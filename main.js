@@ -124,6 +124,7 @@ let playerScore = 0;
 let computerScore = 0;
 let playerLastChoice = "";
 let computerLastChoice = "";
+let countdownValue = 0; // New variable for countdown
 
 // DOM Elements for RPS Game
 const webcamContainer = document.getElementById("webcam-container");
@@ -136,6 +137,7 @@ const computerScoreDisplay = document.getElementById("computer-score");
 const playRoundBtn = document.getElementById("play-round-btn");
 const rpsGameStartButton = document.querySelector(".rps-game-container button[onclick='initRPS()']");
 
+let animationFrameId; // To store the requestAnimationFrame ID for stopping the loop
 
 async function initRPS() {
     rpsGameStartButton.style.display = 'none'; // Hide start button
@@ -162,12 +164,36 @@ async function initRPS() {
     }
 
     resetGame();
-    rpsGameRunning = true;
-    window.requestAnimationFrame(loopRPS);
-
-    playRoundBtn.style.display = 'block'; // Show next round button
-    playRoundBtn.onclick = startNewRound;
+    startCountdown(); // Start countdown instead of directly starting game
+    // window.requestAnimationFrame(loopRPS); // loopRPS will be called after countdown
+    playRoundBtn.onclick = startNewRound; // Set handler for next round
 }
+
+function startCountdown() {
+    countdownValue = 3; // Start from 3
+    rpsGameRunning = false; // Disable prediction during countdown
+    playRoundBtn.style.display = 'none'; // Hide next round button
+
+    gameStatusDisplay.textContent = "준비!";
+    playerChoiceDisplay.textContent = "";
+    computerChoiceDisplay.textContent = "";
+
+    const countdownInterval = setInterval(() => {
+        if (countdownValue > 0) {
+            gameStatusDisplay.textContent = `가위바위보! ${countdownValue}...`;
+            countdownValue--;
+        } else {
+            clearInterval(countdownInterval);
+            gameStatusDisplay.textContent = "시작!";
+            rpsGameRunning = true; // Enable prediction after countdown
+            // Start the loop only if it's not already running
+            if (!animationFrameId) {
+                animationFrameId = window.requestAnimationFrame(loopRPS);
+            }
+        }
+    }, 1000);
+}
+
 
 async function loopRPS() {
     if (webcam) { // Ensure webcam is initialized
@@ -176,7 +202,7 @@ async function loopRPS() {
             await predictRPS();
         }
     }
-    window.requestAnimationFrame(loopRPS);
+    animationFrameId = window.requestAnimationFrame(loopRPS);
 }
 
 async function predictRPS() {
@@ -194,14 +220,13 @@ async function predictRPS() {
     }
 
     // Only set player choice if confidence is high enough
-    if (highestPrediction.probability > 0.85) { // Confidence threshold
+    if (rpsGameRunning && highestPrediction.probability > 0.85) { // Confidence threshold
         playerLastChoice = highestPrediction.className;
         playerChoiceDisplay.textContent = playerLastChoice;
-        if (rpsGameRunning) {
-            rpsGameRunning = false; // Stop prediction until next round
-            playRound();
-        }
-    } else {
+        
+        rpsGameRunning = false; // Stop prediction until next round
+        playRound();
+    } else if (rpsGameRunning) {
         playerChoiceDisplay.textContent = "고르는 중...";
     }
 }
@@ -211,6 +236,11 @@ function stopWebcam() {
         webcam.stop();
         webcamContainer.innerHTML = '';
         labelContainer.innerHTML = '';
+        // Stop the animation frame loop as well
+        if (animationFrameId) {
+            cancelAnimationFrame(animationFrameId);
+            animationFrameId = null;
+        }
     }
 }
 
@@ -268,9 +298,10 @@ function resetGame() {
 }
 
 function startNewRound() {
-    gameStatusDisplay.textContent = "준비! 가위바위보!";
+    // gameStatusDisplay.textContent = "준비! 가위바위보!"; // This will be handled by startCountdown
     playerChoiceDisplay.textContent = "";
     computerChoiceDisplay.textContent = "";
-    rpsGameRunning = true; // Resume prediction
+    // rpsGameRunning = true; // This will be handled by startCountdown
     playRoundBtn.style.display = 'none'; // Hide next round button until next prediction
+    startCountdown(); // Start countdown for the new round
 }
