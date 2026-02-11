@@ -69,7 +69,7 @@ function recommendDinnerMenu() {
     
     // Unsplash를 사용하여 이미지 URL 생성
     // `sig` 파라미터는 동일한 쿼리에서도 다른 이미지를 가져오도록 돕습니다.
-    const imageUrl = `https://source.unsplash.com/random/400x300/?${selectedMenu.keywords}&sig=${Math.random()}`;
+    const imageUrl = `https://source.unsplash.com/400x300/?${encodeURIComponent(selectedMenu.keywords)}&sig=${Date.now()}`;
 
     // 이전 내용 지우기 및 로딩 상태 표시
     dinnerMenuImage.style.display = 'none'; // 이미지 숨기기
