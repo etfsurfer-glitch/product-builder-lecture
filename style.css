@@ -155,3 +155,70 @@ body.dark-mode .theme-toggle .icon {
     background-color: var(--button-hover-bg);
 }
 
+/* 제휴 문의 폼 섹션 스타일 */
+#contact-form {
+    background-color: var(--container-bg);
+    padding: 2rem;
+    border-radius: 1rem;
+    box-shadow: var(--box-shadow);
+    margin-top: 2rem;
+    text-align: left; /* Align form content to the left */
+}
+
+#contact-form h2 {
+    text-align: center;
+    margin-bottom: 1.5rem;
+}
+
+.form-group {
+    margin-bottom: 1rem;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: bold;
+    color: var(--text-color);
+}
+
+.form-group input[type="text"],
+.form-group input[type="email"],
+.form-group textarea {
+    width: calc(100% - 20px); /* Adjust for padding */
+    padding: 10px;
+    border: 1px solid var(--lotto-number-bg);
+    border-radius: 0.5rem;
+    background-color: var(--lotto-number-bg);
+    color: var(--text-color);
+    transition: border-color 0.3s ease, background-color 0.3s ease, color 0.3s ease;
+}
+
+.form-group textarea {
+    resize: vertical; /* Allow vertical resizing */
+}
+
+.form-group input[type="text"]:focus,
+.form-group input[type="email"]:focus,
+.form-group textarea:focus {
+    border-color: var(--button-bg);
+    outline: none;
+}
+
+#contact-form button[type="submit"] {
+    background-color: var(--button-bg);
+    color: white;
+    border: none;
+    padding: 0.8rem 1.5rem;
+    font-size: 1rem;
+    border-radius: 0.5rem;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+    display: block; /* Make button full width */
+    width: 100%;
+    margin-top: 1.5rem;
+}
+
+#contact-form button[type="submit"]:hover {
+    background-color: var(--button-hover-bg);
+}
+
