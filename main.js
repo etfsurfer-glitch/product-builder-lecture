@@ -5,6 +5,8 @@ const body = document.body;
 
 // 저녁 메뉴 추천 관련 요소
 const recommendBtn = document.getElementById('recommend-btn');
+const dinnerMenuText = document.getElementById('dinner-menu-text');
+
 const dinnerMenus = [
     { name: "김치찌개", keywords: "kimchi jjigae,korean food" },
     { name: "된장찌개", keywords: "doenjang jjigae,korean food" },
@@ -63,7 +65,7 @@ function recommendDinnerMenu() {
     const randomIndex = Math.floor(Math.random() * dinnerMenus.length);
     const selectedMenu = dinnerMenus[randomIndex];
     
-    document.getElementById('dinner-menu-text').textContent = selectedMenu.name;
+    dinnerMenuText.textContent = selectedMenu.name;
 }
 
 // 테마 토글 버튼 이벤트 리스너
