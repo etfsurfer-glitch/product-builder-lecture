@@ -1,29 +1,33 @@
 # Project Blueprint
 
 ## Project Overview
-This is a framework-less web project consisting of `index.html`, `style.css`, and `main.js`. The AI is tasked with adding dark mode and light mode functionality and preparing the changes for deployment via `git push`.
+This is a framework-less web project consisting of `index.html`, `style.css`, and `main.js`. The AI is tasked with adding dark mode and light mode functionality, a "저녁 메뉴 추천" (dinner menu recommendation) feature, ensuring all user-facing text is in Korean, and deploying all changes via `git push`.
 
 ## Current Features
 - Basic HTML structure (`index.html`)
 - Basic styling (`style.css`)
 - Basic JavaScript logic (`main.js`)
-- **Dark Mode/Light Mode Toggle**: Users can switch between dark and light themes, and their preference is saved locally.
+- Dark Mode/Light Mode Toggle: Users can switch between dark and light themes, and their preference is saved locally.
+- **저녁 메뉴 추천 (Dinner Menu Recommendation)**: A new section recommending dinner menus with a button to get new recommendations, fully localized in Korean.
 
-## Plan for Current Request: Dark Mode / Light Mode Feature
+## Plan for Current Request: Dinner Menu Recommendation and Korean Localization
 
 ### Objective
-Implement a toggleable dark mode and light mode feature, persist the user's preference, and prepare the changes for `git push`.
+Add a "저녁 메뉴 추천" (dinner menu recommendation) feature below the existing lotto site, ensure all user-facing text is in Korean, and deploy the changes via `git push`.
 
 ### Steps
-1.  **Create/Update `blueprint.md`**: Document the project's current state and outline the steps for implementing the dark/light mode and preparing for deployment. (Completed)
-2.  **Analyze existing code**: Review `index.html`, `style.css`, and `main.js` to understand the current structure and identify the best approach for integrating the theme toggle and styles. (Completed)
-3.  **Implement Theme Toggle**:
-    *   Add a button or toggle switch to `index.html` for users to switch themes. (Completed)
-    *   Add JavaScript in `main.js` to handle the theme switching logic (e.g., adding/removing a class to the `body` or `html` element). (Completed)
-    *   Store the user's preference in `localStorage` to persist the theme across sessions. (Completed)
-4.  **Define Dark/Light Mode Styles**:
-    *   Modify `style.css` to include CSS variables for colors, text, etc., for both light and dark themes. (Completed)
-    *   Use a class (e.g., `.dark-mode`) on the `body` or `html` element to apply the dark theme styles. (Completed)
-5.  **Prepare for Deployment**:
+1.  **Update `blueprint.md`**: Document the new tasks for the dinner menu recommendation, Korean localization, and deployment. (Completed)
+2.  **Translate existing text**:
+    *   Modify `index.html` to change all English text to Korean. (Completed)
+    *   Modify `main.js` to change all English text to Korean. (Completed)
+3.  **Implement Dinner Menu Recommendation Feature**:
+    *   Modify `index.html` to add a new section for dinner menu recommendation below the lotto numbers section. This section will include a title, a display area for the recommended menu, and a button to get a new recommendation. (Completed)
+    *   Modify `style.css` to add styles for the new dinner menu recommendation section. (Completed)
+    *   Modify `main.js` to add JavaScript logic for the dinner menu recommendation:
+        *   Define a list of Korean dinner menu items. (Completed)
+        *   Implement a function to randomly select and display a menu item. (Completed)
+        *   Add an event listener to the recommendation button. (Completed)
+4.  **Commit and Push**:
     *   Stage all modified files for commit. (Pending)
-    *   Provide a draft commit message for the user to review and confirm. (Pending)
+    *   Provide a draft commit message. (Pending)
+    *   Perform `git push` to deploy the changes. (Pending)

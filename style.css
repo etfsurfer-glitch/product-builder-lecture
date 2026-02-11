@@ -103,3 +103,38 @@ body.dark-mode .theme-toggle .icon {
     content: "☀️"; /* Sun icon for light mode when in dark mode */
 }
 
+/* 저녁 메뉴 추천 섹션 스타일 */
+.container h2 {
+    margin-top: 2rem;
+    color: var(--text-color);
+    transition: color 0.3s ease;
+}
+
+.dinner-menu {
+    font-size: 1.5rem;
+    font-weight: bold;
+    margin: 1.5rem 0;
+    padding: 1rem;
+    border: 1px solid var(--lotto-number-bg);
+    border-radius: 0.5rem;
+    background-color: var(--lotto-number-bg);
+    color: var(--text-color);
+    transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+}
+
+#recommend-btn {
+    background-color: var(--button-bg);
+    color: white;
+    border: none;
+    padding: 0.8rem 1.5rem;
+    font-size: 1rem;
+    border-radius: 0.5rem;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+    margin-top: 1rem;
+}
+
+#recommend-btn:hover {
+    background-color: var(--button-hover-bg);
+}
+
