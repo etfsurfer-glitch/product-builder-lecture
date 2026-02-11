@@ -1,24 +1,49 @@
+:root {
+    --background-color: #f0f2f5;
+    --container-bg: white;
+    --text-color: #333;
+    --lotto-number-bg: #eee;
+    --button-bg: #4CAF50;
+    --button-hover-bg: #45a049;
+    --box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+}
+
+body.dark-mode {
+    --background-color: #2c3e50;
+    --container-bg: #34495e;
+    --text-color: #ecf0f1;
+    --lotto-number-bg: #4a627a;
+    --button-bg: #27ae60;
+    --button-hover-bg: #229954;
+    --box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+}
+
 body {
     font-family: sans-serif;
     display: flex;
     justify-content: center;
     align-items: center;
     min-height: 100vh;
-    background-color: #f0f2f5;
+    background-color: var(--background-color);
     margin: 0;
+    transition: background-color 0.3s ease;
+    color: var(--text-color); /* Apply text color to body */
 }
 
 .container {
+    position: relative; /* Added for positioning the toggle button */
     text-align: center;
-    background-color: white;
+    background-color: var(--container-bg);
     padding: 2rem;
     border-radius: 1rem;
-    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+    box-shadow: var(--box-shadow);
+    transition: background-color 0.3s ease, box-shadow 0.3s ease;
 }
 
 h1 {
-    color: #333;
+    color: var(--text-color);
     margin-bottom: 1.5rem;
+    transition: color 0.3s ease;
 }
 
 .lotto-numbers {
@@ -35,23 +60,46 @@ h1 {
     justify-content: center;
     align-items: center;
     border-radius: 50%;
-    background-color: #eee;
+    background-color: var(--lotto-number-bg);
     font-size: 1.2rem;
     font-weight: bold;
-    color: #333;
+    color: var(--text-color);
+    transition: background-color 0.3s ease, color 0.3s ease;
 }
 
 #generate-btn {
-    background-color: #4CAF50;
+    background-color: var(--button-bg);
     color: white;
     border: none;
     padding: 0.8rem 1.5rem;
     font-size: 1rem;
     border-radius: 0.5rem;
     cursor: pointer;
-    transition: background-color 0.3s;
+    transition: background-color 0.3s ease;
 }
 
 #generate-btn:hover {
-    background-color: #45a049;
+    background-color: var(--button-hover-bg);
 }
+
+.theme-toggle {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    cursor: pointer;
+    color: var(--text-color); /* Use theme text color for the icon */
+    transition: color 0.3s ease;
+}
+
+.theme-toggle .icon {
+    display: inline-block;
+    transition: transform 0.3s ease;
+}
+
+body.dark-mode .theme-toggle .icon {
+    content: "☀️"; /* Sun icon for light mode when in dark mode */
+}
+
