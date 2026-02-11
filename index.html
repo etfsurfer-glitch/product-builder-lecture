@@ -7,43 +7,44 @@
     <link href='/style.css' rel='stylesheet'>
 </head>
 <body>
-    <div class="container">
-        <button id="theme-toggle" class="theme-toggle">
-            <span class="icon">🌙</span> <!-- Moon icon for dark mode -->
-        </button>
-        <h1>로또 번호 추출기</h1>
-        <div class="lotto-numbers" id="lotto-numbers"></div>
-        <button id="generate-btn">번호 생성</button>
+    <div class="main-layout">
+        <div class="container">
+            <button id="theme-toggle" class="theme-toggle">
+                <span class="icon">🌙</span> <!-- Moon icon for dark mode -->
+            </button>
+            <h1>로또 번호 추출기</h1>
+            <div class="lotto-numbers" id="lotto-numbers"></div>
+            <button id="generate-btn">번호 생성</button>
 
-        <hr style="margin: 2rem 0; border-color: var(--text-color); opacity: 0.2;"> <!-- Separator -->
+            <hr style="margin: 2rem 0; border-color: var(--text-color); opacity: 0.2;"> <!-- Separator -->
 
-        <h2>저녁 메뉴 추천</h2>
-        <div class="dinner-menu" id="dinner-menu">
-            <p id="dinner-menu-text"></p>
+            <h2>저녁 메뉴 추천</h2>
+            <div class="dinner-menu" id="dinner-menu">
+                <p id="dinner-menu-text"></p>
+            </div>
+            <button id="recommend-btn">메뉴 추천받기</button>
+
+            <hr style="margin: 2rem 0; border-color: var(--text-color); opacity: 0.2;"> <!-- Separator -->
+
+            <h2>제휴 문의</h2>
+            <form id="contact-form" action="https://formspree.io/f/xlgwgljw" method="POST">
+                <div class="form-group">
+                    <label for="name">이름:</label>
+                    <input type="text" id="name" name="이름" required>
+                </div>
+                <div class="form-group">
+                    <label for="email">이메일:</label>
+                    <input type="email" id="email" name="이메일" required>
+                </div>
+                <div class="form-group">
+                    <label for="message">문의 내용:</label>
+                    <textarea id="message" name="문의 내용" rows="5" required></textarea>
+                </div>
+                <button type="submit">제출하기</button>
+            </form>
         </div>
-        <button id="recommend-btn">메뉴 추천받기</button>
-
-        <hr style="margin: 2rem 0; border-color: var(--text-color); opacity: 0.2;"> <!-- Separator -->
-
-        <h2>제휴 문의</h2>
-        <form id="contact-form" action="https://formspree.io/f/xlgwgljw" method="POST">
-            <div class="form-group">
-                <label for="name">이름:</label>
-                <input type="text" id="name" name="이름" required>
-            </div>
-            <div class="form-group">
-                <label for="email">이메일:</label>
-                <input type="email" id="email" name="이메일" required>
-            </div>
-            <div class="form-group">
-                <label for="message">문의 내용:</label>
-                <textarea id="message" name="문의 내용" rows="5" required></textarea>
-            </div>
-            <button type="submit">제출하기</button>
-        </form>
+        <div id="disqus_thread"></div>
     </div>
     <script defer type="text/javascript" src="/main.js"></script>
-
-    <div id="disqus_thread"></div>
 </body>
 </html>
