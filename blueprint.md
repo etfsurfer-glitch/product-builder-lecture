@@ -10,17 +10,17 @@ This is a framework-less web project consisting of `index.html`, `style.css`, an
 - Dark Mode/Light Mode Toggle: Users can switch between dark and light themes, and their preference is saved locally.
 - 저녁 메뉴 추천 (Dinner Menu Recommendation): A section recommending dinner menus with a button to get new recommendations, fully localized in Korean, now including images.
 
-## Plan for Current Request: Add Images to Dinner Menu Recommendation
+## Plan for Current Request: Fix Image Display in Dinner Menu Recommendation
 
 ### Objective
-Enhance the "저녁 메뉴 추천" feature by displaying a relevant image alongside the recommended menu text.
+Ensure images are reliably displayed in the "저녁 메뉴 추천" section by improving image loading robustness and providing better feedback.
 
 ### Steps
-1.  **Update `blueprint.md`**: Document the new task for image integration. (Completed)
-2.  **Image Sourcing Strategy**: I will use placeholder image URLs (e.g., from `https://source.unsplash.com/random/400x300/?food,korean-food`) to display images alongside the menu text. This allows for dynamic, somewhat relevant images without requiring local assets or complex image generation. (Completed)
-3.  **Modify `main.js`**:
-    *   Update the `dinnerMenus` array to store objects containing both the menu name and a corresponding (or dynamically generated) image URL. (Completed)
-    *   Modify the `recommendDinnerMenu` function to dynamically create and display an `<img>` tag with the appropriate image URL, in addition to the menu name. (Completed)
-4.  **Modify `index.html`**: Add an `<img>` tag within the `dinner-menu` div to serve as the container for the recommended image. (Completed)
-5.  **Modify `style.css`**: Add styles for the new image element to ensure it's displayed nicely (e.g., proper sizing, borders, responsiveness). (Completed)
-6.  **Commit and Push**: Stage all changes, commit them with a descriptive message, and then `git push` to deploy. (Pending)
+1.  **Update `blueprint.md`**: Document the new tasks for fixing image display. (Completed)
+2.  **Modify `main.js`**:
+    *   Implement `onload` and `onerror` handlers for the `dinnerMenuImage` to manage display and error states. (Completed)
+    *   Clear previous image and text content before loading a new recommendation. (Completed)
+    *   Temporarily hide the image during loading and show a loading indicator/fallback text. (Completed)
+3.  **Modify `index.html`**: (No change needed, `<img>` is already there with `display: none;` as initial state) (Completed)
+4.  **Modify `style.css`**: (No change needed initially, may add specific loading indicator styles later if needed) (Completed)
+5.  **Commit and Push**: Stage all changes, commit them with a descriptive message, and then `git push` to deploy. (Pending)

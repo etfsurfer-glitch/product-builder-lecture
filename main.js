@@ -68,12 +68,29 @@ function recommendDinnerMenu() {
     const selectedMenu = dinnerMenus[randomIndex];
     
     // Unsplash를 사용하여 이미지 URL 생성
+    // `sig` 파라미터는 동일한 쿼리에서도 다른 이미지를 가져오도록 돕습니다.
     const imageUrl = `https://source.unsplash.com/random/400x300/?${selectedMenu.keywords}&sig=${Math.random()}`;
+
+    // 이전 내용 지우기 및 로딩 상태 표시
+    dinnerMenuImage.style.display = 'none'; // 이미지 숨기기
+    dinnerMenuImage.src = ''; // 이미지 소스 초기화
+    dinnerMenuText.textContent = '메뉴 로딩 중...'; // 로딩 텍스트 표시
+
+    dinnerMenuImage.onload = () => {
+        dinnerMenuImage.style.display = 'block'; // 이미지 로드 성공 시 보이기
+        dinnerMenuText.textContent = selectedMenu.name; // 메뉴 텍스트 표시
+    };
+
+    dinnerMenuImage.onerror = () => {
+        dinnerMenuImage.style.display = 'none'; // 에러 발생 시 이미지 숨기기
+        dinnerMenuText.textContent = '이미지를 불러오는 데 실패했습니다: ' + selectedMenu.name; // 에러 메시지
+        // 기본 대체 이미지를 여기에 설정할 수 있습니다.
+        // dinnerMenuImage.src = 'placeholder-error.png'; 
+        // dinnerMenuImage.style.display = 'block';
+    };
 
     dinnerMenuImage.src = imageUrl;
     dinnerMenuImage.alt = selectedMenu.name + " 이미지";
-    dinnerMenuImage.style.display = 'block'; // 이미지 보이기
-    dinnerMenuText.textContent = selectedMenu.name;
 }
 
 // 테마 토글 버튼 이벤트 리스너
