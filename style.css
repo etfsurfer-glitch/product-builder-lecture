@@ -127,14 +127,6 @@ body.dark-mode .theme-toggle .icon {
     min-height: 200px; /* Ensure a minimum height for the container */
 }
 
-#dinner-menu-image {
-    max-width: 100%;
-    height: auto;
-    border-radius: 0.5rem;
-    margin-bottom: 1rem; /* Space between image and text */
-    object-fit: cover; /* Cover the area, cropping if necessary */
-}
-
 #dinner-menu-text {
     text-align: center;
 }
