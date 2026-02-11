@@ -120,6 +120,23 @@ body.dark-mode .theme-toggle .icon {
     background-color: var(--lotto-number-bg);
     color: var(--text-color);
     transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+    display: flex; /* Use flexbox for image and text alignment */
+    flex-direction: column; /* Stack image and text vertically */
+    align-items: center; /* Center items horizontally */
+    justify-content: center; /* Center items vertically */
+    min-height: 200px; /* Ensure a minimum height for the container */
+}
+
+#dinner-menu-image {
+    max-width: 100%;
+    height: auto;
+    border-radius: 0.5rem;
+    margin-bottom: 1rem; /* Space between image and text */
+    object-fit: cover; /* Cover the area, cropping if necessary */
+}
+
+#dinner-menu-text {
+    text-align: center;
 }
 
 #recommend-btn {

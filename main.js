@@ -6,11 +6,29 @@ const body = document.body;
 // 저녁 메뉴 추천 관련 요소
 const recommendBtn = document.getElementById('recommend-btn');
 const dinnerMenuContainer = document.getElementById('dinner-menu');
+const dinnerMenuImage = document.getElementById('dinner-menu-image');
+const dinnerMenuText = document.getElementById('dinner-menu-text');
 
 const dinnerMenus = [
-    "김치찌개", "된장찌개", "삼겹살", "불고기", "비빔밥", "갈비찜",
-    "닭갈비", "제육볶음", "순두부찌개", "초밥", "파스타", "피자",
-    "스테이크", "카레", "돈까스", "햄버거", "치킨", "보쌈", "족발"
+    { name: "김치찌개", keywords: "kimchi jjigae,korean food" },
+    { name: "된장찌개", keywords: "doenjang jjigae,korean food" },
+    { name: "삼겹살", keywords: "samgyeopsal,korean bbq" },
+    { name: "불고기", keywords: "bulgogi,korean food" },
+    { name: "비빔밥", keywords: "bibimbap,korean food" },
+    { name: "갈비찜", keywords: "galbijjim,korean food" },
+    { name: "닭갈비", keywords: "dakgalbi,korean food" },
+    { name: "제육볶음", keywords: "jeyuk bokkeum,korean food" },
+    { name: "순두부찌개", keywords: "sundubu jjigae,korean food" },
+    { name: "초밥", keywords: "sushi,japanese food" },
+    { name: "파스타", keywords: "pasta,italian food" },
+    { name: "피자", keywords: "pizza,italian food" },
+    { name: "스테이크", keywords: "steak,western food" },
+    { name: "카레", keywords: "curry,indian food" },
+    { name: "돈까스", keywords: "donkatsu,japanese food" },
+    { name: "햄버거", keywords: "hamburger,fast food" },
+    { name: "치킨", keywords: "chicken,fried chicken" },
+    { name: "보쌈", keywords: "bossam,korean food" },
+    { name: "족발", keywords: "jokbal,korean food" }
 ];
 
 // 테마 적용 함수
@@ -47,7 +65,15 @@ function applySavedTheme() {
 // 저녁 메뉴 추천 함수
 function recommendDinnerMenu() {
     const randomIndex = Math.floor(Math.random() * dinnerMenus.length);
-    dinnerMenuContainer.textContent = dinnerMenus[randomIndex];
+    const selectedMenu = dinnerMenus[randomIndex];
+    
+    // Unsplash를 사용하여 이미지 URL 생성
+    const imageUrl = `https://source.unsplash.com/random/400x300/?${selectedMenu.keywords}&sig=${Math.random()}`;
+
+    dinnerMenuImage.src = imageUrl;
+    dinnerMenuImage.alt = selectedMenu.name + " 이미지";
+    dinnerMenuImage.style.display = 'block'; // 이미지 보이기
+    dinnerMenuText.textContent = selectedMenu.name;
 }
 
 // 테마 토글 버튼 이벤트 리스너
