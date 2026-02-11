@@ -52,6 +52,84 @@ body {
     max-width: 700px; /* Maximum width for the main content */
 }
 
+/* RPS Game Section Styles */
+.rps-game-container {
+    background-color: var(--container-bg);
+    padding: 2rem;
+    border-radius: 1rem;
+    box-shadow: var(--box-shadow);
+    flex: 0 0 350px; /* Don't grow, don't shrink, fixed width of 350px, similar to disqus */
+    min-width: 300px;
+    max-width: 400px;
+    text-align: center;
+    overflow-y: auto;
+    height: 100%;
+    box-sizing: border-box;
+}
+
+.rps-game-container h2 {
+    color: var(--text-color);
+    margin-bottom: 1rem;
+}
+
+.rps-game-container button {
+    background-color: var(--button-bg);
+    color: white;
+    border: none;
+    padding: 0.8rem 1.5rem;
+    font-size: 1rem;
+    border-radius: 0.5rem;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+    margin-top: 1rem;
+    margin-bottom: 1rem;
+}
+
+.rps-game-container button:hover {
+    background-color: var(--button-hover-bg);
+}
+
+#webcam-container {
+    margin: 1rem auto;
+    border: 2px solid var(--lotto-number-bg);
+    border-radius: 0.5rem;
+    display: flex; /* For centering the canvas if it's smaller than container */
+    justify-content: center;
+    align-items: center;
+    overflow: hidden; /* Hide any overflow if canvas is too big */
+}
+
+#webcam-container canvas {
+    display: block; /* Remove extra space below canvas */
+    max-width: 100%; /* Ensure canvas scales within container */
+    height: auto;
+}
+
+#label-container div {
+    font-size: 1.1rem;
+    color: var(--text-color);
+    margin: 0.5rem 0;
+}
+
+#game-status {
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: var(--button-bg); /* Use a prominent color for status */
+    margin: 1rem 0;
+}
+
+.choices p, .score p {
+    font-size: 1.2rem;
+    color: var(--text-color);
+    margin: 0.5rem 0;
+}
+
+.choices span, .score span {
+    font-weight: bold;
+    color: var(--button-hover-bg); /* Highlight choices and scores */
+}
+
+
 #disqus_thread {
     background-color: var(--container-bg); /* Use container background for disqus too */
     padding: 2rem;

@@ -43,6 +43,24 @@
                 <button type="submit">제출하기</button>
             </form>
         </div>
+
+        <!-- Rock Paper Scissors Game Section -->
+        <div class="rps-game-container">
+            <h2>가위바위보 게임</h2>
+            <button type="button" onclick="initRPS()">게임 시작</button>
+            <div id="webcam-container"></div>
+            <div id="label-container"></div>
+            <div id="game-status"></div>
+            <div class="choices">
+                <p>당신: <span id="player-choice"></span></p>
+                <p>컴퓨터: <span id="computer-choice"></span></p>
+            </div>
+            <div class="score">
+                <p>점수 - 당신: <span id="player-score">0</span> 컴퓨터: <span id="computer-score">0</span></p>
+            </div>
+            <button type="button" id="play-round-btn" style="display: none;">다음 라운드</button>
+        </div>
+
         <div id="disqus_thread"></div>
     </div>
     <script defer type="text/javascript" src="/main.js"></script>
