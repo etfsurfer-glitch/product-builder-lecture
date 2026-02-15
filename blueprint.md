@@ -10,20 +10,17 @@ This is a framework-less web project consisting of `index.html`, `style.css`, an
 - Dark Mode/Light Mode Toggle: Users can switch between dark and light themes, and their preference is saved locally.
 - 저녁 메뉴 추천 (Dinner Menu Recommendation): A section recommending dinner menus with a button to get new recommendations, fully localized in Korean, now including images.
 - **제휴 문의 (Partnership Inquiry) Form**: A simple contact form integrated with Formspree for partnership inquiries.
+- **블로그 섹션 (Blog Section)**: A dedicated section in `index.html` with placeholder articles to host original and valuable content, enhancing the site's appeal for AdSense.
+- **개인정보처리방침 (Privacy Policy)**: A `privacy.html` page containing a generic privacy policy, linked from the footer of `index.html`, to ensure legal compliance and build user trust.
 
-## Plan for Current Request: Integrate Formspree Partnership Inquiry Form
+## Plan for Current Request: Add Privacy Policy and Update Blueprint
 
 ### Objective
-Add a simple "제휴 문의" (partnership inquiry) contact form using Formspree to the `index.html` page.
+Add a privacy policy page (`privacy.html`), link it from `index.html`, add necessary styling, and update this `blueprint.md` to reflect all recent changes (blog section and privacy policy).
 
 ### Steps
-1.  **Update `blueprint.md`**: Document the new task for integrating the Formspree contact form. (Completed)
-2.  **Modify `index.html`**:
-    *   Add a new section for the "제휴 문의" form below the dinner menu section. (Completed)
-    *   Include a title for the section (e.g., "제휴 문의"). (Completed)
-    *   Create a `<form>` element with the provided Formspree endpoint (`https://formspree.io/f/xlgwgljw`) as its `action` and `method="POST"`. (Completed)
-    *   Add basic form fields: name (`이름`), email (`이메일`), and message (`문의 내용`), each with appropriate `name` attributes for Formspree. (Completed)
-    *   Include a submit button (`제출하기`). (Completed)
-3.  **Modify `style.css`**: Add basic styling for the new form elements (labels, inputs, textarea, button) to ensure they fit the existing theme and layout. (Completed)
-4.  **Modify `main.js`**: No JavaScript changes are strictly necessary for a basic Formspree integration. (Completed)
+1.  **Create `privacy.html`**: Create a new HTML file for the privacy policy with generic content. (Completed)
+2.  **Modify `index.html`**: Add a link to `privacy.html` in the footer. (Completed)
+3.  **Modify `style.css`**: Add basic styling for the new privacy policy link. (Completed)
+4.  **Update `blueprint.md`**: Document the new features and plan. (Completed)
 5.  **Commit and Push**: Stage all changes, commit them with a descriptive message, and then `git push` to deploy. (Pending)

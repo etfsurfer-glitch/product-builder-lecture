@@ -201,6 +201,30 @@ body {
     background-color: var(--button-hover-bg);
 }
 
+.footer-links {
+    margin-top: 2rem;
+    text-align: center;
+    padding: 1rem;
+    background-color: var(--container-bg);
+    border-radius: 1rem;
+    box-shadow: var(--box-shadow);
+    flex: 0 0 350px; /* Take same width as RPS and Disqus */
+    min-width: 300px;
+    max-width: 400px;
+    box-sizing: border-box;
+}
+
+.footer-links a {
+    color: var(--text-color);
+    text-decoration: none;
+    font-size: 0.9rem;
+    transition: color 0.3s ease;
+}
+
+.footer-links a:hover {
+    color: var(--button-hover-bg);
+}
+
 /* Existing styles below */
 h1 {
     color: var(--text-color);
