@@ -143,7 +143,65 @@ body {
     box-sizing: border-box;
 }
 
-/* Original styles below */
+
+/* Blog Section Styles */
+.blog-posts-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 1.5rem;
+    margin-top: 1.5rem;
+}
+
+.blog-post-card {
+    background-color: var(--lotto-number-bg); /* Reusing existing variable for consistency */
+    padding: 1.5rem;
+    border-radius: 0.8rem;
+    box-shadow: var(--box-shadow);
+    transition: all 0.3s ease;
+    text-align: left;
+}
+
+.blog-post-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 15px 30px rgba(0, 0, 0, 0.2);
+}
+
+.blog-post-card h3 {
+    color: var(--text-color);
+    margin-top: 0;
+    margin-bottom: 0.8rem;
+    font-size: 1.3rem;
+}
+
+.blog-post-card .post-meta {
+    font-size: 0.9rem;
+    color: #888; /* A slightly subdued color for meta info */
+    margin-bottom: 1rem;
+}
+
+.blog-post-card p {
+    font-size: 1rem;
+    line-height: 1.6;
+    color: var(--text-color);
+    margin-bottom: 1.5rem;
+}
+
+.blog-post-card .read-more {
+    display: inline-block;
+    background-color: var(--button-bg);
+    color: white;
+    padding: 0.6rem 1.2rem;
+    border-radius: 0.4rem;
+    text-decoration: none;
+    font-weight: bold;
+    transition: background-color 0.3s ease;
+}
+
+.blog-post-card .read-more:hover {
+    background-color: var(--button-hover-bg);
+}
+
+/* Existing styles below */
 h1 {
     color: var(--text-color);
     margin-bottom: 1.5rem;
