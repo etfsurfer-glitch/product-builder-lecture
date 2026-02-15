@@ -3,7 +3,14 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>로또 번호 추출기</title>
+    <title>로또 번호 추출기, 저녁 메뉴 추천, 가위바위보 게임 | 유용한 도구와 블로그</title>
+    <meta name="description" content="로또 번호 추출기로 행운을 시험하고, 저녁 메뉴 추천으로 고민을 해결하며, 인공지능 가위바위보 게임으로 즐거움을 만끽하세요. 다양한 정보와 유용한 팁이 가득한 블로그도 방문해 보세요!">
+    <meta name="keywords" content="로또 번호, 저녁 메뉴, 가위바위보, 인공지능 게임, 블로그, 유틸리티, 운세, 생활 팁, 엔터테인먼트, 개인정보처리방침">
+    <meta property="og:title" content="로또 번호 추출기, 저녁 메뉴 추천, 가위바위보 게임 | 유용한 도구와 블로그">
+    <meta property="og:description" content="로또 번호 추출기로 행운을 시험하고, 저녁 메뉴 추천으로 고민을 해결하며, 인공지능 가위바위보 게임으로 즐거움을 만끽하세요. 다양한 정보와 유용한 팁이 가득한 블로그도 방문해 보세요!">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="[사이트 URL]"> <!-- TODO: 실제 사이트 URL로 변경 필요 -->
+    <meta property="og:image" content="[사이트 대표 이미지 URL]"> <!-- TODO: 실제 사이트 대표 이미지 URL로 변경 필요 -->
     <link href='/style.css' rel='stylesheet'>
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest/dist/tf.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@latest/dist/teachablemachine-image.min.js"></script>
@@ -17,12 +24,24 @@
                 <span class="icon">🌙</span> <!-- Moon icon for dark mode -->
             </button>
             <h1>로또 번호 추출기</h1>
+            <p class="section-description">
+                매주 찾아오는 행운의 기회를 놓치지 마세요! 저희 로또 번호 추출기는
+                간단한 클릭 한 번으로 무작위의 행운 번호 6개를 생성해 드립니다.
+                복잡한 계산이나 고민 없이 빠르고 쉽게 나만의 로또 번호를
+                받아보세요. 꿈의 당첨을 향한 첫걸음을 저희와 함께 시작하세요!
+            </p>
             <div class="lotto-numbers" id="lotto-numbers"></div>
             <button id="generate-btn">번호 생성</button>
 
             <hr style="margin: 2rem 0; border-color: var(--text-color); opacity: 0.2;"> <!-- Separator -->
 
             <h2>저녁 메뉴 추천</h2>
+            <p class="section-description">
+                오늘 저녁은 뭘 먹어야 할지 고민이신가요? 매일 반복되는 메뉴 고민은 이제 그만!
+                저희 저녁 메뉴 추천 서비스는 당신의 소중한 시간을 절약해 드립니다.
+                버튼 하나만 누르면 다양하고 맛있는 메뉴를 랜덤으로 추천받을 수 있습니다.
+                새로운 미식의 경험을 지금 바로 시작해보세요!
+            </p>
             <div class="dinner-menu" id="dinner-menu">
                 <p id="dinner-menu-text"></p>
             </div>
@@ -33,12 +52,29 @@
             <h2>최신 블로그 포스트</h2>
             <div class="blog-posts-container">
                 <div class="blog-post-card">
-                    <h3>로또 번호 예측, 과연 가능할까?</h3>
+                    <h3>로또 번호 분석: 통계로 본 당첨 확률의 비밀</h3>
                     <p class="post-meta">작성일: 2026년 2월 15일</p>
-                    <p>로또 번호 예측은 많은 사람들의 꿈입니다. 과연 통계적인 접근이나 인공지능을 통해 로또 번호를 예측하는 것이 가능할까요? 이 글에서는 로또 번호 예측의 가능성과 한계에 대해 탐구합니다...</p>
+                    <p>로또 당첨은 순전히 운일까요? 아니면 통계적인 분석을 통해 확률을 높일 수 있을까요? 이 글에서는 로또 번호의 출현 빈도, 연속 번호 패턴, 홀짝 비율 등 다양한 통계 데이터를 분석하여 당첨 확률에 대한 흥미로운 비밀들을 파헤쳐 봅니다. 과연 당신의 로또 전략에 도움이 될 만한 인사이트를 얻을 수 있을까요?...</p>
                     <a href="#" class="read-more">더 읽어보기</a>
                 </div>
-                <!-- 추가 블로그 포스트가 여기에 들어갈 수 있습니다 -->
+                <div class="blog-post-card">
+                    <h3>오늘 저녁 뭐 먹지? 결정 장애를 위한 메뉴 선택 가이드</h3>
+                    <p class="post-meta">작성일: 2026년 2월 15일</p>
+                    <p>매일 저녁 "오늘 뭐 먹지?"라는 고민에 빠지는 당신을 위한 특별한 가이드! 한식, 중식, 일식, 양식부터 간단한 혼밥 메뉴까지, 다양한 음식 카테고리별 추천과 함께 당신의 취향과 상황에 맞는 최적의 메뉴를 선택하는 방법을 제안합니다. 더 이상 저녁 메뉴 고민으로 시간을 낭비하지 마세요!...</p>
+                    <a href="#" class="read-more">더 읽어보기</a>
+                </div>
+                <div class="blog-post-card">
+                    <h3>가위바위보 심리학: 단순한 게임 뒤에 숨겨진 전략</h3>
+                    <p class="post-meta">작성일: 2026년 2월 15일</p>
+                    <p>어릴 적 친구들과 하던 단순한 가위바위보 게임에도 심리학적 전략이 숨어있다는 사실, 알고 계셨나요? 이 글에서는 가위바위보 게임에서 승리할 확률을 높이는 심리적 패턴 분석, 상대방의 다음 수를 예측하는 팁, 그리고 무의식적인 행동이 결과에 미치는 영향 등 흥미로운 가위바위보 심리학을 탐구합니다. 당신도 이제 가위바위보의 고수가 될 수 있습니다!...</p>
+                    <a href="#" class="read-more">더 읽어보기</a>
+                </div>
+                <div class="blog-post-card">
+                    <h3>효율적인 하루를 위한 시간 관리 팁</h3>
+                    <p class="post-meta">작성일: 2026년 2월 15일</p>
+                    <p>시간은 누구에게나 공평하게 주어지지만, 어떻게 활용하느냐에 따라 결과는 천차만별입니다. 바쁜 현대인들을 위한 효율적인 시간 관리 방법을 소개합니다. 우선순위 설정, 뽀모도로 기법, 투두리스트 활용, 디지털 디톡스 등 과학적으로 입증된 다양한 시간 관리 전략들을 통해 당신의 생산성을 극대화하고 스트레스를 줄여보세요. 오늘부터 당신의 하루는 더욱 풍요로워질 것입니다!...</p>
+                    <a href="#" class="read-more">더 읽어보기</a>
+                </div>
             </div>
 
             <hr style="margin: 2rem 0; border-color: var(--text-color); opacity: 0.2;"> <!-- Separator -->
@@ -64,6 +100,12 @@
         <!-- Rock Paper Scissors Game Section -->
         <div class="rps-game-container">
             <h2>가위바위보 게임</h2>
+            <p class="section-description">
+                인공지능과 함께 즐기는 신나는 가위바위보 게임!
+                당신의 손동작을 웹캠으로 인식하여 인공지능 상대와 대결할 수 있습니다.
+                단순한 운이 아닌, 미묘한 심리전과 전략이 숨어있는 가위바위보의 세계로 초대합니다.
+                지금 바로 도전하여 인공지능을 이겨보세요!
+            </p>
             <button type="button" onclick="initRPS()">게임 시작</button>
             <div id="webcam-container"></div>
             <div id="label-container"></div>
