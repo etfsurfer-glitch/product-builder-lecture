@@ -305,3 +305,19 @@ function startNewRound() {
     playRoundBtn.style.display = 'none'; // Hide next round button until next prediction
     startCountdown(); // Start countdown for the new round
 }
+
+function togglePostContent(button) {
+    const postCard = button.closest('.blog-post-card');
+    const fullContent = postCard.querySelector('.full-post-content');
+    const ellipsis = postCard.querySelector('.ellipsis');
+
+    if (fullContent.style.display === 'none' || fullContent.style.display === '') {
+        fullContent.style.display = 'inline'; // Show full content
+        if (ellipsis) ellipsis.style.display = 'none'; // Hide ellipsis if present
+        button.textContent = '간략히 보기'; // Change button text
+    } else {
+        fullContent.style.display = 'none'; // Hide full content
+        if (ellipsis) ellipsis.style.display = 'inline'; // Show ellipsis if present
+        button.textContent = '더 읽어보기'; // Change button text
+    }
+}

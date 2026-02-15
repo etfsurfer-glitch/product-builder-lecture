@@ -225,6 +225,14 @@ body {
     color: var(--button-hover-bg);
 }
 
+.full-post-content {
+    display: none; /* Initially hide the full content */
+}
+
+.ellipsis {
+    display: inline; /* Initially show ellipsis */
+}
+
 /* Existing styles below */
 .section-description {
     font-size: 1rem;
