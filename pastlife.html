@@ -315,9 +315,9 @@
 
             <!-- Input Method Selector -->
             <div class="input-method-selector">
-                <input type="radio" id="camera-select" name="input-method" value="camera" checked>
+                <input type="radio" id="camera-select" name="input-method" value="camera">
                 <label for="camera-select">카메라로 촬영</label>
-                <input type="radio" id="upload-select" name="input-method" value="upload">
+                <input type="radio" id="upload-select" name="input-method" value="upload" checked>
                 <label for="upload-select">사진 업로드</label>
             </div>
 
@@ -611,6 +611,15 @@
                 themeToggle.querySelector('.icon').textContent = '🌙';
             }
             resetUI(); // Initialize UI state
+
+            // Set initial state for upload default and trigger its change event
+            // This ensures the inputPrompt text and capture attribute are correct from the start.
+            const uploadRadio = document.getElementById('upload-select');
+            if (uploadRadio.checked) {
+                inputPrompt.textContent = '사진 파일을 업로드하려면 클릭하세요!';
+                imageInput.removeAttribute('capture');
+            }
+            // If camera is checked by default (which is not the case now), it would trigger its own logic.
         });
 
 
