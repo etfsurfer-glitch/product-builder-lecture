@@ -6,46 +6,83 @@
     <title>레시피 상세 보기</title>
     <link href='/style.css' rel='stylesheet'>
     <style>
+        /* 기존 스타일 유지 및 개선 */
         .recipe-container {
             max-width: 800px;
             margin: 2rem auto;
             padding: 1.5rem;
-            background-color: var(--background-color-secondary);
+            background-color: var(--container-bg); /* 배경색 변수 사용 */
             border-radius: 8px;
-            box-shadow: var(--shadow);
+            box-shadow: var(--box-shadow); /* 그림자 변수 사용 */
         }
         .recipe-title {
             color: var(--text-color);
             margin-bottom: 1rem;
             text-align: center;
+            font-size: 2.5rem; /* 제목 크기 키움 */
+            font-weight: bold;
+        }
+        .recipe-description {
+            color: var(--text-color);
+            text-align: center;
+            font-size: 1.1rem;
+            line-height: 1.8;
+            margin-bottom: 2rem;
+            padding: 0 1rem; /* 좌우 여백 추가 */
         }
         .recipe-image {
             max-width: 100%;
             height: auto;
             display: block;
-            margin: 1rem auto;
+            margin: 1.5rem auto 2.5rem auto; /* 상하 여백 조절 */
             border-radius: 8px;
+            box-shadow: var(--box-shadow); /* 이미지에도 그림자 추가 */
         }
         .recipe-section-title {
-            color: var(--primary-color);
-            margin-top: 1.5rem;
-            margin-bottom: 0.8rem;
-            border-bottom: 2px solid var(--border-color);
-            padding-bottom: 0.5rem;
+            color: var(--primary-color); /* 주요 색상 변수 사용 */
+            margin-top: 2.5rem; /* 상단 여백 증가 */
+            margin-bottom: 1rem;
+            border-bottom: 2px solid var(--border-color); /* 테마 색상에 맞춤 */
+            padding-bottom: 0.8rem;
+            font-size: 1.8rem; /* 제목 크기 키움 */
+            font-weight: bold;
         }
         .recipe-content ul, .recipe-content ol {
             margin-left: 1.5rem;
+            padding-left: 0; /* 기본 패딩 제거 */
             color: var(--text-color);
+            line-height: 1.8; /* 줄 간격 넓힘 */
+            font-size: 1.05rem; /* 글자 크기 약간 키움 */
+            list-style-position: inside; /* 글머리 기호를 안쪽으로 */
+        }
+        .recipe-content ul li, .recipe-content ol li {
+            margin-bottom: 0.5rem; /* 목록 항목 간 간격 */
         }
         .recipe-content p {
             color: var(--text-color);
-            line-height: 1.6;
-            margin-bottom: 0.5rem;
+            line-height: 1.8;
+            margin-bottom: 0.8rem;
+            font-size: 1.05rem;
         }
         #comments-section {
-            margin-top: 3rem;
-            padding-top: 2rem;
+            margin-top: 4rem; /* 상단 여백 증가 */
+            padding-top: 2.5rem;
             border-top: 1px solid var(--border-color);
+        }
+        .footer-links {
+            text-align: center;
+            margin-top: 3rem; /* 상단 여백 증가 */
+            padding: 1rem;
+        }
+        .footer-links a {
+            margin: 0 0.8rem; /* 링크 간격 조절 */
+            color: var(--text-color);
+            text-decoration: none;
+            font-size: 1rem;
+            transition: color 0.3s ease;
+        }
+        .footer-links a:hover {
+            color: var(--button-hover-bg);
         }
     </style>
 </head>
@@ -56,6 +93,7 @@
                 <span class="icon">🌙</span> <!-- Moon icon for dark mode -->
             </button>
             <h1 class="recipe-title" id="recipe-title">선택된 레시피 제목</h1>
+            <p id="recipe-description" class="recipe-description">레시피에 대한 간략한 설명이 이곳에 표시됩니다.</p>
             <img id="recipe-image" src="" alt="Recipe Image" class="recipe-image" style="display:none;">
             
             <div class="recipe-container">
@@ -127,6 +165,7 @@
 
             if (recipeData) {
                 document.getElementById('recipe-title').textContent = recipeName;
+                document.getElementById('recipe-description').textContent = recipeData.description || '레시피에 대한 간략한 설명이 이곳에 표시됩니다.';
                 
                 const imgElement = document.getElementById('recipe-image');
                 if (recipeData.imageUrl) {
@@ -144,8 +183,9 @@
 
             } else {
                 document.getElementById('recipe-title').textContent = '레시피를 찾을 수 없습니다.';
-                document.getElementById('recipe-ingredients').innerHTML = '<p>선택하신 메뉴에 대한 레시피 정보가 없습니다.</p>';
-                document.getElementById('recipe-instructions').innerHTML = '<p>선택하신 메뉴에 대한 레시피 정보가 없습니다.</p>';
+                document.getElementById('recipe-description').textContent = '죄송합니다. 요청하신 레시피에 대한 정보를 찾을 수 없습니다. 메인 페이지로 돌아가 다른 메뉴를 선택해 주세요.';
+                document.getElementById('recipe-ingredients').innerHTML = '<p>선택하신 메뉴에 대한 재료 정보가 없습니다.</p>';
+                document.getElementById('recipe-instructions').innerHTML = '<p>선택하신 메뉴에 대한 조리법 정보가 없습니다.</p>';
                 document.getElementById('recipe-image').style.display = 'none';
             }
         });
