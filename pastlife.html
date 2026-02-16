@@ -1,844 +1,1125 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="ko">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>전생 알아보기</title>
-    <style>
-        :root {
-            --background-color: #f4f7f6;
-            --text-color: #2c3e50;
-            --primary-color: #3498db;
-            --secondary-color: #2ecc71;
-            --container-bg: #ffffff;
-            --border-color: #e0e0e0;
-            --button-bg: var(--primary-color);
-            --button-hover-bg: #2980b9;
-            --input-border: #cccccc;
-            --loading-spinner-color: var(--primary-color);
-            --box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-            --subtle-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-        }
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>전생 직업 테스트 (동양 사주풍)</title>
+  <style>
+    :root{
+      --bg:#0b1020;
+      --card:#121a33;
+      --card2:#0f1730;
+      --text:#e9ecf5;
+      --muted:#aab3cf;
+      --line:rgba(255,255,255,.12);
+      --accent:#7aa2ff;
+      --danger:#ff6b6b;
+      --ok:#4ade80;
+      --shadow: 0 18px 60px rgba(0,0,0,.45);
+      --radius: 18px;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, "Apple SD Gothic Neo", "Noto Sans KR", "Malgun Gothic", Arial, sans-serif;
+      color:var(--text);
+      background:
+        radial-gradient(1200px 600px at 10% 0%, rgba(122,162,255,.18), transparent 60%),
+        radial-gradient(900px 500px at 90% 20%, rgba(255,165,122,.12), transparent 55%),
+        radial-gradient(700px 450px at 50% 95%, rgba(122,255,199,.10), transparent 60%),
+        var(--bg);
+      min-height:100vh;
+      padding:24px 14px 48px;
+    }
+    .wrap{max-width:980px; margin:0 auto;}
+    header{
+      display:flex; gap:16px; align-items:flex-start; justify-content:space-between;
+      margin-bottom:18px;
+    }
+    .title{
+      display:flex; flex-direction:column; gap:6px;
+    }
+    h1{
+      margin:0;
+      font-size: clamp(22px, 3.6vw, 34px);
+      letter-spacing:-.02em;
+      line-height:1.1;
+    }
+    .subtitle{
+      color:var(--muted);
+      font-size: 14px;
+      line-height:1.4;
+    }
+    .pill{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      border:1px solid var(--line);
+      border-radius:999px;
+      padding:10px 12px;
+      background:rgba(255,255,255,.04);
+      color:var(--muted);
+      font-size:12px;
+      white-space:nowrap;
+      height: fit-content;
+    }
 
-        body.dark-mode {
-            --background-color: #2c3e50;
-            --text-color: #ecf0f1;
-            --primary-color: #9b59b6;
-            --secondary-color: #1abc9c;
-            --container-bg: #34495e;
-            --border-color: #555555;
-            --button-bg: var(--primary-color);
-            --button-hover-bg: #8e44ad;
-            --input-border: #555555;
-            --loading-spinner-color: var(--primary-color);
-            --box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
-            --subtle-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-        }
+    .grid{
+      display:grid;
+      grid-template-columns: 1fr;
+      gap:14px;
+    }
+    @media (min-width: 900px){
+      .grid{
+        grid-template-columns: 1.05fr .95fr;
+        align-items:start;
+      }
+    }
 
-        body {
-            font-family: 'Apple SD Gothic Neo', 'Malgun Gothic', 'Nanum Gothic', sans-serif;
-            margin: 0;
-            padding: 0;
-            background-color: var(--background-color);
-            color: var(--text-color);
-            line-height: 1.6;
-            transition: background-color 0.3s, color 0.3s;
-            display: flex;
-            justify-content: center;
-            align-items: flex-start;
-            min-height: 100vh;
-            padding-top: 20px;
-            box-sizing: border-box;
-        }
+    .card{
+      background: linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.02));
+      border:1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow:hidden;
+    }
+    .card .hd{
+      padding:14px 16px;
+      border-bottom:1px solid var(--line);
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:12px;
+      background: rgba(0,0,0,.12);
+    }
+    .card .hd .h{
+      font-weight:700;
+      letter-spacing:-.01em;
+      font-size:14px;
+    }
+    .card .bd{ padding:16px; }
 
-        .main-layout {
-            width: 100%;
-            max-width: 768px;
-            padding: 20px;
-            box-sizing: border-box;
-        }
+    .seg{
+      display:flex;
+      gap:8px;
+      flex-wrap:wrap;
+    }
+    .seg button{
+      border:1px solid var(--line);
+      background: rgba(255,255,255,.03);
+      color:var(--text);
+      padding:10px 12px;
+      border-radius:999px;
+      cursor:pointer;
+      font-weight:600;
+      font-size:13px;
+      transition: transform .06s ease, background .2s ease, border-color .2s ease;
+    }
+    .seg button:hover{ transform: translateY(-1px); }
+    .seg button[aria-pressed="true"]{
+      border-color: rgba(122,162,255,.65);
+      background: rgba(122,162,255,.18);
+    }
 
-        .container {
-            background-color: var(--container-bg);
-            padding: 30px;
-            border-radius: 12px;
-            box-shadow: var(--box-shadow);
-            margin-bottom: 20px;
-            position: relative;
-        }
+    .row{ display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
+    .row > *{ flex: 1 1 auto; }
 
-        h1, h2 {
-            color: var(--primary-color);
-            text-align: center;
-            margin-bottom: 20px;
-        }
+    .btn{
+      border:1px solid var(--line);
+      background: rgba(255,255,255,.04);
+      color:var(--text);
+      padding:12px 14px;
+      border-radius: 14px;
+      cursor:pointer;
+      font-weight:800;
+      letter-spacing:-.01em;
+      transition: transform .06s ease, background .2s ease, border-color .2s ease;
+      user-select:none;
+    }
+    .btn:hover{ transform: translateY(-1px); }
+    .btn:disabled{
+      opacity:.45;
+      cursor:not-allowed;
+      transform:none;
+    }
+    .btn.primary{
+      border-color: rgba(122,162,255,.65);
+      background: rgba(122,162,255,.18);
+    }
+    .btn.danger{
+      border-color: rgba(255,107,107,.45);
+      background: rgba(255,107,107,.12);
+    }
 
-        p {
-            text-align: center;
-            margin-bottom: 15px;
-        }
+    .note{
+      color:var(--muted);
+      font-size:12.5px;
+      line-height:1.45;
+    }
+    .note strong{ color: var(--text); }
 
-        button {
-            background-color: var(--button-bg);
-            color: white;
-            border: none;
-            padding: 12px 25px;
-            border-radius: 8px;
-            cursor: pointer;
-            font-size: 1rem;
-            transition: background-color 0.3s ease, transform 0.2s ease;
-            display: block;
-            width: fit-content;
-            margin: 15px auto;
-            box-shadow: var(--subtle-shadow);
-        }
+    .videoWrap{
+      border:1px dashed rgba(255,255,255,.18);
+      background: rgba(0,0,0,.20);
+      border-radius: 16px;
+      padding:12px;
+    }
+    video, img.preview{
+      width:100%;
+      max-height: 340px;
+      object-fit: cover;
+      border-radius: 14px;
+      background: rgba(0,0,0,.35);
+      display:block;
+    }
 
-        button:hover:not(:disabled) {
-            background-color: var(--button-hover-bg);
-            transform: translateY(-2px);
-        }
+    .small{ font-size:12px; color:var(--muted); }
 
-        button:active:not(:disabled) {
-            transform: translateY(0);
-        }
+    .status{
+      display:flex; gap:10px; align-items:center; flex-wrap:wrap;
+      padding:10px 12px;
+      border:1px solid var(--line);
+      border-radius: 14px;
+      background: rgba(255,255,255,.03);
+      margin-top:12px;
+    }
+    .dot{
+      width:10px; height:10px; border-radius:999px;
+      background: rgba(255,255,255,.25);
+      box-shadow: 0 0 0 6px rgba(255,255,255,.04);
+    }
+    .dot.ok{ background: var(--ok); box-shadow: 0 0 0 6px rgba(74,222,128,.10);}
+    .dot.bad{ background: var(--danger); box-shadow: 0 0 0 6px rgba(255,107,107,.10);}
 
-        button:disabled {
-            background-color: #cccccc;
-            cursor: not-allowed;
-        }
+    .loader{
+      display:none;
+      padding:18px 16px;
+      border-radius: var(--radius);
+      border:1px solid var(--line);
+      background: rgba(0,0,0,.18);
+      align-items:center;
+      gap:14px;
+      box-shadow: var(--shadow);
+    }
+    .loader.show{ display:flex; }
+    .spinner{
+      width:22px; height:22px;
+      border-radius:999px;
+      border: 3px solid rgba(255,255,255,.18);
+      border-top-color: rgba(122,162,255,.95);
+      animation: spin 1s linear infinite;
+    }
+    @keyframes spin{ to{ transform: rotate(360deg);} }
 
-        .theme-toggle {
-            position: absolute;
-            top: 20px;
-            right: 20px;
-            background: none;
-            border: 1px solid var(--border-color);
-            color: var(--text-color);
-            padding: 8px 12px;
-            border-radius: 50%;
-            font-size: 1.2rem;
-            box-shadow: var(--subtle-shadow);
-            cursor: pointer;
-            width: 40px;
-            height: 40px;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            transition: background-color 0.3s, color 0.3s, border-color 0.3s;
-        }
+    .result{
+      display:none;
+    }
+    .result.show{ display:block; }
 
-        .theme-toggle .icon {
-            line-height: 1;
-        }
+    .hero{
+      display:flex;
+      gap:14px;
+      align-items:stretch;
+      flex-wrap:wrap;
+    }
+    .badge{
+      border:1px solid var(--line);
+      background: rgba(255,255,255,.03);
+      border-radius: 999px;
+      padding:8px 10px;
+      font-size:12px;
+      color:var(--muted);
+      display:inline-flex;
+      gap:8px;
+      align-items:center;
+      white-space:nowrap;
+    }
 
-        .input-method-selector {
-            display: flex;
-            justify-content: center;
-            margin-bottom: 25px;
-            background-color: var(--background-color);
-            border-radius: 8px;
-            padding: 5px;
-            box-shadow: var(--subtle-shadow);
-        }
+    .art{
+      flex: 0 0 180px;
+      min-height: 180px;
+      border-radius: 18px;
+      border:1px solid var(--line);
+      background: rgba(0,0,0,.22);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      overflow:hidden;
+    }
+    .art svg{
+      width: 100%;
+      height: 100%;
+      display:block;
+    }
+    .resultText{
+      flex: 1 1 260px;
+      display:flex;
+      flex-direction:column;
+      gap:10px;
+      min-width: 260px;
+    }
+    .job{
+      font-size: 22px;
+      font-weight: 900;
+      letter-spacing: -.01em;
+      margin:0;
+      line-height:1.15;
+    }
+    .one{
+      margin:0;
+      color:var(--muted);
+      font-size: 14px;
+      line-height:1.4;
+    }
+    .story{
+      margin:0;
+      color: var(--text);
+      font-size: 14px;
+      line-height:1.55;
+      opacity:.95;
+    }
+    .kv{
+      display:grid;
+      grid-template-columns: 1fr;
+      gap:10px;
+      margin-top:8px;
+    }
+    @media (min-width: 520px){
+      .kv{ grid-template-columns: 1fr 1fr; }
+    }
+    .kbox{
+      border:1px solid var(--line);
+      background: rgba(255,255,255,.03);
+      border-radius: 16px;
+      padding:12px 12px;
+    }
+    .kbox .k{
+      color: var(--muted);
+      font-size: 12px;
+      margin-bottom:6px;
+    }
+    .kbox .v{
+      font-weight:800;
+      letter-spacing:-.01em;
+      font-size: 14px;
+      line-height:1.3;
+    }
 
-        .input-method-selector label {
-            flex: 1;
-            text-align: center;
-            padding: 10px 15px;
-            cursor: pointer;
-            border-radius: 6px;
-            transition: background-color 0.3s, color 0.3s;
-            color: var(--text-color);
-            font-weight: bold;
-        }
+    .actions{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      margin-top:14px;
+    }
+    .toast{
+      position: fixed;
+      left:50%;
+      bottom: 18px;
+      transform: translateX(-50%);
+      padding:10px 12px;
+      border-radius: 999px;
+      border:1px solid var(--line);
+      background: rgba(15,23,48,.92);
+      color: var(--text);
+      font-weight:700;
+      font-size: 13px;
+      box-shadow: var(--shadow);
+      display:none;
+      z-index: 999;
+    }
+    .toast.show{ display:block; }
 
-        .input-method-selector input[type="radio"] {
-            display: none;
-        }
+    .dangerText{ color: var(--danger); font-weight:700; }
+    .mono{ font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; }
+    .hr{
+      height:1px;
+      background: var(--line);
+      margin:14px 0;
+    }
 
-        .input-method-selector input[type="radio"]:checked + label {
-            background-color: var(--primary-color);
-            color: white;
-            box-shadow: var(--subtle-shadow);
-        }
-
-        .image-input-area {
-            text-align: center;
-            margin-bottom: 20px;
-        }
-
-        .image-input-area input[type="file"] {
-            display: block;
-            margin: 0 auto 15px auto;
-            border: 1px solid var(--input-border);
-            padding: 10px;
-            border-radius: 8px;
-            background-color: var(--container-bg);
-            color: var(--text-color);
-            width: calc(100% - 22px);
-            box-sizing: border-box;
-        }
-
-        #image-preview {
-            max-width: 100%;
-            max-height: 300px;
-            border: 1px solid var(--border-color);
-            border-radius: 8px;
-            margin-top: 15px;
-            display: none; /* Hidden by default */
-            box-shadow: var(--subtle-shadow);
-        }
-
-        /* New camera specific styles */
-        #camera-feed {
-            display: block;
-            margin: 0 auto;
-            background-color: #000;
-            width: 100%; /* Ensure video fits parent */
-            max-width: 400px; /* Limit max width */
-            border-radius: 8px;
-            margin-bottom: 15px;
-        }
-        #photo-canvas {
-            position: absolute; /* Hide off-screen */
-            left: -9999px;
-            top: -9999px;
-        }
-        #camera-controls button {
-            margin-top: 15px;
-        }
-
-
-        .loading-screen {
-            display: none; /* Hidden by default */
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            padding: 40px 20px;
-            background-color: var(--container-bg);
-            border-radius: 12px;
-            box-shadow: var(--box-shadow);
-            margin-top: 20px;
-        }
-
-        .spinner {
-            border: 8px solid #f3f3f3;
-            border-top: 8px solid var(--loading-spinner-color);
-            border-radius: 50%;
-            width: 60px;
-            height: 60px;
-            animation: spin 1.5s linear infinite;
-            margin-bottom: 20px;
-        }
-
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-
-        .result-card {
-            display: none; /* Hidden by default */
-            background-color: var(--container-bg);
-            border: 1px solid var(--border-color);
-            border-radius: 12px;
-            padding: 25px;
-            margin-top: 20px;
-            box-shadow: var(--box-shadow);
-            text-align: center;
-        }
-
-        .result-card h3 {
-            color: var(--primary-color);
-            font-size: 1.8rem;
-            margin-bottom: 10px;
-        }
-
-        .result-card .profession-emoji {
-            font-size: 3rem;
-            display: block;
-            margin: 0 auto 15px auto;
-        }
-
-        .result-card .description {
-            font-style: italic;
-            color: var(--text-color);
-            margin-bottom: 15px;
-        }
-
-        .result-card .story {
-            text-align: left;
-            margin-bottom: 20px;
-            font-size: 0.95rem;
-            color: var(--text-color);
-        }
-
-        .result-card .advice {
-            font-weight: bold;
-            color: var(--secondary-color);
-            margin-bottom: 15px;
-        }
-
-        .result-card .lucky-elements {
-            font-size: 0.9rem;
-            color: var(--text-color);
-        }
-
-        .hash-info {
-            font-size: 0.75rem;
-            color: #888;
-            margin-top: 20px;
-        }
-
-        .privacy-notice {
-            font-size: 0.8rem;
-            color: #888;
-            text-align: center;
-            margin-top: 30px;
-            padding: 10px;
-            background-color: var(--background-color);
-            border-radius: 8px;
-            box-shadow: var(--subtle-shadow);
-        }
-
-        .footer-links {
-            text-align: center;
-            margin-top: 20px;
-        }
-
-        .footer-links a {
-            color: var(--primary-color);
-            text-decoration: none;
-            margin: 0 10px;
-            transition: color 0.3s ease;
-        }
-
-        .footer-links a:hover {
-            color: var(--button-hover-bg);
-            text-decoration: underline;
-        }
-
-        /* Utility classes */
-        .hidden {
-            display: none !important;
-        }
-    </style>
+    .hint{
+      margin-top:10px;
+      padding:10px 12px;
+      border-radius: 14px;
+      border:1px dashed rgba(255,255,255,.18);
+      color: var(--muted);
+      font-size: 12.5px;
+      line-height:1.45;
+      background: rgba(0,0,0,.18);
+    }
+  </style>
 </head>
 <body>
-    <div class="main-layout">
-        <div class="container">
-            <button id="theme-toggle" class="theme-toggle">
-                <span class="icon">🌙</span>
-            </button>
-
-            <h1>전생 알아보기</h1>
-            <p>당신의 얼굴 사진으로 당신의 전생 직업을 예측해 드립니다.</p>
-
-            <!-- Input Method Selector -->
-            <div class="input-method-selector">
-                <input type="radio" id="camera-select" name="input-method" value="camera">
-                <label for="camera-select">카메라로 촬영</label>
-                <input type="radio" id="upload-select" name="input-method" value="upload" checked>
-                <label for="upload-select">사진 업로드</label>
-            </div>
-
-            <!-- Image Input Area -->
-            <div class="image-input-area">
-                <p id="input-prompt" style="margin-bottom: 10px; color: var(--text-color);">사진 파일을 업로드하려면 클릭하세요!</p>
-                <!-- File Upload Input -->
-                <input type="file" id="image-input" accept="image/*">
-                
-                <!-- Camera Input Elements (Hidden by default) -->
-                <div id="camera-controls" class="hidden">
-                    <video id="camera-feed" autoplay playsinline></video>
-                    <button id="take-photo-btn">사진 찍기</button>
-                    <canvas id="photo-canvas" class="hidden"></canvas> <!-- Hidden canvas for capturing frame -->
-                </div>
-
-                <img id="image-preview" src="#" alt="Image Preview">
-            </div>
-
-            <button id="analyze-btn" disabled>전생 알아보기</button>
-        </div>
-
-        <!-- Loading Screen -->
-        <div id="loading-screen" class="loading-screen hidden">
-            <div class="spinner"></div>
-            <p>분석중...</p>
-        </div>
-
-        <!-- Result Card -->
-        <div id="result-card" class="result-card hidden">
-            <span class="profession-emoji" id="result-emoji"></span>
-            <h3 id="result-name"></h3>
-            <p class="description" id="result-description"></p>
-            <p class="story" id="result-story"></p>
-            <p class="advice" id="result-advice"></p>
-            <p class="lucky-elements" id="result-lucky-elements"></p>
-            <p class="hash-info">분석 코드 (일부): <span id="result-hash-partial"></span></p>
-            <button id="retry-btn">다시 하기</button>
-            <button id="copy-btn">결과 복사</button>
-        </div>
-
-        <p class="privacy-notice">
-            * 사진은 브라우저에서만 처리되며 서버로 업로드되지 않습니다.
-        </p>
-
-        <div class="footer-links">
-            <a href="/">메인 페이지로 돌아가기</a>
-        </div>
+<div class="wrap">
+  <header>
+    <div class="title">
+      <h1>전생 직업 감별소</h1>
+      <div class="subtitle">
+        사진은 <strong>브라우저에서만</strong> 처리됩니다. 서버로 업로드되지 않습니다. <br/>
+        같은 사진이면 같은 결과가 나오도록 “분석 코드”를 생성해 고정 매칭합니다.
+      </div>
     </div>
+    <div class="pill">
+      <span>⚠️</span>
+      <span>카메라: HTTPS/localhost 필요</span>
+    </div>
+  </header>
 
-    <script>
-        // --- 0. UI Element References ---
-        const themeToggle = document.getElementById('theme-toggle');
-        const inputMethodRadios = document.querySelectorAll('input[name="input-method"]');
-        const imageInput = document.getElementById('image-input');
-        const imagePreview = document.getElementById('image-preview');
-        const analyzeBtn = document.getElementById('analyze-btn');
-        const loadingScreen = document.getElementById('loading-screen');
-        const resultCard = document.getElementById('result-card');
-        const resultEmoji = document.getElementById('result-emoji');
-        const resultName = document.getElementById('result-name');
-        const resultDescription = document.getElementById('result-description');
-        const resultStory = document.getElementById('result-story');
-        const resultAdvice = document.getElementById('result-advice');
-        const resultLuckyElements = document.getElementById('result-lucky-elements');
-        const resultHashPartial = document.getElementById('result-hash-partial');
-        const retryBtn = document.getElementById('retry-btn');
-        const copyBtn = document.getElementById('copy-btn');
-        const mainContainer = document.querySelector('.container'); // Main content container
-        const inputPrompt = document.getElementById('input-prompt'); // Get reference to the prompt
-        
-        // New Camera Elements
-        const cameraControls = document.getElementById('camera-controls');
-        const cameraFeed = document.getElementById('camera-feed');
-        const photoCanvas = document.getElementById('photo-canvas');
-        const takePhotoBtn = document.getElementById('take-photo-btn');
+  <div class="grid">
+    <!-- LEFT: Input -->
+    <section class="card" aria-label="입력">
+      <div class="hd">
+        <div class="h">1) 사진 입력</div>
+        <div class="small">카메라/업로드 선택</div>
+      </div>
+      <div class="bd">
+        <div class="seg" role="group" aria-label="입력 방식 선택">
+          <button id="modeCamera" class="btn" type="button" aria-pressed="false">📷 카메라로 촬영</button>
+          <button id="modeUpload" class="btn" type="button" aria-pressed="true">🖼️ 사진 업로드</button>
+        </div>
 
+        <div class="hr"></div>
 
-        let currentImageHash = null;
-        let currentProfession = null;
-        let currentSeed = null;
-        let cameraStream = null; // To hold the MediaStream object
+        <!-- Camera UI -->
+        <div id="cameraSection" style="display:none;">
+          <div class="videoWrap">
+            <video id="video" autoplay playsinline muted></video>
+          </div>
 
+          <div class="row" style="margin-top:12px;">
+            <button id="btnStartCam" class="btn" type="button">카메라 켜기</button>
+            <button id="btnCapture" class="btn primary" type="button" disabled>촬영하기</button>
+            <button id="btnStopCam" class="btn danger" type="button" disabled>카메라 끄기</button>
+          </div>
 
-        // --- 1. Professions Data (Easy to modify) ---
-        const professions = [
-            {
-                name: "서원 유생",
-                emoji: "📚",
-                description: "학문에 정진하며 세상을 밝히는 선비",
-                story: "당신에게는 고요한 서원에서의 삶, 책과 벗 삼아 진리를 탐구하던 유생의 기운이 강하게 보입니다. 엄격한 학문의 길에서 도리를 지키고, 백성을 위한 지혜를 갈고 닦았을 전생의 인연이 느껴집니다. 당신의 현재 삶에서도 깊이 있는 사고와 배움을 중요시하는 경향이 있을 것입니다.",
-                advice: "지식의 탐구를 멈추지 마세요. 당신의 지혜는 주변을 밝히는 등불이 될 것입니다.",
-                luckyElements: "행운의 색: 옥색, 행운의 숫자: 3, 행운의 아이템: 붓과 종이",
-                imageUrl: "" // Optional: for future image integration
-            },
-            {
-                name: "궁중 책사",
-                emoji: "👑",
-                description: "왕을 보필하며 나라의 기틀을 세운 전략가",
-                story: "당신은 왕의 곁에서 지략으로 나라의 운명을 좌우하던 궁중 책사의 전생 기운을 타고났습니다. 날카로운 통찰력과 뛰어난 설득력으로 복잡한 문제들을 해결하며 대업을 이루었을 것입니다. 현재의 당신도 중요한 결정을 내릴 때 탁월한 분석력을 발휘할 것입니다.",
-                advice: "당신의 전략적 사고는 위기를 기회로 바꿀 힘을 가지고 있습니다. 신중하되 과감하게 나아가세요.",
-                luckyElements: "행운의 색: 금색, 행운의 숫자: 7, 행운의 아이템: 비단 부채",
-                imageUrl: ""
-            },
-            {
-                name: "기마 장수",
-                emoji: "🐎",
-                description: "말 위에서 나라를 지킨 용맹한 무사",
-                story: "당신에게는 넓은 들판을 달리며 나라의 경계를 지키던 기마 장수의 굳건한 기상이 흐릅니다. 뛰어난 무예와 불굴의 정신으로 전장을 누볐을 전생의 모습이 그려집니다. 현재 당신의 삶에서도 강한 책임감과 리더십으로 도전을 극복하는 모습을 보일 것입니다.",
-                advice: "어떤 역경에도 굴하지 않는 용기를 가지세요. 당신의 강인함이 당신을 승리로 이끌 것입니다.",
-                luckyElements: "행운의 색: 붉은색, 행운의 숫자: 1, 행운의 아이템: 말발굽 장식",
-                imageUrl: ""
-            },
-            {
-                name: "산중 수행자",
-                emoji: "🧘‍♀️",
-                description: "속세를 떠나 깨달음을 구한 구도자",
-                story: "당신에게는 깊은 산중에서 스스로를 단련하며 진정한 깨달음을 얻으려 했던 수행자의 영혼이 깃들어 있습니다. 고요함 속에서 내면의 소리에 귀 기울이고, 자연과 하나 되어 지혜를 쌓았을 것입니다. 현재 당신의 삶에서도 평온과 성찰을 통해 삶의 의미를 찾으려 할 것입니다.",
-                advice: "내면의 평화를 찾으세요. 그 속에서 당신의 진정한 힘을 발견할 수 있습니다.",
-                luckyElements: "행운의 색: 회색, 행운의 숫자: 9, 행운의 아이템: 염주",
-                imageUrl: ""
-            },
-            {
-                name: "약초 의원",
-                emoji: "🌿",
-                description: "병든 자를 치료하며 생명을 살린 치유사",
-                story: "당신은 산과 들을 헤매며 귀한 약초를 찾아 병든 이들을 구원하던 약초 의원의 전생과 깊은 인연이 있습니다. 생명에 대한 깊은 이해와 연민으로 많은 이들을 보살폈을 것입니다. 현재 당신의 삶에서도 타인을 돕고 치유하는 데서 큰 보람을 느끼는 따뜻한 마음을 가지고 있습니다.",
-                advice: "당신의 손길은 치유의 힘을 가지고 있습니다. 주변의 아픔을 보듬는 데 주저하지 마세요.",
-                luckyElements: "행운의 색: 초록색, 행운의 숫자: 5, 행운의 아이템: 약절구",
-                imageUrl: ""
-            },
-            {
-                name: "비단 상단 행수",
-                emoji: "💰",
-                description: "널리 비단을 유통하며 부를 일군 큰 손",
-                story: "당신은 먼 길을 마다않고 비단을 실어 나르며 큰 상단을 이끌었던 비단 상단 행수의 기운을 지녔습니다. 뛰어난 수완과 사람을 아끼는 마음으로 많은 이들의 신뢰를 얻어 부를 축적했을 것입니다. 현재 당신의 삶에서도 사업적 감각과 협상 능력이 돋보일 것입니다.",
-                advice: "과감한 도전과 신뢰를 바탕으로 당신의 재능을 펼치세요. 큰 성공이 따를 것입니다.",
-                luckyElements: "행운의 색: 자색, 행운의 숫자: 8, 행운의 아이템: 주판",
-                imageUrl: ""
-            },
-            {
-                name: "궁중 악사",
-                emoji: "🎶",
-                description: "아름다운 선율로 궁궐을 채운 예인",
-                story: "당신은 궁궐에 아름다운 음악을 선사하며 많은 이들의 마음을 움직였던 궁중 악사의 전생 인연이 느껴집니다. 섬세한 감성과 뛰어난 예술적 재능으로 듣는 이들에게 깊은 감동을 주었을 것입니다. 현재 당신의 삶에서도 예술적 감각과 표현력이 남다를 것입니다.",
-                advice: "당신의 재능을 세상에 보여주세요. 당신의 예술은 사람들에게 큰 위안을 줄 것입니다.",
-                luckyElements: "행운의 색: 남색, 행운의 숫자: 2, 행운의 아이템: 가야금",
-                imageUrl: ""
-            },
-            {
-                name: "암행어사",
-                emoji: "🕵️",
-                description: "백성의 억울함을 해결한 정의로운 관리",
-                story: "당신에게는 어두운 곳에서 백성의 고통을 살피고 부정한 자들을 단죄하던 암행어사의 기개가 서려 있습니다. 날카로운 판단력과 강직한 성품으로 정의를 실현했을 전생의 모습이 떠오릅니다. 현재 당신의 삶에서도 불의를 보면 참지 못하고 약자를 돕는 정의로운 마음을 가지고 있습니다.",
-                advice: "당신의 정의감을 따르세요. 당신의 행동은 세상에 긍정적인 변화를 가져올 것입니다.",
-                luckyElements: "행운의 색: 검은색, 행운의 숫자: 4, 행운의 아이템: 마패",
-                imageUrl: ""
-            },
-            {
-                name: "별 관측관",
-                emoji: "🔭",
-                description: "하늘의 움직임을 기록하고 미래를 예견한 학자",
-                story: "당신은 밤하늘의 별을 관측하며 우주의 섭리를 탐구하고 길흉을 예견했던 별 관측관의 지혜로운 영혼을 지녔습니다. 끝없는 호기심과 분석력으로 자연의 이치를 깨달았을 것입니다. 현재 당신의 삶에서도 미지의 세계에 대한 탐구심과 깊이 있는 사고를 통해 해답을 찾으려 할 것입니다.",
-                advice: "하늘의 뜻을 살피듯, 당신의 주변을 깊이 관찰하세요. 그 속에서 새로운 통찰을 얻을 것입니다.",
-                luckyElements: "행운의 색: 보라색, 행운의 숫자: 6, 행운의 아이템: 천문도",
-                imageUrl: ""
-            },
-            {
-                name: "떠돌이 무당",
-                emoji: "🔮",
-                description: "신과 소통하며 인간의 길흉화복을 점지한 영매",
-                story: "당신에게는 신비로운 기운으로 사람들의 운명을 점치고 영적인 존재와 소통했던 떠돌이 무당의 전생이 비춰집니다. 예리한 직관력과 영적인 능력으로 많은 이들에게 위안과 방향을 제시했을 것입니다. 현재 당신의 삶에서도 남다른 육감과 통찰력으로 미래를 예견하는 능력이 있을 수 있습니다.",
-                advice: "당신의 직관을 믿고 따르세요. 보이지 않는 지혜가 당신을 이끌 것입니다.",
-                luckyElements: "행운의 색: 흰색, 행운의 숫자: 0, 행운의 아이템: 방울",
-                imageUrl: ""
-            },
-            {
-                name: "거리의 거지",
-                emoji: "🚶‍♂️",
-                description: "자유롭게 세상을 유랑하며 깨달음을 얻은 방랑자",
-                story: "당신에게는 세상의 부질없음을 깨닫고 모든 속박에서 벗어나 자유를 누리던 거리의 거지의 영혼이 흐릅니다. 비록 가진 것은 없었으나, 삶의 본질을 꿰뚫는 깊은 통찰과 인간적인 따뜻함을 지녔을 것입니다. 현재 당신의 삶에서도 물질적인 것보다 정신적인 가치를 더 중요하게 여길 것입니다.",
-                advice: "자유로운 영혼을 잃지 마세요. 당신의 경험이 곧 가장 큰 재산입니다.",
-                luckyElements: "행운의 색: 갈색, 행운의 숫자: 11, 행운의 아이템: 낡은 삿갓",
-                imageUrl: ""
-            },
-            {
-                name: "백정 장인",
-                emoji: "🔪",
-                description: "천대 속에서도 묵묵히 기술을 갈고 닦은 숨은 장인",
-                story: "당신에게는 사회의 편견 속에서도 자신의 기술을 묵묵히 갈고 닦으며 삶의 가치를 찾아냈던 백정 장인의 끈기 있는 기운이 보입니다. 누구에게도 의지하지 않고 오직 자신의 손끝으로 삶을 일구어냈을 것입니다. 현재 당신의 삶에서도 맡은 일에 대한 강한 장인정신과 끈기를 가지고 있습니다.",
-                advice: "당신의 기술과 끈기는 언젠가 빛을 발할 것입니다. 묵묵히 당신의 길을 걸으세요.",
-                luckyElements: "행운의 색: 은색, 행운의 숫자: 10, 행운의 아이템: 날카로운 칼",
-                imageUrl: ""
-            }
-        ];
+          <div class="hint">
+            <strong>팁</strong> 정면, 밝은 조명, 선글라스 없이 촬영하면 결과가 더 안정적으로 나옵니다.
+          </div>
+        </div>
 
-        // --- 2. Utility Functions ---
+        <!-- Upload UI -->
+        <div id="uploadSection" class="">
+          <div class="row">
+            <input id="fileInput" type="file" accept="image/*" class="btn" style="padding:10px;" />
+          </div>
+          <div class="hint">
+            파일을 선택하면 자동으로 미리보기가 뜹니다. (서버 업로드 없음)
+          </div>
+        </div>
 
-        // Seeded Pseudo-Random Number Generator (Mulberry32)
-        // Source: https://github.com/bryc/code/blob/master/jshash/PRNGs.md#mulberry32
-        function mulberry32(a) {
-            return function() {
-                var t = a += 0x6D2B79F5;
-                t = Math.imul(t ^ t >>> 15, t | 1);
-                t ^= t + Math.imul(t ^ t >>> 7, t | 61);
-                return ((t ^ t >>> 14) >>> 0) / 4294967296;
-            }
-        }
+        <div class="hr"></div>
 
-        // dHash (Difference Hash) implementation
-        // Adapted from various sources for perceptual hashing
-        function generatedHash(imgData, size = 8) { // default size 8x8 (produces 64-bit hash)
-            const canvas = document.createElement('canvas');
-            const ctx = canvas.getContext('2d');
-            canvas.width = size + 1; // Need size+1 for dHash
-            canvas.height = size;
+        <div>
+          <div class="small" style="margin-bottom:8px;">미리보기</div>
+          <img id="preview" class="preview" alt="선택한 사진 미리보기" style="display:none;" />
+          <div id="previewEmpty" class="note" style="padding:14px; border:1px dashed rgba(255,255,255,.18); border-radius:16px; background:rgba(0,0,0,.18);">
+            아직 사진이 없습니다. <strong>카메라로 촬영</strong>하거나 <strong>사진 업로드</strong>를 해주세요.
+          </div>
 
-            ctx.drawImage(imgData, 0, 0, size + 1, size);
+          <div class="status" aria-live="polite">
+            <div id="statusDot" class="dot"></div>
+            <div id="statusText" class="note">대기 중…</div>
+          </div>
+        </div>
 
-            const pixels = ctx.getImageData(0, 0, size + 1, size).data;
-            const grayscale = [];
+        <div class="hr"></div>
 
-            // Convert to grayscale
-            for (let i = 0; i < pixels.length; i += 4) {
-                const r = pixels[i];
-                const g = pixels[i + 1];
-                const b = pixels[i + 2];
-                // Luminosity method (0.2126*R + 0.7152*G + 0.0722*B)
-                grayscale.push(0.2126 * r + 0.7152 * g + 0.0722 * b);
-            }
+        <div class="row">
+          <button id="btnAnalyze" class="btn primary" type="button" disabled>🔮 전생 알아보기</button>
+          <button id="btnReset" class="btn" type="button">초기화</button>
+        </div>
+      </div>
+    </section>
 
-            let hash = '';
-            for (let y = 0; y < size; y++) {
-                for (let x = 0; x < size; x++) {
-                    const leftPixel = grayscale[y * (size + 1) + x];
-                    const rightPixel = grayscale[y * (size + 1) + (x + 1)];
-                    hash += (leftPixel > rightPixel) ? '1' : '0';
-                }
-            }
-            return hash;
-        }
+    <!-- RIGHT: Output -->
+    <section class="card" aria-label="결과">
+      <div class="hd">
+        <div class="h">2) 결과</div>
+        <div class="small">3초 분석 후 출력</div>
+      </div>
+      <div class="bd">
+        <div id="loader" class="loader" role="status" aria-live="polite">
+          <div class="spinner" aria-hidden="true"></div>
+          <div>
+            <div style="font-weight:900; letter-spacing:-.01em;">분석중…</div>
+            <div class="note">운의 결을 읽는 중입니다. 잠시만요.</div>
+          </div>
+        </div>
 
-        // Convert binary hash string to hexadecimal
-        function binToHex(bin) {
-            let hex = '';
-            for (let i = 0; i < bin.length; i += 4) {
-                const chunk = bin.substr(i, 4);
-                hex += parseInt(chunk, 2).toString(16);
-            }
-            return hex;
-        }
+        <div id="result" class="result">
+          <div class="hero">
+            <div class="art" id="artBox" aria-label="대표 이미지"></div>
+            <div class="resultText">
+              <div class="row" style="gap:8px;">
+                <span class="badge">🧾 분석 코드 <span id="hashShort" class="mono"></span></span>
+                <span class="badge">🧭 오행 <span id="elementText"></span></span>
+              </div>
 
-        // --- 3. UI State Management ---
+              <h2 class="job" id="jobTitle"></h2>
+              <p class="one" id="jobOne"></p>
+              <p class="story" id="jobStory"></p>
 
-        function resetUI() {
-            imageInput.value = '';
-            imagePreview.src = '#';
-            imagePreview.style.display = 'none';
-            analyzeBtn.disabled = true;
-            loadingScreen.classList.add('hidden');
-            resultCard.classList.add('hidden');
-            currentImageHash = null;
-            currentProfession = null;
-            currentSeed = null;
-            mainContainer.classList.remove('hidden'); // Ensure main container is visible
-            
-            // Stop camera if active and hide camera controls
-            stopCamera();
-            cameraControls.classList.add('hidden');
-            imageInput.classList.remove('hidden'); // Ensure file input is visible by default
-            inputPrompt.textContent = '사진 파일을 업로드하려면 클릭하세요!'; // Default prompt
-        }
+              <div class="kv">
+                <div class="kbox">
+                  <div class="k">오늘의 조언</div>
+                  <div class="v" id="todayTip"></div>
+                </div>
+                <div class="kbox">
+                  <div class="k">행운</div>
+                  <div class="v" id="luckyBox"></div>
+                </div>
+              </div>
 
-        function showLoading() {
-            mainContainer.classList.add('hidden');
-            resultCard.classList.add('hidden');
-            loadingScreen.classList.remove('hidden');
-            stopCamera(); // Ensure camera is off during analysis
-        }
+              <div class="actions">
+                <button id="btnCopy" class="btn" type="button">📋 결과 복사</button>
+                <button id="btnAgain" class="btn" type="button">🔁 다시 하기</button>
+              </div>
 
-        function hideLoading() {
-            loadingScreen.classList.add('hidden');
-            mainContainer.classList.remove('hidden');
-        }
+              <div class="hint">
+                <strong>참고</strong> 같은 사진(같은 이미지 데이터)이면 같은 분석 코드와 같은 결과가 나옵니다.
+              </div>
+            </div>
+          </div>
+        </div>
 
-        function displayResult(profession, hash) {
-            resultEmoji.textContent = profession.emoji;
-            resultName.textContent = profession.name;
-            resultDescription.textContent = profession.description;
-            resultStory.textContent = profession.story;
-            resultAdvice.textContent = profession.advice;
-            resultLuckyElements.textContent = profession.luckyElements;
-            resultHashPartial.textContent = hash.substring(0, 10) + '...'; // Show first 10 chars of hash
+        <div id="resultEmpty" class="note">
+          아직 결과가 없습니다. 왼쪽에서 사진을 입력한 뒤 <strong>전생 알아보기</strong>를 눌러주세요.
+        </div>
+      </div>
+    </section>
+  </div>
+</div>
 
-            resultCard.classList.remove('hidden');
-        }
+<div id="toast" class="toast" role="status" aria-live="polite"></div>
 
-        // --- Camera Functions ---
-        let cameraStream = null; // To hold the MediaStream object
+<script>
+  // ---------------------------
+  // 1) 데이터: 12 전생 직업 카드
+  // ---------------------------
+  const JOBS = [
+    {
+      id: 1, title: "서원 유생", one: "목(木)의 기운이 강한 ‘사색형’ 전생",
+      element: "목(木)", lucky: { color: "청색", number: 3, item: "책" },
+      story: "당신의 기운은 고요하지만 뻗어 나가려는 힘이 있습니다. 예전 삶에서는 글을 통해 길을 찾던 서원 유생의 결이 보입니다. 성급히 결론을 내리기보다, 기록과 관찰로 답을 모으는 편이 운을 키웁니다. 오늘의 선택도 ‘깊이’가 기준이 되면 흔들림이 적습니다.",
+      art: makeArt("wood", "📜"),
+      advice: "성급히 결론을 내리기보다, 기록과 관찰로 답을 모으는 편이 운을 키웁니다. 오늘의 선택도 ‘깊이’가 기준이 되면 흔들림이 적습니다."
+    },
+    {
+      id: 2, title: "궁중 책사", one: "금(金)의 기운이 강한 ‘분석형’ 전생",
+      element: "금(金)", lucky: { color: "백색", number: 7, item: "부채" },
+      story: "얼굴의 결에 ‘정리’와 ‘선택’의 기운이 또렷합니다. 전생에는 궁중 책사로서 흐름을 읽고 판을 설계하던 흔적이 보입니다. 감정에 휩쓸리기보다 구조를 먼저 잡으면 운이 따라옵니다. 오늘은 한 번에 크게 바꾸기보다, 핵심 하나만 정리해 보세요.",
+      art: makeArt("metal", "🧠"),
+      advice: "감정에 휩쓸리기보다 구조를 먼저 잡으면 운이 따라옵니다. 오늘은 한 번에 크게 바꾸기보다, 핵심 하나만 정리해 보세요."
+    },
+    {
+      id: 3, title: "기마 장수", one: "화(火)의 기운이 강한 ‘행동형’ 전생",
+      element: "화(火)", lucky: { color: "적색", number: 9, item: "띠끈" },
+      story: "당신은 멈추면 오히려 불안해지는 불꽃의 기운이 있습니다. 전생에는 기마 장수로 결단과 돌파가 생존의 기술이었습니다. 망설임이 길어지면 운이 식을 수 있으니, 작은 실행으로 불씨를 살리면 좋습니다. 오늘은 ‘시작’이 곧 반입니다.",
+      art: makeArt("fire", "⚔️"),
+      advice: "망설임이 길어지면 운이 식을 수 있으니, 작은 실행으로 불씨를 살리면 좋습니다. 오늘은 ‘시작’이 곧 반입니다."
+    },
+    {
+      id: 4, title: "산중 수행자", one: "토(土)의 기운이 강한 ‘내면형’ 전생",
+      element: "토(土)", lucky: { color: "황색", number: 5, item: "염주" },
+      story: "당신의 기운에는 ‘버티는 힘’과 ‘가라앉는 중심’이 보입니다. 전생에는 산중 수행자로서 말보다 침묵으로 답을 찾곤 했습니다. 지금도 과열될수록 한 발 물러서면 운이 정돈됩니다. 오늘은 속도를 줄이고, 한 가지 루틴을 지키는 게 길합니다.",
+      art: makeArt("earth", "🧘"),
+      advice: "과열될수록 한 발 물러서면 운이 정돈됩니다. 오늘은 속도를 줄이고, 한 가지 루틴을 지키는 게 길합니다."
+    },
+    {
+      id: 5, title: "약초 의원", one: "목(木)의 기운이 섬세한 ‘치유형’ 전생",
+      element: "목(木)", lucky: { color: "연두", number: 2, item: "약첩" },
+      story: "당신의 기운에는 ‘돌봄’과 ‘조율’이 흐릅니다. 전생에는 약초를 다루는 의원으로 사람의 기색을 먼저 읽던 흔적이 보입니다. 남을 챙기다 나를 잊기 쉬우니, 오늘은 내 컨디션부터 점검하면 운이 열립니다. 작은 회복이 큰 흐름을 바꿉니다.",
+      art: makeArt("wood2", "🌿"),
+      advice: "남을 챙기다 나를 잊기 쉬우니, 오늘은 내 컨디션부터 점검하면 운이 열립니다. 작은 회복이 큰 흐름을 바꿉니다."
+    },
+    {
+      id: 6, title: "비단 상단 행수", one: "금(金)의 기운이 강한 ‘현실형’ 전생",
+      element: "금(金)", lucky: { color: "회색", number: 8, item: "계산주판" },
+      story: "당신의 기운은 ‘기회 포착’에 강점이 있습니다. 전생에는 비단 상단의 행수로서 거래와 사람의 마음을 함께 다루었습니다. 오늘은 감으로만 밀기보다, 한 번 더 숫자로 확인하면 운이 단단해집니다. 작은 손익 계산이 큰 행운을 부릅니다.",
+      art: makeArt("metal2", "💰"),
+      advice: "감으로만 밀기보다, 한 번 더 숫자로 확인하면 운이 단단해집니다. 작은 손익 계산이 큰 행운을 부릅니다."
+    },
+    {
+      id: 7, title: "궁중 악사", one: "수(水)의 기운이 강한 ‘감성형’ 전생",
+      element: "수(水)", lucky: { color: "남색", number: 1, item: "거문고" },
+      story: "당신은 분위기의 결을 빠르게 읽는 물의 기운이 있습니다. 전생에는 궁중 악사로 감정의 파동을 다루며 살아갔습니다. 오늘은 사람과의 흐름을 조율하면 운이 부드럽게 풀립니다. 말 한마디의 리듬이 일을 쉽게 만들 수 있습니다.",
+      art: makeArt("water", "🎼"),
+      advice: "사람과의 흐름을 조율하면 운이 부드럽게 풀립니다. 말 한마디의 리듬이 일을 쉽게 만들 수 있습니다."
+    },
+    {
+      id: 8, title: "암행어사", one: "화(火)의 기운이 곧은 ‘정의형’ 전생",
+      element: "화(火)", lucky: { color: "흑색", number: 4, item: "패" },
+      story: "당신의 기운은 ‘숨은 것을 드러내는 힘’이 있습니다. 전생에는 암행어사로서 틀어진 질서를 바로잡는 역할이었습니다. 오늘은 애매함을 그대로 두지 말고, 기준을 한 줄로 정리하면 운이 열립니다. 다만 말은 짧게, 증거는 단단하게가 길합니다.",
+      art: makeArt("fire2", "🕵️"),
+      advice: "애매함을 그대로 두지 말고, 기준을 한 줄로 정리하면 운이 열립니다. 다만 말은 짧게, 증거는 단단하게가 길합니다."
+    },
+    {
+      id: 9, title: "별 관측관", one: "수(水)의 기운이 깊은 ‘관찰형’ 전생",
+      element: "수(水)", lucky: { color: "보라", number: 6, item: "별지도" },
+      story: "당신의 기운에는 ‘멀리 보는 눈’이 있습니다. 전생에는 별 관측관으로 하늘의 흐름을 기록하며 인간의 때를 재었습니다. 오늘은 급한 결론보다, 한 박자 늦춘 판단이 더 정확합니다. 기분이 흔들릴수록 하늘처럼 크게 보세요.",
+      art: makeArt("water2", "🌌"),
+      advice: "급한 결론보다, 한 박자 늦춘 판단이 더 정확합니다. 기분이 흔들릴수록 하늘처럼 크게 보세요."
+    },
+    {
+      id: 10, title: "떠돌이 무당", one: "수(水) + 화(火)의 직관이 강한 ‘신비형’ 전생",
+      element: "수(水)", lucky: { color: "청록", number: 11, item: "방울" },
+      story: "당신의 기운은 논리보다 ‘느낌’이 먼저 닿는 편입니다. 전생에는 떠돌이 무당으로 반은 신의 뜻, 반은 사람의 결을 읽으며 살아갔습니다. 오늘은 이유가 설명되지 않아도 맞는 감이 있습니다. 다만 과열되면 흔들리니, 직감에 ‘한 번의 확인’을 더하면 길합니다.",
+      art: makeArt("shaman", "🔮"),
+      advice: "이유가 설명되지 않아도 맞는 감이 있습니다. 다만 과열되면 흔들리니, 직감에 ‘한 번의 확인’을 더하면 길합니다."
+    },
+    {
+      id: 11, title: "거리의 거지", one: "토(土)의 내려놓음이 강한 ‘방랑형’ 전생",
+      element: "토(土)", lucky: { color: "갈색", number: 10, item: "낡은 주머니" },
+      story: "당신의 기운에는 ‘집착을 줄이는 힘’이 있습니다. 전생에는 거리의 방랑자로 세상의 이야기를 가장 가까이에서 듣곤 했습니다. 오늘은 움켜쥐기보다 내려놓는 쪽에서 운이 열립니다. 손을 비워야 새 기회가 들어옵니다.",
+      art: makeArt("wander", "🥣"),
+      advice: "움켜쥐기보다 내려놓는 쪽에서 운이 열립니다. 손을 비워야 새 기회가 들어옵니다."
+    },
+    {
+      id: 12, title: "백정 장인", one: "금(金)의 현실감이 강한 ‘기술형’ 전생",
+      element: "금(金)", lucky: { color: "은색", number: 12, item: "칼자루" },
+      story: "당신의 기운은 현실을 직시하는 힘이 있습니다. 전생에는 날카로운 기술로 삶을 버티던 장인의 흔적이 보입니다. 오늘은 감정보다 ‘결정’을 먼저 두면 일이 풀립니다. 다만 말이 차게 들릴 수 있으니, 마지막 한 마디는 부드럽게 마무리하면 길합니다.",
+      art: makeArt("butcher", "🔪"),
+      advice: "감정보다 ‘결정’을 먼저 두면 일이 풀립니다. 다만 말이 차게 들릴 수 있으니, 마지막 한 마디는 부드럽게 마무리하면 길합니다."
+    },
+  ];
 
-        async function startCamera() {
-            try {
-                // Request camera access (facingMode: 'user' for front camera on mobile, or default on desktop)
-                cameraStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } });
-                cameraFeed.srcObject = cameraStream;
-                cameraFeed.play();
-                
-                // Hide file input, show camera feed and controls
-                imageInput.classList.add('hidden');
-                imagePreview.style.display = 'none'; // Hide image preview if visible
-                cameraControls.classList.remove('hidden');
-                inputPrompt.textContent = '카메라를 통해 얼굴을 맞춰주세요!';
-                analyzeBtn.disabled = true; // Disable analyze button until photo is taken
-                takePhotoBtn.disabled = false;
-            } catch (err) {
-                console.error('카메라 접근 에러:', err);
-                alert('카메라에 접근할 수 없습니다. 권한을 확인하거나 다른 입력 방식을 선택해주세요.');
-                // Fallback to upload mode if camera fails
-                document.getElementById('upload-select').checked = true;
-                inputPrompt.textContent = '사진 파일을 업로드하려면 클릭하세요!';
-                imageInput.classList.remove('hidden');
-                cameraControls.classList.add('hidden');
-                analyzeBtn.disabled = true;
-            }
-        }
+  // ---------------------------
+  // 2) UI 엘리먼트
+  // ---------------------------
+  const modeCameraBtn = document.getElementById("modeCamera");
+  const modeUploadBtn = document.getElementById("modeUpload");
+  const cameraSection = document.getElementById("cameraSection");
+  const uploadSection = document.getElementById("uploadSection");
 
-        function stopCamera() {
-            if (cameraStream) {
-                cameraStream.getTracks().forEach(track => track.stop()); // Stop all tracks in the stream
-                cameraStream = null;
-                cameraFeed.srcObject = null;
-            }
-            cameraControls.classList.add('hidden');
-            takePhotoBtn.disabled = true;
-        }
+  const videoEl = document.getElementById("video");
+  const btnStartCam = document.getElementById("btnStartCam");
+  const btnCapture = document.getElementById("btnCapture");
+  const btnStopCam = document.getElementById("btnStopCam");
 
-        function takePhoto() {
-            if (!cameraFeed.srcObject) {
-                alert('카메라가 활성화되지 않았습니다.');
-                return;
-            }
+  const fileInput = document.getElementById("fileInput");
+  const previewEl = document.getElementById("preview");
+  const previewEmpty = document.getElementById("previewEmpty");
 
-            const context = photoCanvas.getContext('2d');
-            // Set canvas dimensions to match video feed
-            photoCanvas.width = cameraFeed.videoWidth;
-            photoCanvas.height = cameraFeed.videoHeight;
+  const statusDot = document.getElementById("statusDot");
+  const statusText = document.getElementById("statusText");
 
-            // Draw current video frame onto canvas
-            context.drawImage(cameraFeed, 0, 0, photoCanvas.width, photoCanvas.height);
+  const btnAnalyze = document.getElementById("btnAnalyze");
+  const btnReset = document.getElementById("btnReset");
 
-            // Get image data from canvas as Data URL
-            const imageDataUrl = photoCanvas.toDataURL('image/png');
-            
-            // Display captured photo in image preview
-            imagePreview.src = imageDataUrl;
-            imagePreview.style.display = 'block';
-            analyzeBtn.disabled = false; // Enable analyze button
+  const loader = document.getElementById("loader");
+  const result = document.getElementById("result");
+  const resultEmpty = document.getElementById("resultEmpty");
 
-            // Hide camera and stop stream
-            stopCamera();
-            cameraControls.classList.add('hidden');
-            inputPrompt.textContent = '촬영된 사진입니다.';
-        }
+  const artBox = document.getElementById("artBox");
+  const hashShortEl = document.getElementById("hashShort");
+  const elementText = document.getElementById("elementText");
+  const jobTitle = document.getElementById("jobTitle");
+  const jobOne = document.getElementById("jobOne");
+  const jobStory = document.getElementById("jobStory");
+  const todayTip = document.getElementById("todayTip");
+  const luckyBox = document.getElementById("luckyBox");
 
+  const btnCopy = document.getElementById("btnCopy");
+  const btnAgain = document.getElementById("btnAgain");
+  const toast = document.getElementById("toast");
 
-        // --- 4. Event Handlers ---
+  // Hidden canvas to hold the "selected image" (from camera capture or upload)
+  const imageCanvas = document.createElement("canvas");
+  const imageCtx = imageCanvas.getContext("2d", { willReadFrequently: true });
 
-        themeToggle.addEventListener('click', () => {
-            document.body.classList.toggle('dark-mode');
-            if (document.body.classList.contains('dark-mode')) {
-                localStorage.setItem('theme', 'dark');
-                themeToggle.querySelector('.icon').textContent = '☀️';
-            } else {
-                localStorage.setItem('theme', 'light');
-                themeToggle.querySelector('.icon').textContent = '🌙';
-            }
-        });
+  let currentMode = "upload"; // "camera" or "upload"
+  let stream = null;
+  let currentHash = null; // hex string
+  let currentSeedInt = null; // 32-bit int for PRNG
+  let lastSelectedDataURL = null;
 
-        // Apply saved theme on load
-        document.addEventListener('DOMContentLoaded', () => {
-            if (localStorage.getItem('theme') === 'dark') {
-                document.body.classList.add('dark-mode');
-                themeToggle.querySelector('.icon').textContent = '☀️';
-            } else {
-                themeToggle.querySelector('.icon').textContent = '🌙';
-            }
-            // Initial setup for upload mode
-            resetUI();
-            document.getElementById('upload-select').checked = true; // Explicitly set upload as checked
-            inputPrompt.textContent = '사진 파일을 업로드하려면 클릭하세요!';
-            imageInput.classList.remove('hidden'); // Ensure file input is visible
-            cameraControls.classList.add('hidden'); // Ensure camera controls are hidden
-        });
+  // ---------------------------
+  // 3) Mode switching
+  // ---------------------------
+  function setMode(mode){
+    currentMode = mode;
+    const isCam = mode === "camera";
+    modeCameraBtn.setAttribute("aria-pressed", String(isCam));
+    modeUploadBtn.setAttribute("aria-pressed", String(!isCam));
+    cameraSection.style.display = isCam ? "" : "none";
+    uploadSection.style.display = isCam ? "none" : "";
 
+    // UX: 모드 변경 시 상태 초기화(혼란 방지)
+    stopCamera();
+    clearSelection(true);
+    setStatus("대기 중…", "neutral");
+  }
 
-        const inputPrompt = document.getElementById('input-prompt'); // Get reference to the prompt
-        const cameraControls = document.getElementById('camera-controls'); // Needs to be re-referenced after HTML change
-        const cameraFeed = document.getElementById('camera-feed');
-        const photoCanvas = document.getElementById('photo-canvas');
-        const takePhotoBtn = document.getElementById('take-photo-btn');
+  modeCameraBtn.addEventListener("click", () => setMode("camera"));
+  modeUploadBtn.addEventListener("click", () => setMode("upload"));
 
+  // ---------------------------
+  // 4) Camera controls
+  // ---------------------------
+  async function startCamera(){
+    try{
+      if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){
+        setStatus("이 브라우저는 카메라 API를 지원하지 않습니다.", "bad");
+        return;
+      }
 
-        inputMethodRadios.forEach(radio => {
-            radio.addEventListener('change', (event) => {
-                resetUI(); // Reset UI when input method changes
-                if (event.target.value === 'camera') {
-                    startCamera();
-                    imageInput.classList.add('hidden'); // Hide file input
-                } else { // upload
-                    stopCamera();
-                    imageInput.classList.remove('hidden'); // Show file input
-                    inputPrompt.textContent = '사진 파일을 업로드하려면 클릭하세요!';
-                }
-            });
-        });
+      // iOS/모바일 안정성을 위해 ideal 크기 힌트
+      stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: "user", width: { ideal: 1280 }, height: { ideal: 720 } },
+        audio: false
+      });
+      videoEl.srcObject = stream;
+      videoEl.play(); // Play the video stream
 
-        imageInput.addEventListener('change', (event) => {
-            const file = event.target.files[0];
-            if (file) {
-                const reader = new FileReader();
-                reader.onload = (e) => {
-                    imagePreview.src = e.target.result;
-                    imagePreview.style.display = 'block';
-                    analyzeBtn.disabled = false;
-                };
-                reader.readAsDataURL(file);
-            } else {
-                resetUI(); // If file selection is cancelled
-            }
-        });
+      btnStartCam.disabled = true;
+      btnStopCam.disabled = false;
+      btnCapture.disabled = false;
 
-        takePhotoBtn.addEventListener('click', takePhoto);
+      setStatus("카메라가 켜졌습니다. 촬영하기를 눌러주세요.", "ok");
+    }catch(err){
+      console.error('카메라 접근 에러:', err); // Log error for debugging
+      let errorMessage = "카메라에 접근할 수 없습니다. ";
+      if (window.location.protocol !== 'https:' && window.location.hostname !== 'localhost') {
+          errorMessage += "카메라는 HTTPS 또는 localhost 환경에서만 작동합니다. 현재 " + window.location.protocol + " 환경입니다. ";
+      }
+      errorMessage += "권한을 확인하거나 다른 입력 방식을 선택해주세요.";
+      setStatus(errorMessage, "bad");
+      showToast(errorMessage); // Show toast for more visibility
+      // Fallback to upload mode if camera fails
+      setMode("upload"); // Explicitly switch to upload mode on failure
+    }
+  }
 
+  function stopCamera(){
+    if(stream){
+      stream.getTracks().forEach(t => t.stop());
+      stream = null;
+    }
+    videoEl.srcObject = null; // Clear video source
+    videoEl.pause(); // Pause video
 
-        analyzeBtn.addEventListener('click', async () => {
-            if (imagePreview.src === '#' || imagePreview.src === window.location.href) {
-                alert('먼저 사진을 선택하거나 촬영해주세요!');
-                return;
-            }
+    btnStartCam.disabled = false;
+    btnStopCam.disabled = true;
+    btnCapture.disabled = true;
+  }
 
-            showLoading(); // Show loading spinner
+  function captureFromVideo(){
+    if(!videoEl.videoWidth || !videoEl.videoHeight){
+      setStatus("카메라 영상이 아직 준비되지 않았습니다. 잠시 후 다시 시도해주세요.", "bad");
+      return;
+    }
+    const w = videoEl.videoWidth;
+    const h = videoEl.videoHeight;
 
-            // Create an Image object to get raw pixel data
-            const img = new Image();
-            img.onload = async () => {
-                const binaryHash = generatedHash(img, 32); // Use 32x32 for hash generation
-                currentImageHash = binToHex(binaryHash);
-                
-                // Convert hash string to an integer seed
-                // Simple example: take first 8 hex chars, parse to int
-                const hashSeed = parseInt(currentImageHash.substring(0, 8), 16);
-                currentSeed = hashSeed;
-                
-                // Initialize PRNG with the hash seed
-                const random = mulberry32(currentSeed);
+    // 결과 안정성을 위해: 너무 큰 해상도는 줄여서 저장(해시 안정성 + 성능)
+    const targetW = 900;
+    const scale = Math.min(1, targetW / w);
+    const cw = Math.round(w * scale);
+    const ch = Math.round(h * scale);
 
-                // Get a pseudo-random number to select a profession
-                const randomIndex = Math.floor(random() * professions.length);
-                currentProfession = professions[randomIndex];
+    imageCanvas.width = cw;
+    imageCanvas.height = ch;
+    imageCtx.drawImage(videoEl, 0, 0, cw, ch);
 
-                setTimeout(() => {
-                    hideLoading();
-                    displayResult(currentProfession, currentImageHash);
-                }, 3000); // Show loading for exactly 3 seconds
-            };
-            img.onerror = () => {
-                hideLoading();
-                alert('이미지를 로드하는 데 실패했습니다. 올바른 이미지 파일인지 확인해주세요.');
-                resetUI();
-            };
-            img.src = imagePreview.src; // Trigger image loading
-        });
+    const dataUrl = imageCanvas.toDataURL("image/jpeg", 0.88);
+    lastSelectedDataURL = dataUrl;
 
-        retryBtn.addEventListener('click', () => {
-            resetUI();
-        });
+    showPreview(dataUrl);
+    computeHashFromCanvas(); // sets currentHash/currentSeedInt
+    stopCamera(); // Stop camera after capturing
+  }
 
-        copyBtn.addEventListener('click', async () => {
-            if (!currentProfession) {
-                alert('먼저 전생을 분석해주세요!');
-                return;
-            }
+  btnStartCam.addEventListener("click", startCamera);
+  btnStopCam.addEventListener("click", () => {
+    stopCamera();
+    setStatus("카메라를 껐습니다.", "neutral");
+  });
+  btnCapture.addEventListener("click", captureFromVideo);
 
-            const copyText = `[나의 전생 직업은?]
-직업명: ${currentProfession.name} ${currentProfession.emoji}
-설명: ${currentProfession.description}
-스토리: ${currentProfession.story}
-오늘의 조언: ${currentProfession.advice}
-행운 요소: ${currentProfession.luckyElements}
-분석 코드 (일부): ${currentImageHash.substring(0, 10)}...
+  // ---------------------------
+  // 5) Upload controls
+  // ---------------------------
+  fileInput.addEventListener("change", async (e) => {
+    const file = e.target.files?.[0];
+    if(!file) return;
 
-#전생알아보기 #PastLifeFinder`;
+    // Load image into <img> then draw to canvas
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = () => {
+      URL.revokeObjectURL(url);
 
-            try {
-                await navigator.clipboard.writeText(copyText);
-                alert('결과가 클립보드에 복사되었습니다!');
-            } catch (err) {
-                console.error('클립보드 복사 실패:', err);
-                alert('클립보드 복사에 실패했습니다. 수동으로 복사해주세요.');
-            }
-        });
-    </script>
+      // Normalize size for hash stability/performance
+      const maxW = 900;
+      const scale = Math.min(1, maxW / img.width);
+      const cw = Math.round(img.width * scale);
+      const ch = Math.round(img.height * scale);
+
+      imageCanvas.width = cw;
+      imageCanvas.height = ch;
+      imageCtx.drawImage(img, 0, 0, cw, ch);
+
+      const dataUrl = imageCanvas.toDataURL("image/jpeg", 0.88);
+      lastSelectedDataURL = dataUrl;
+
+      showPreview(dataUrl);
+      computeHashFromCanvas();
+    };
+    img.onerror = () => setStatus("이미지를 불러오지 못했습니다. 다른 파일로 시도해주세요.", "bad");
+    img.src = url;
+  });
+
+  // ---------------------------
+  // 6) Preview & status
+  // ---------------------------
+  function showPreview(dataUrl){
+    previewEl.src = dataUrl;
+    previewEl.style.display = "block";
+    previewEmpty.style.display = "none";
+
+    // Reset result view when a new image arrives
+    hideResult();
+    resultEmpty.style.display = "block";
+
+    btnAnalyze.disabled = false;
+    setStatus("사진 준비 완료. 전생 알아보기를 눌러주세요.", "ok");
+  }
+
+  function setStatus(text, tone){
+    statusText.textContent = text;
+    statusDot.className = "dot";
+    if(tone === "ok") statusDot.classList.add("ok");
+    else if(tone === "bad") statusDot.classList.add("bad");
+  }
+
+  function showToast(msg){
+    toast.textContent = msg;
+    toast.classList.add("show");
+    setTimeout(() => toast.classList.remove("show"), 1600);
+  }
+
+  // ---------------------------
+  // 7) Deterministic hash (dHash) + seeded PRNG
+  // ---------------------------
+  // dHash: compare adjacent pixels (grayscale), create bits, then hex string
+  function computeDHashFromCanvas(srcCanvas, hashW = 9, hashH = 8){
+    // For dHash we need (hashW x hashH) grayscale values where hashW = N+1
+    const c = document.createElement("canvas");
+    c.width = hashW;
+    c.height = hashH;
+    const ctx = c.getContext("2d", { willReadFrequently: true });
+
+    // draw scaled
+    ctx.drawImage(srcCanvas, 0, 0, hashW, hashH);
+    const { data } = ctx.getImageData(0, 0, hashW, hashH);
+
+    // grayscale array
+    const gray = new Float32Array(hashW * hashH);
+    for(let i=0;i<hashW*hashH;i++){
+      const r = data[i*4+0], g = data[i*4+1], b = data[i*4+2];
+      // luminance
+      gray[i] = 0.299*r + 0.587*g + 0.114*b;
+    }
+
+    // compare adjacent columns: for each row, for col 0..hashW-2
+    const bits = [];
+    for(let y=0;y<hashH;y++){
+      for(let x=0;x<hashW-1;x++){
+        const left = gray[y*hashW + x];
+        const right = gray[y*hashW + x + 1];
+        bits.push(left > right ? 1 : 0);
+      }
+    }
+    // bits length = hashH*(hashW-1) = 8*8=64
+    // convert to hex
+    let hex = "";
+    for(let i=0;i<bits.length;i+=4){
+      const n = (bits[i]<<3) | (bits[i+1]<<2) | (bits[i+2]<<1) | (bits[i+3]);
+      hex += n.toString(16);
+    }
+    return hex; // 16 hex chars for 64 bits
+  }
+
+  function hexToSeedInt(hex){
+    // Fold hex string into a 32-bit int (deterministic)
+    let h = 2166136261 >>> 0; // FNV-like
+    for(let i=0;i<hex.length;i++){
+      h ^= hex.charCodeAt(i);
+      h = Math.imul(h, 16777619) >>> 0;
+    }
+    return h >>> 0;
+  }
+
+  // mulberry32 seeded PRNG
+  function mulberry32(a){
+    return function(){
+      let t = a += 0x6D2B79F5;
+      t = Math.imul(t ^ (t >>> 15), t | 1);
+      t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    }
+  }
+
+  function computeHashFromCanvas(){
+    currentHash = computeDHashFromCanvas(imageCanvas, 9, 8); // 64-bit dhash
+    currentSeedInt = hexToSeedInt(currentHash);
+
+    const short = currentHash.slice(0, 10);
+    setStatus(`분석 코드 생성 완료: ${short}`, "ok");
+  }
+
+  // ---------------------------
+  // 8) (Optional) "Element vibe" from image stats (still deterministic)
+  // ---------------------------
+  function computeVibeScoresFromCanvas(srcCanvas){
+    // Simple pixel stats to derive an "element vibe" (for display only)
+    // This does not change determinism much; it is derived from image itself.
+    const c = document.createElement("canvas");
+    const w = 96, h = 96;
+    c.width = w; c.height = h;
+    const ctx = c.getContext("2d", { willReadFrequently: true });
+    ctx.drawImage(srcCanvas, 0, 0, w, h);
+    const { data } = ctx.getImageData(0, 0, w, h);
+
+    let sum = 0, sumSq = 0;
+    let sumR=0,sumG=0,sumB=0;
+    for(let i=0;i<data.length;i+=4){
+      const r = data[i], g = data[i+1], b = data[i+2];
+      const lum = 0.299*r+0.587*g+0.114*b;
+      sum += lum;
+      sumSq += lum*lum;
+      sumR+=r; sumG+=g; sumB+=b;
+    }
+    const n = data.length/4;
+    const mean = sum/n;
+    const variance = (sumSq/n) - mean*mean; // rough sharpness proxy
+    const contrast = Math.max(0, Math.min(255, Math.sqrt(Math.max(0, variance))));
+
+    // simplistic mapping to 5 elements (scores 0..1)
+    // bright -> fire, contrast -> metal, calm(mid brightness)-> earth, blue -> water, green -> wood
+    const fire = clamp01((mean - 110)/90);
+    const metal = clamp01((contrast - 40)/70);
+    const water = clamp01((avgB - avgR)/120 + 0.5);
+    const wood = clamp01((avgG - avgR)/120 + 0.5);
+    const earth = clamp01(1 - Math.abs(mean - 128)/128);
+
+    return { fire, metal, water, wood, earth };
+  }
+  function clamp01(x){ return Math.max(0, Math.min(1, x)); }
+
+  function elementLabelFromScores(s){
+    // pick max
+    const entries = [
+      ["목(木)", s.wood],
+      ["화(火)", s.fire],
+      ["토(土)", s.earth],
+      ["금(金)", s.metal],
+      ["수(水)", s.water],
+    ];
+    entries.sort((a,b)=>b[1]-a[1]);
+    return entries[0][0];
+  }
+
+  // ---------------------------
+  // 9) Analyze flow (3 seconds) + deterministic selection
+  // ---------------------------
+  let analyzeTimer = null;
+
+  btnAnalyze.addEventListener("click", () => {
+    if(!lastSelectedDataURL){
+      setStatus("먼저 사진을 입력해주세요.", "bad");
+      return;
+    }
+    if(!currentHash || !currentSeedInt){
+      // in case hash wasn't computed yet
+      computeHashFromCanvas();
+    }
+
+    // UI
+    hideResult();
+    resultEmpty.style.display = "none";
+    loader.classList.add("show");
+    btnAnalyze.disabled = true;
+
+    // After 3 seconds, show result
+    if(analyzeTimer) clearTimeout(analyzeTimer);
+    analyzeTimer = setTimeout(() => {
+      loader.classList.remove("show");
+      btnAnalyze.disabled = false;
+      showDeterministicResult();
+    }, 3000);
+  });
+
+  function showDeterministicResult(){
+    const rand = mulberry32(currentSeedInt);
+
+    // Deterministic pick (optionally biased by vibe)
+    const vibe = computeVibeScoresFromCanvas(imageCanvas);
+    const vibeElement = elementLabelFromScores(vibe);
+
+    // Create weights per job (still deterministic because vibe comes from image)
+    // Base weight 1, add small boost if job element matches vibeElement
+    const weights = JOBS.map(j => {
+      let w = 1.0;
+      const el = j.element.includes("목") ? "목(木)"
+               : j.element.includes("화") ? "화(火)"
+               : j.element.includes("토") ? "토(토)"
+               : j.element.includes("금") ? "금(金)"
+               : "수(水)";
+      if(el === vibeElement) w += 0.55;
+      // Make "코믹" results less frequent but still possible (deterministic)
+      if(j.title === "거리의 거지" || j.title === "떠돌이 무당" || j.title === "백정 장인"){
+        w *= 0.78;
+      }
+      return w;
+    });
+
+    const picked = weightedPick(JOBS, weights, rand);
+
+    // render
+    artBox.innerHTML = picked.art;
+    hashShortEl.textContent = currentHash.slice(0, 10);
+    elementText.textContent = picked.element;
+
+    jobTitle.textContent = picked.title;
+    jobOne.textContent = picked.one;
+    jobStory.textContent = picked.story;
+    todayTip.textContent = picked.advice;
+    luckyBox.textContent = `색 ${picked.lucky.color} · 숫자 ${picked.lucky.number} · 아이템 ${picked.lucky.item}`;
+
+    result.classList.add("show");
+    resultEmpty.style.display = "none";
+  }
+
+  function weightedPick(items, weights, randFn){
+    const total = weights.reduce((a,b)=>a+b,0);
+    let r = randFn() * total;
+    for(let i=0;i<items.length;i++){
+      r -= weights[i];
+      if(r <= 0) return items[i];
+    }
+    return items[items.length-1];
+  }
+
+  function hideResult(){
+    result.classList.remove("show");
+  }
+
+  // ---------------------------
+  // 10) Copy / Again / Reset
+  // ---------------------------
+  btnCopy.addEventListener("click", async () => {
+    if(!result.classList.contains("show")){
+      showToast("복사할 결과가 없습니다.");
+      return;
+    }
+    const text =
+`[전생 직업 결과]
+직업: ${jobTitle.textContent}
+오행: ${elementText.textContent}
+설명: ${jobOne.textContent}
+
+스토리:
+${jobStory.textContent}
+
+조언: ${todayTip.textContent}
+행운: ${luckyBox.textContent}
+분석 코드: ${hashShortEl.textContent}`;
+
+    try{
+      await navigator.clipboard.writeText(text);
+      showToast("결과를 복사했습니다.");
+    }catch(e){
+      // Fallback
+      prompt("복사가 차단되었습니다. 아래 내용을 직접 복사하세요.", text);
+    }
+  });
+
+  btnAgain.addEventListener("click", () => {
+    // Keep the same image: same hash => same result, so user sees consistency.
+    hideResult();
+    resultEmpty.style.display = "block";
+    setStatus("다시 시도할 수 있습니다. 전생 알아보기를 눌러주세요.", "ok");
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  });
+
+  btnReset.addEventListener("click", () => {
+    stopCamera();
+    clearSelection(true);
+    setStatus("초기화 완료. 사진을 다시 입력해주세요.", "neutral");
+  });
+
+  function clearSelection(resetFileInput){
+    lastSelectedDataURL = null;
+    currentHash = null;
+    currentSeedInt = null;
+
+    previewEl.style.display = "none";
+    previewEl.src = "";
+    previewEmpty.style.display = "block";
+
+    hideResult();
+    loader.classList.remove("show");
+    resultEmpty.style.display = "block";
+
+    btnAnalyze.disabled = true;
+
+    if(resetFileInput) fileInput.value = "";
+  }
+
+  // ---------------------------
+  // 11) Art generator (inline SVG, no external assets)
+  // ---------------------------
+  function makeArt(theme, emoji){
+    const gradients = {
+      wood: ["#1f7a3f","#0b1020"],
+      wood2: ["#2cb67d","#0b1020"],
+      fire: ["#ff6b6b","#0b1020"],
+      fire2: ["#ff9f43","#0b1020"],
+      earth: ["#f6c177","#0b1020"],
+      metal: ["#aab3cf","#0b1020"],
+      metal2: ["#7aa2ff","#0b1020"],
+      water: ["#3aa0ff","#0b1020"],
+      water2: ["#7c3aed","#0b1020"],
+      shaman: ["#22c55e","#7c3aed"],
+      wander: ["#b45309","#0b1020"],
+      butcher: ["#ef4444","#94a3b8"],
+    };
+    const [c1,c2] = gradients[theme] || ["#7aa2ff","#0b1020"];
+    // Simple emblem: gradient bg + circle + emoji
+    return `
+      <svg viewBox="0 0 240 240" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="대표 이미지">
+        <defs>
+          <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0" stop-color="${c1}" stop-opacity="0.95"/>
+            <stop offset="1" stop-color="${c2}" stop-opacity="1"/>
+          </linearGradient>
+          <radialGradient id="r" cx="30%" cy="25%" r="70%">
+            <stop offset="0" stop-color="white" stop-opacity="0.18"/>
+            <stop offset="1" stop-color="white" stop-opacity="0"/>
+          </radialGradient>
+          <filter id="s" x="-30%" y="-30%" width="160%" height="160%">
+            <feDropShadow dx="0" dy="10" stdDeviation="14" flood-color="rgba(0,0,0,.55)"/>
+          </filter>
+        </defs>
+        <rect x="0" y="0" width="240" height="240" rx="26" fill="url(#g)"/>
+        <rect x="0" y="0" width="240" height="240" rx="26" fill="url(#r)"/>
+        <g filter="url(#s)">
+          <circle cx="120" cy="122" r="70" fill="rgba(0,0,0,.26)" stroke="rgba(255,255,255,.22)" stroke-width="2"/>
+          <text x="120" y="142" text-anchor="middle" font-size="64">${emoji}</text>
+        </g>
+        <path d="M24 198 C70 160, 110 210, 216 160" fill="none" stroke="rgba(255,255,255,.14)" stroke-width="3" stroke-linecap="round"/>
+      </svg>
+    `;
+  }
+
+  // ---------------------------
+  // 12) Init
+  // ---------------------------
+  // Default mode: Upload Photo.
+  setMode("upload"); // Set to upload mode by default
+  setStatus("입력 방식을 선택하고 사진을 준비해주세요.", "neutral");
+
+</script>
 </body>
 </html>
