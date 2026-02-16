@@ -323,6 +323,7 @@
 
             <!-- Image Input Area -->
             <div class="image-input-area">
+                <p id="input-prompt" style="margin-bottom: 10px; color: var(--text-color);">클릭하여 사진을 선택해주세요!</p>
                 <input type="file" id="image-input" accept="image/*" capture="user">
                 <img id="image-preview" src="#" alt="Image Preview">
             </div>
@@ -613,13 +614,18 @@
         });
 
 
+        const inputPrompt = document.getElementById('input-prompt'); // Get reference to the prompt
+
         inputMethodRadios.forEach(radio => {
             radio.addEventListener('change', (event) => {
                 resetUI(); // Reset UI when input method changes
                 if (event.target.value === 'camera') {
                     imageInput.setAttribute('capture', 'user');
+                    inputPrompt.textContent = '카메라로 촬영하려면 클릭하세요!';
+                    imageInput.click(); // Programmatically click to open camera
                 } else {
                     imageInput.removeAttribute('capture');
+                    inputPrompt.textContent = '사진 파일을 업로드하려면 클릭하세요!';
                 }
             });
         });
