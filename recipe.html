@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>레시피 상세 보기</title>
+    <link href='/style.css' rel='stylesheet'>
+    <style>
+        .recipe-container {
+            max-width: 800px;
+            margin: 2rem auto;
+            padding: 1.5rem;
+            background-color: var(--background-color-secondary);
+            border-radius: 8px;
+            box-shadow: var(--shadow);
+        }
+        .recipe-title {
+            color: var(--text-color);
+            margin-bottom: 1rem;
+            text-align: center;
+        }
+        .recipe-image {
+            max-width: 100%;
+            height: auto;
+            display: block;
+            margin: 1rem auto;
+            border-radius: 8px;
+        }
+        .recipe-section-title {
+            color: var(--primary-color);
+            margin-top: 1.5rem;
+            margin-bottom: 0.8rem;
+            border-bottom: 2px solid var(--border-color);
+            padding-bottom: 0.5rem;
+        }
+        .recipe-content ul, .recipe-content ol {
+            margin-left: 1.5rem;
+            color: var(--text-color);
+        }
+        .recipe-content p {
+            color: var(--text-color);
+            line-height: 1.6;
+            margin-bottom: 0.5rem;
+        }
+        #comments-section {
+            margin-top: 3rem;
+            padding-top: 2rem;
+            border-top: 1px solid var(--border-color);
+        }
+    </style>
+</head>
+<body>
+    <div class="main-layout">
+        <div class="container">
+            <button id="theme-toggle" class="theme-toggle">
+                <span class="icon">🌙</span> <!-- Moon icon for dark mode -->
+            </button>
+            <h1 class="recipe-title" id="recipe-title">선택된 레시피 제목</h1>
+            <img id="recipe-image" src="" alt="Recipe Image" class="recipe-image" style="display:none;">
+            
+            <div class="recipe-container">
+                <h2 class="recipe-section-title">재료</h2>
+                <div id="recipe-ingredients" class="recipe-content">
+                    <ul>
+                        <li>재료 1</li>
+                        <li>재료 2</li>
+                        <li>재료 3</li>
+                    </ul>
+                </div>
+
+                <h2 class="recipe-section-title">조리법</h2>
+                <div id="recipe-instructions" class="recipe-content">
+                    <ol>
+                        <li>단계 1</li>
+                        <li>단계 2</li>
+                        <li>단계 3</li>
+                    </ol>
+                </div>
+            </div>
+
+            <div id="comments-section">
+                <h2 class="recipe-section-title">댓글</h2>
+                <!-- 여기에 댓글 시스템을 연동하세요 (예: Disqus, LiveRe 등) -->
+                <p style="color: var(--text-color);">
+                    댓글 기능을 추가하려면 Disqus와 같은 외부 서비스와 연동해야 합니다. 
+                    자세한 방법은 각 서비스의 문서를 참고해주세요.
+                </p>
+                <div id="disqus_thread"></div>
+            </div>
+
+            <div class="footer-links" style="margin-top: 2rem;">
+                <a href="/privacy.html">개인정보처리방침</a>
+                <a href="/">메인 페이지로 돌아가기</a>
+            </div>
+        </div>
+    </div>
+    <script defer type="text/javascript" src="/main.js"></script>
+    <script>
+        // Theme toggle functionality (if needed on this page)
+        document.addEventListener('DOMContentLoaded', () => {
+            const themeToggle = document.getElementById('theme-toggle');
+            if (themeToggle) {
+                themeToggle.addEventListener('click', () => {
+                    document.body.classList.toggle('dark-mode');
+                    // Save preference
+                    if (document.body.classList.contains('dark-mode')) {
+                        localStorage.setItem('theme', 'dark');
+                        themeToggle.querySelector('.icon').textContent = '☀️';
+                    } else {
+                        localStorage.setItem('theme', 'light');
+                        themeToggle.querySelector('.icon').textContent = '🌙';
+                    }
+                });
+                // Apply saved theme on load
+                if (localStorage.getItem('theme') === 'dark') {
+                    document.body.classList.add('dark-mode');
+                    themeToggle.querySelector('.icon').textContent = '☀️';
+                } else {
+                    themeToggle.querySelector('.icon').textContent = '🌙';
+                }
+            }
+
+            // Example of how to populate recipe details from query parameters or local storage
+            const urlParams = new URLSearchParams(window.location.search);
+            const recipeName = urlParams.get('name') || '기본 레시피';
+            const recipeImage = urlParams.get('image') || '';
+            const recipeIngredients = urlParams.get('ingredients') || '<ul><li>기본 재료 1</li><li>기본 재료 2</li></ul>';
+            const recipeInstructions = urlParams.get('instructions') || '<ol><li>기본 조리법 1</li><li>기본 조리법 2</li></ol>';
+
+            document.getElementById('recipe-title').textContent = recipeName;
+            
+            const imgElement = document.getElementById('recipe-image');
+            if (recipeImage) {
+                imgElement.src = recipeImage;
+                imgElement.style.display = 'block';
+            } else {
+                imgElement.style.display = 'none';
+            }
+
+            document.getElementById('recipe-ingredients').innerHTML = decodeURIComponent(recipeIngredients);
+            document.getElementById('recipe-instructions').innerHTML = decodeURIComponent(recipeInstructions);
+        });
+
+        // Disqus integration code - replace with your actual Disqus shortname
+        /*
+        (function() { // DON'T EDIT BELOW THIS LINE
+            var d = document, s = d.createElement('script');
+            s.src = 'https://YOUR_DISQUS_SHORTNAME.disqus.com/embed.js';
+            s.setAttribute('data-timestamp', +new Date());
+            (d.head || d.body).appendChild(s);
+        })();
+        */
+    </script>
+</body>
+</html>

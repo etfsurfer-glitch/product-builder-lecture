@@ -66,6 +66,7 @@ function recommendDinnerMenu() {
     const selectedMenu = dinnerMenus[randomIndex];
     
     dinnerMenuText.textContent = selectedMenu.name;
+    lastRecommendedMenu = selectedMenu.name;
 }
 
 // 테마 토글 버튼 이벤트 리스너
@@ -95,6 +96,19 @@ generateBtn.addEventListener('click', () => {
 
 // 저녁 메뉴 추천 버튼 이벤트 리스너
 recommendBtn.addEventListener('click', recommendDinnerMenu);
+
+// "레시피 보기" 버튼 이벤트 리스너
+const showRecipeBtn = document.getElementById('show-recipe-btn');
+let lastRecommendedMenu = ''; // Variable to store the last recommended menu
+if (showRecipeBtn) {
+    showRecipeBtn.addEventListener('click', () => {
+        if (lastRecommendedMenu) {
+            window.open(`recipe.html?name=${encodeURIComponent(lastRecommendedMenu)}`, '_blank');
+        } else {
+            alert('먼저 메뉴 추천을 받아주세요!');
+        }
+    });
+}
 
 // 페이지 로드 시 첫 저녁 메뉴 추천
 recommendDinnerMenu();
