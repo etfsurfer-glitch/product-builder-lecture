@@ -95,6 +95,7 @@
         </div>
     </div>
     <script defer type="text/javascript" src="/main.js"></script>
+    <script src="/recipes.js"></script>
     <script>
         // Theme toggle functionality (if needed on this page)
         document.addEventListener('DOMContentLoaded', () => {
@@ -120,36 +121,34 @@
                 }
             }
 
-            // Example of how to populate recipe details from query parameters or local storage
             const urlParams = new URLSearchParams(window.location.search);
-            const recipeName = urlParams.get('name') || '기본 레시피';
-            const recipeImage = urlParams.get('image') || '';
-            const recipeIngredients = urlParams.get('ingredients') || '<ul><li>기본 재료 1</li><li>기본 재료 2</li></ul>';
-            const recipeInstructions = urlParams.get('instructions') || '<ol><li>기본 조리법 1</li><li>기본 조리법 2</li></ol>';
+            const recipeName = urlParams.get('name');
+            const recipeData = recipes[recipeName];
 
-            document.getElementById('recipe-title').textContent = recipeName;
-            
-            const imgElement = document.getElementById('recipe-image');
-            if (recipeImage) {
-                imgElement.src = recipeImage;
-                imgElement.style.display = 'block';
+            if (recipeData) {
+                document.getElementById('recipe-title').textContent = recipeName;
+                
+                const imgElement = document.getElementById('recipe-image');
+                if (recipeData.imageUrl) {
+                    imgElement.src = recipeData.imageUrl;
+                    imgElement.style.display = 'block';
+                } else {
+                    imgElement.style.display = 'none';
+                }
+
+                const ingredientsList = document.getElementById('recipe-ingredients');
+                ingredientsList.innerHTML = '<ul>' + recipeData.ingredients.map(item => `<li>${item}</li>`).join('') + '</ul>';
+
+                const instructionsList = document.getElementById('recipe-instructions');
+                instructionsList.innerHTML = '<ol>' + recipeData.instructions.map(item => `<li>${item}</li>`).join('') + '</ol>';
+
             } else {
-                imgElement.style.display = 'none';
+                document.getElementById('recipe-title').textContent = '레시피를 찾을 수 없습니다.';
+                document.getElementById('recipe-ingredients').innerHTML = '<p>선택하신 메뉴에 대한 레시피 정보가 없습니다.</p>';
+                document.getElementById('recipe-instructions').innerHTML = '<p>선택하신 메뉴에 대한 레시피 정보가 없습니다.</p>';
+                document.getElementById('recipe-image').style.display = 'none';
             }
-
-            document.getElementById('recipe-ingredients').innerHTML = decodeURIComponent(recipeIngredients);
-            document.getElementById('recipe-instructions').innerHTML = decodeURIComponent(recipeInstructions);
         });
-
-        // Disqus integration code - replace with your actual Disqus shortname
-        /*
-        (function() { // DON'T EDIT BELOW THIS LINE
-            var d = document, s = d.createElement('script');
-            s.src = 'https://YOUR_DISQUS_SHORTNAME.disqus.com/embed.js';
-            s.setAttribute('data-timestamp', +new Date());
-            (d.head || d.body).appendChild(s);
-        })();
-        */
     </script>
 </body>
 </html>

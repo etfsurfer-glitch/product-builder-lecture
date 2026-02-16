@@ -114,13 +114,19 @@ if (showRecipeBtn) {
 recommendDinnerMenu();
 
 // Disqus 스크립트 로드
+window.disqus_config = function () {
+    this.page.url = window.location.href;
+    // Dynamically set identifier based on the page
+    if (window.location.pathname.includes('recipe.html')) {
+        const urlParams = new URLSearchParams(window.location.search);
+        const recipeName = urlParams.get('name');
+        this.page.identifier = `/recipe/${recipeName || 'default-recipe'}`; // Use recipe name for unique identifier
+    } else {
+        this.page.identifier = window.location.pathname;
+    }
+};
+
 document.addEventListener('DOMContentLoaded', function() {
-    /*
-    var disqus_config = function () {
-        this.page.url = window.location.href;  // Replace PAGE_URL with your page's canonical URL variable
-        this.page.identifier = window.location.pathname; // Replace PAGE_IDENTIFIER with your page's unique identifier variable
-    };
-    */
     (function() { // DON'T EDIT BELOW THIS LINE
         var d = document, s = d.createElement('script');
         s.src = 'https://surfer22-1.disqus.com/embed.js';
