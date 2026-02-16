@@ -1,0 +1,711 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>전생 알아보기</title>
+    <style>
+        :root {
+            --background-color: #f4f7f6;
+            --text-color: #2c3e50;
+            --primary-color: #3498db;
+            --secondary-color: #2ecc71;
+            --container-bg: #ffffff;
+            --border-color: #e0e0e0;
+            --button-bg: var(--primary-color);
+            --button-hover-bg: #2980b9;
+            --input-border: #cccccc;
+            --loading-spinner-color: var(--primary-color);
+            --box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+            --subtle-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        }
+
+        body.dark-mode {
+            --background-color: #2c3e50;
+            --text-color: #ecf0f1;
+            --primary-color: #9b59b6;
+            --secondary-color: #1abc9c;
+            --container-bg: #34495e;
+            --border-color: #555555;
+            --button-bg: var(--primary-color);
+            --button-hover-bg: #8e44ad;
+            --input-border: #555555;
+            --loading-spinner-color: var(--primary-color);
+            --box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+            --subtle-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        body {
+            font-family: 'Apple SD Gothic Neo', 'Malgun Gothic', 'Nanum Gothic', sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: var(--background-color);
+            color: var(--text-color);
+            line-height: 1.6;
+            transition: background-color 0.3s, color 0.3s;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            min-height: 100vh;
+            padding-top: 20px;
+            box-sizing: border-box;
+        }
+
+        .main-layout {
+            width: 100%;
+            max-width: 768px;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        .container {
+            background-color: var(--container-bg);
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: var(--box-shadow);
+            margin-bottom: 20px;
+            position: relative;
+        }
+
+        h1, h2 {
+            color: var(--primary-color);
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        p {
+            text-align: center;
+            margin-bottom: 15px;
+        }
+
+        button {
+            background-color: var(--button-bg);
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: background-color 0.3s ease, transform 0.2s ease;
+            display: block;
+            width: fit-content;
+            margin: 15px auto;
+            box-shadow: var(--subtle-shadow);
+        }
+
+        button:hover:not(:disabled) {
+            background-color: var(--button-hover-bg);
+            transform: translateY(-2px);
+        }
+
+        button:active:not(:disabled) {
+            transform: translateY(0);
+        }
+
+        button:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
+
+        .theme-toggle {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: none;
+            border: 1px solid var(--border-color);
+            color: var(--text-color);
+            padding: 8px 12px;
+            border-radius: 50%;
+            font-size: 1.2rem;
+            box-shadow: var(--subtle-shadow);
+            cursor: pointer;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transition: background-color 0.3s, color 0.3s, border-color 0.3s;
+        }
+
+        .theme-toggle .icon {
+            line-height: 1;
+        }
+
+        .input-method-selector {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 25px;
+            background-color: var(--background-color);
+            border-radius: 8px;
+            padding: 5px;
+            box-shadow: var(--subtle-shadow);
+        }
+
+        .input-method-selector label {
+            flex: 1;
+            text-align: center;
+            padding: 10px 15px;
+            cursor: pointer;
+            border-radius: 6px;
+            transition: background-color 0.3s, color 0.3s;
+            color: var(--text-color);
+            font-weight: bold;
+        }
+
+        .input-method-selector input[type="radio"] {
+            display: none;
+        }
+
+        .input-method-selector input[type="radio"]:checked + label {
+            background-color: var(--primary-color);
+            color: white;
+            box-shadow: var(--subtle-shadow);
+        }
+
+        .image-input-area {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .image-input-area input[type="file"] {
+            display: block;
+            margin: 0 auto 15px auto;
+            border: 1px solid var(--input-border);
+            padding: 10px;
+            border-radius: 8px;
+            background-color: var(--container-bg);
+            color: var(--text-color);
+            width: calc(100% - 22px);
+            box-sizing: border-box;
+        }
+
+        #image-preview {
+            max-width: 100%;
+            max-height: 300px;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            margin-top: 15px;
+            display: none; /* Hidden by default */
+            box-shadow: var(--subtle-shadow);
+        }
+
+        .loading-screen {
+            display: none; /* Hidden by default */
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 40px 20px;
+            background-color: var(--container-bg);
+            border-radius: 12px;
+            box-shadow: var(--box-shadow);
+            margin-top: 20px;
+        }
+
+        .spinner {
+            border: 8px solid #f3f3f3;
+            border-top: 8px solid var(--loading-spinner-color);
+            border-radius: 50%;
+            width: 60px;
+            height: 60px;
+            animation: spin 1.5s linear infinite;
+            margin-bottom: 20px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .result-card {
+            display: none; /* Hidden by default */
+            background-color: var(--container-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 25px;
+            margin-top: 20px;
+            box-shadow: var(--box-shadow);
+            text-align: center;
+        }
+
+        .result-card h3 {
+            color: var(--primary-color);
+            font-size: 1.8rem;
+            margin-bottom: 10px;
+        }
+
+        .result-card .profession-emoji {
+            font-size: 3rem;
+            display: block;
+            margin: 0 auto 15px auto;
+        }
+
+        .result-card .description {
+            font-style: italic;
+            color: var(--text-color);
+            margin-bottom: 15px;
+        }
+
+        .result-card .story {
+            text-align: left;
+            margin-bottom: 20px;
+            font-size: 0.95rem;
+            color: var(--text-color);
+        }
+
+        .result-card .advice {
+            font-weight: bold;
+            color: var(--secondary-color);
+            margin-bottom: 15px;
+        }
+
+        .result-card .lucky-elements {
+            font-size: 0.9rem;
+            color: var(--text-color);
+        }
+
+        .hash-info {
+            font-size: 0.75rem;
+            color: #888;
+            margin-top: 20px;
+        }
+
+        .privacy-notice {
+            font-size: 0.8rem;
+            color: #888;
+            text-align: center;
+            margin-top: 30px;
+            padding: 10px;
+            background-color: var(--background-color);
+            border-radius: 8px;
+            box-shadow: var(--subtle-shadow);
+        }
+
+        .footer-links {
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        .footer-links a {
+            color: var(--primary-color);
+            text-decoration: none;
+            margin: 0 10px;
+            transition: color 0.3s ease;
+        }
+
+        .footer-links a:hover {
+            color: var(--button-hover-bg);
+            text-decoration: underline;
+        }
+
+        /* Utility classes */
+        .hidden {
+            display: none !important;
+        }
+    </style>
+</head>
+<body>
+    <div class="main-layout">
+        <div class="container">
+            <button id="theme-toggle" class="theme-toggle">
+                <span class="icon">🌙</span>
+            </button>
+
+            <h1>전생 알아보기</h1>
+            <p>당신의 얼굴 사진으로 당신의 전생 직업을 예측해 드립니다.</p>
+
+            <!-- Input Method Selector -->
+            <div class="input-method-selector">
+                <input type="radio" id="camera-select" name="input-method" value="camera" checked>
+                <label for="camera-select">카메라로 촬영</label>
+                <input type="radio" id="upload-select" name="input-method" value="upload">
+                <label for="upload-select">사진 업로드</label>
+            </div>
+
+            <!-- Image Input Area -->
+            <div class="image-input-area">
+                <input type="file" id="image-input" accept="image/*" capture="user">
+                <img id="image-preview" src="#" alt="Image Preview">
+            </div>
+
+            <button id="analyze-btn" disabled>전생 알아보기</button>
+        </div>
+
+        <!-- Loading Screen -->
+        <div id="loading-screen" class="loading-screen hidden">
+            <div class="spinner"></div>
+            <p>분석중...</p>
+        </div>
+
+        <!-- Result Card -->
+        <div id="result-card" class="result-card hidden">
+            <span class="profession-emoji" id="result-emoji"></span>
+            <h3 id="result-name"></h3>
+            <p class="description" id="result-description"></p>
+            <p class="story" id="result-story"></p>
+            <p class="advice" id="result-advice"></p>
+            <p class="lucky-elements" id="result-lucky-elements"></p>
+            <p class="hash-info">분석 코드 (일부): <span id="result-hash-partial"></span></p>
+            <button id="retry-btn">다시 하기</button>
+            <button id="copy-btn">결과 복사</button>
+        </div>
+
+        <p class="privacy-notice">
+            * 사진은 브라우저에서만 처리되며 서버로 업로드되지 않습니다.
+        </p>
+
+        <div class="footer-links">
+            <a href="/">메인 페이지로 돌아가기</a>
+        </div>
+    </div>
+
+    <script>
+        // --- 0. UI Element References ---
+        const themeToggle = document.getElementById('theme-toggle');
+        const inputMethodRadios = document.querySelectorAll('input[name="input-method"]');
+        const imageInput = document.getElementById('image-input');
+        const imagePreview = document.getElementById('image-preview');
+        const analyzeBtn = document.getElementById('analyze-btn');
+        const loadingScreen = document.getElementById('loading-screen');
+        const resultCard = document.getElementById('result-card');
+        const resultEmoji = document.getElementById('result-emoji');
+        const resultName = document.getElementById('result-name');
+        const resultDescription = document.getElementById('result-description');
+        const resultStory = document.getElementById('result-story');
+        const resultAdvice = document.getElementById('result-advice');
+        const resultLuckyElements = document.getElementById('result-lucky-elements');
+        const resultHashPartial = document.getElementById('result-hash-partial');
+        const retryBtn = document.getElementById('retry-btn');
+        const copyBtn = document.getElementById('copy-btn');
+        const mainContainer = document.querySelector('.container'); // Main content container
+
+        let currentImageHash = null;
+        let currentProfession = null;
+        let currentSeed = null;
+
+        // --- 1. Professions Data (Easy to modify) ---
+        const professions = [
+            {
+                name: "서원 유생",
+                emoji: "📚",
+                description: "학문에 정진하며 세상을 밝히는 선비",
+                story: "당신에게는 고요한 서원에서의 삶, 책과 벗 삼아 진리를 탐구하던 유생의 기운이 강하게 보입니다. 엄격한 학문의 길에서 도리를 지키고, 백성을 위한 지혜를 갈고 닦았을 전생의 인연이 느껴집니다. 당신의 현재 삶에서도 깊이 있는 사고와 배움을 중요시하는 경향이 있을 것입니다.",
+                advice: "지식의 탐구를 멈추지 마세요. 당신의 지혜는 주변을 밝히는 등불이 될 것입니다.",
+                luckyElements: "행운의 색: 옥색, 행운의 숫자: 3, 행운의 아이템: 붓과 종이",
+                imageUrl: "" // Optional: for future image integration
+            },
+            {
+                name: "궁중 책사",
+                emoji: "👑",
+                description: "왕을 보필하며 나라의 기틀을 세운 전략가",
+                story: "당신은 왕의 곁에서 지략으로 나라의 운명을 좌우하던 궁중 책사의 전생 기운을 타고났습니다. 날카로운 통찰력과 뛰어난 설득력으로 복잡한 문제들을 해결하며 대업을 이루었을 것입니다. 현재의 당신도 중요한 결정을 내릴 때 탁월한 분석력을 발휘할 것입니다.",
+                advice: "당신의 전략적 사고는 위기를 기회로 바꿀 힘을 가지고 있습니다. 신중하되 과감하게 나아가세요.",
+                luckyElements: "행운의 색: 금색, 행운의 숫자: 7, 행운의 아이템: 비단 부채",
+                imageUrl: ""
+            },
+            {
+                name: "기마 장수",
+                emoji: "🐎",
+                description: "말 위에서 나라를 지킨 용맹한 무사",
+                story: "당신에게는 넓은 들판을 달리며 나라의 경계를 지키던 기마 장수의 굳건한 기상이 흐릅니다. 뛰어난 무예와 불굴의 정신으로 전장을 누볐을 전생의 모습이 그려집니다. 현재 당신의 삶에서도 강한 책임감과 리더십으로 도전을 극복하는 모습을 보일 것입니다.",
+                advice: "어떤 역경에도 굴하지 않는 용기를 가지세요. 당신의 강인함이 당신을 승리로 이끌 것입니다.",
+                luckyElements: "행운의 색: 붉은색, 행운의 숫자: 1, 행운의 아이템: 말발굽 장식",
+                imageUrl: ""
+            },
+            {
+                name: "산중 수행자",
+                emoji: "🧘‍♀️",
+                description: "속세를 떠나 깨달음을 구한 구도자",
+                story: "당신에게는 깊은 산중에서 스스로를 단련하며 진정한 깨달음을 얻으려 했던 수행자의 영혼이 깃들어 있습니다. 고요함 속에서 내면의 소리에 귀 기울이고, 자연과 하나 되어 지혜를 쌓았을 것입니다. 현재 당신의 삶에서도 평온과 성찰을 통해 삶의 의미를 찾으려 할 것입니다.",
+                advice: "내면의 평화를 찾으세요. 그 속에서 당신의 진정한 힘을 발견할 수 있습니다.",
+                luckyElements: "행운의 색: 회색, 행운의 숫자: 9, 행운의 아이템: 염주",
+                imageUrl: ""
+            },
+            {
+                name: "약초 의원",
+                emoji: "🌿",
+                description: "병든 자를 치료하며 생명을 살린 치유사",
+                story: "당신은 산과 들을 헤매며 귀한 약초를 찾아 병든 이들을 구원하던 약초 의원의 전생과 깊은 인연이 있습니다. 생명에 대한 깊은 이해와 연민으로 많은 이들을 보살폈을 것입니다. 현재 당신의 삶에서도 타인을 돕고 치유하는 데서 큰 보람을 느끼는 따뜻한 마음을 가지고 있습니다.",
+                advice: "당신의 손길은 치유의 힘을 가지고 있습니다. 주변의 아픔을 보듬는 데 주저하지 마세요.",
+                luckyElements: "행운의 색: 초록색, 행운의 숫자: 5, 행운의 아이템: 약절구",
+                imageUrl: ""
+            },
+            {
+                name: "비단 상단 행수",
+                emoji: "💰",
+                description: "널리 비단을 유통하며 부를 일군 큰 손",
+                story: "당신은 먼 길을 마다않고 비단을 실어 나르며 큰 상단을 이끌었던 비단 상단 행수의 기운을 지녔습니다. 뛰어난 수완과 사람을 아끼는 마음으로 많은 이들의 신뢰를 얻어 부를 축적했을 것입니다. 현재 당신의 삶에서도 사업적 감각과 협상 능력이 돋보일 것입니다.",
+                advice: "과감한 도전과 신뢰를 바탕으로 당신의 재능을 펼치세요. 큰 성공이 따를 것입니다.",
+                luckyElements: "행운의 색: 자색, 행운의 숫자: 8, 행운의 아이템: 주판",
+                imageUrl: ""
+            },
+            {
+                name: "궁중 악사",
+                emoji: "🎶",
+                description: "아름다운 선율로 궁궐을 채운 예인",
+                story: "당신은 궁궐에 아름다운 음악을 선사하며 많은 이들의 마음을 움직였던 궁중 악사의 전생 인연이 느껴집니다. 섬세한 감성과 뛰어난 예술적 재능으로 듣는 이들에게 깊은 감동을 주었을 것입니다. 현재 당신의 삶에서도 예술적 감각과 표현력이 남다를 것입니다.",
+                advice: "당신의 재능을 세상에 보여주세요. 당신의 예술은 사람들에게 큰 위안을 줄 것입니다.",
+                luckyElements: "행운의 색: 남색, 행운의 숫자: 2, 행운의 아이템: 가야금",
+                imageUrl: ""
+            },
+            {
+                name: "암행어사",
+                emoji: "🕵️",
+                description: "백성의 억울함을 해결한 정의로운 관리",
+                story: "당신에게는 어두운 곳에서 백성의 고통을 살피고 부정한 자들을 단죄하던 암행어사의 기개가 서려 있습니다. 날카로운 판단력과 강직한 성품으로 정의를 실현했을 전생의 모습이 떠오릅니다. 현재 당신의 삶에서도 불의를 보면 참지 못하고 약자를 돕는 정의로운 마음을 가지고 있습니다.",
+                advice: "당신의 정의감을 따르세요. 당신의 행동은 세상에 긍정적인 변화를 가져올 것입니다.",
+                luckyElements: "행운의 색: 검은색, 행운의 숫자: 4, 행운의 아이템: 마패",
+                imageUrl: ""
+            },
+            {
+                name: "별 관측관",
+                emoji: "🔭",
+                description: "하늘의 움직임을 기록하고 미래를 예견한 학자",
+                story: "당신은 밤하늘의 별을 관측하며 우주의 섭리를 탐구하고 길흉을 예견했던 별 관측관의 지혜로운 영혼을 지녔습니다. 끝없는 호기심과 분석력으로 자연의 이치를 깨달았을 것입니다. 현재 당신의 삶에서도 미지의 세계에 대한 탐구심과 깊이 있는 사고를 통해 해답을 찾으려 할 것입니다.",
+                advice: "하늘의 뜻을 살피듯, 당신의 주변을 깊이 관찰하세요. 그 속에서 새로운 통찰을 얻을 것입니다.",
+                luckyElements: "행운의 색: 보라색, 행운의 숫자: 6, 행운의 아이템: 천문도",
+                imageUrl: ""
+            },
+            {
+                name: "떠돌이 무당",
+                emoji: "🔮",
+                description: "신과 소통하며 인간의 길흉화복을 점지한 영매",
+                story: "당신에게는 신비로운 기운으로 사람들의 운명을 점치고 영적인 존재와 소통했던 떠돌이 무당의 전생이 비춰집니다. 예리한 직관력과 영적인 능력으로 많은 이들에게 위안과 방향을 제시했을 것입니다. 현재 당신의 삶에서도 남다른 육감과 통찰력으로 미래를 예견하는 능력이 있을 수 있습니다.",
+                advice: "당신의 직관을 믿고 따르세요. 보이지 않는 지혜가 당신을 이끌 것입니다.",
+                luckyElements: "행운의 색: 흰색, 행운의 숫자: 0, 행운의 아이템: 방울",
+                imageUrl: ""
+            },
+            {
+                name: "거리의 거지",
+                emoji: "🚶‍♂️",
+                description: "자유롭게 세상을 유랑하며 깨달음을 얻은 방랑자",
+                story: "당신에게는 세상의 부질없음을 깨닫고 모든 속박에서 벗어나 자유를 누리던 거리의 거지의 영혼이 흐릅니다. 비록 가진 것은 없었으나, 삶의 본질을 꿰뚫는 깊은 통찰과 인간적인 따뜻함을 지녔을 것입니다. 현재 당신의 삶에서도 물질적인 것보다 정신적인 가치를 더 중요하게 여길 것입니다.",
+                advice: "자유로운 영혼을 잃지 마세요. 당신의 경험이 곧 가장 큰 재산입니다.",
+                luckyElements: "행운의 색: 갈색, 행운의 숫자: 11, 행운의 아이템: 낡은 삿갓",
+                imageUrl: ""
+            },
+            {
+                name: "백정 장인",
+                emoji: "🔪",
+                description: "천대 속에서도 묵묵히 기술을 갈고 닦은 숨은 장인",
+                story: "당신에게는 사회의 편견 속에서도 자신의 기술을 묵묵히 갈고 닦으며 삶의 가치를 찾아냈던 백정 장인의 끈기 있는 기운이 보입니다. 누구에게도 의지하지 않고 오직 자신의 손끝으로 삶을 일구어냈을 것입니다. 현재 당신의 삶에서도 맡은 일에 대한 강한 장인정신과 끈기를 가지고 있습니다.",
+                advice: "당신의 기술과 끈기는 언젠가 빛을 발할 것입니다. 묵묵히 당신의 길을 걸으세요.",
+                luckyElements: "행운의 색: 은색, 행운의 숫자: 10, 행운의 아이템: 날카로운 칼",
+                imageUrl: ""
+            }
+        ];
+
+        // --- 2. Utility Functions ---
+
+        // Seeded Pseudo-Random Number Generator (Mulberry32)
+        // Source: https://github.com/bryc/code/blob/master/jshash/PRNGs.md#mulberry32
+        function mulberry32(a) {
+            return function() {
+                var t = a += 0x6D2B79F5;
+                t = Math.imul(t ^ t >>> 15, t | 1);
+                t ^= t + Math.imul(t ^ t >>> 7, t | 61);
+                return ((t ^ t >>> 14) >>> 0) / 4294967296;
+            }
+        }
+
+        // dHash (Difference Hash) implementation
+        // Adapted from various sources for perceptual hashing
+        function generatedHash(imgData, size = 8) { // default size 8x8 (produces 64-bit hash)
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            canvas.width = size + 1; // Need size+1 for dHash
+            canvas.height = size;
+
+            ctx.drawImage(imgData, 0, 0, size + 1, size);
+
+            const pixels = ctx.getImageData(0, 0, size + 1, size).data;
+            const grayscale = [];
+
+            // Convert to grayscale
+            for (let i = 0; i < pixels.length; i += 4) {
+                const r = pixels[i];
+                const g = pixels[i + 1];
+                const b = pixels[i + 2];
+                // Luminosity method (0.2126*R + 0.7152*G + 0.0722*B)
+                grayscale.push(0.2126 * r + 0.7152 * g + 0.0722 * b);
+            }
+
+            let hash = '';
+            for (let y = 0; y < size; y++) {
+                for (let x = 0; x < size; x++) {
+                    const leftPixel = grayscale[y * (size + 1) + x];
+                    const rightPixel = grayscale[y * (size + 1) + (x + 1)];
+                    hash += (leftPixel > rightPixel) ? '1' : '0';
+                }
+            }
+            return hash;
+        }
+
+        // Convert binary hash string to hexadecimal
+        function binToHex(bin) {
+            let hex = '';
+            for (let i = 0; i < bin.length; i += 4) {
+                const chunk = bin.substr(i, 4);
+                hex += parseInt(chunk, 2).toString(16);
+            }
+            return hex;
+        }
+
+        // --- 3. UI State Management ---
+
+        function resetUI() {
+            imageInput.value = '';
+            imagePreview.src = '#';
+            imagePreview.style.display = 'none';
+            analyzeBtn.disabled = true;
+            loadingScreen.classList.add('hidden');
+            resultCard.classList.add('hidden');
+            currentImageHash = null;
+            currentProfession = null;
+            currentSeed = null;
+            mainContainer.classList.remove('hidden'); // Ensure main container is visible
+        }
+
+        function showLoading() {
+            mainContainer.classList.add('hidden');
+            resultCard.classList.add('hidden');
+            loadingScreen.classList.remove('hidden');
+        }
+
+        function hideLoading() {
+            loadingScreen.classList.add('hidden');
+            mainContainer.classList.remove('hidden');
+        }
+
+        function displayResult(profession, hash) {
+            resultEmoji.textContent = profession.emoji;
+            resultName.textContent = profession.name;
+            resultDescription.textContent = profession.description;
+            resultStory.textContent = profession.story;
+            resultAdvice.textContent = profession.advice;
+            resultLuckyElements.textContent = profession.luckyElements;
+            resultHashPartial.textContent = hash.substring(0, 10) + '...'; // Show first 10 chars of hash
+
+            resultCard.classList.remove('hidden');
+        }
+
+        // --- 4. Event Handlers ---
+
+        themeToggle.addEventListener('click', () => {
+            document.body.classList.toggle('dark-mode');
+            if (document.body.classList.contains('dark-mode')) {
+                localStorage.setItem('theme', 'dark');
+                themeToggle.querySelector('.icon').textContent = '☀️';
+            } else {
+                localStorage.setItem('theme', 'light');
+                themeToggle.querySelector('.icon').textContent = '🌙';
+            }
+        });
+
+        // Apply saved theme on load
+        document.addEventListener('DOMContentLoaded', () => {
+            if (localStorage.getItem('theme') === 'dark') {
+                document.body.classList.add('dark-mode');
+                themeToggle.querySelector('.icon').textContent = '☀️';
+            } else {
+                themeToggle.querySelector('.icon').textContent = '🌙';
+            }
+            resetUI(); // Initialize UI state
+        });
+
+
+        inputMethodRadios.forEach(radio => {
+            radio.addEventListener('change', (event) => {
+                resetUI(); // Reset UI when input method changes
+                if (event.target.value === 'camera') {
+                    imageInput.setAttribute('capture', 'user');
+                } else {
+                    imageInput.removeAttribute('capture');
+                }
+            });
+        });
+
+        imageInput.addEventListener('change', (event) => {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    imagePreview.src = e.target.result;
+                    imagePreview.style.display = 'block';
+                    analyzeBtn.disabled = false;
+                };
+                reader.readAsDataURL(file);
+            } else {
+                resetUI(); // If file selection is cancelled
+            }
+        });
+
+        analyzeBtn.addEventListener('click', async () => {
+            if (imagePreview.src === '#' || imagePreview.src === window.location.href) {
+                alert('먼저 사진을 선택하거나 촬영해주세요!');
+                return;
+            }
+
+            showLoading(); // Show loading spinner
+
+            // Create an Image object to get raw pixel data
+            const img = new Image();
+            img.onload = async () => {
+                const binaryHash = generatedHash(img, 32); // Use 32x32 for hash generation
+                currentImageHash = binToHex(binaryHash);
+                
+                // Convert hash string to an integer seed
+                // Simple example: take first 8 hex chars, parse to int
+                const hashSeed = parseInt(currentImageHash.substring(0, 8), 16);
+                currentSeed = hashSeed;
+                
+                // Initialize PRNG with the hash seed
+                const random = mulberry32(currentSeed);
+
+                // Get a pseudo-random number to select a profession
+                const randomIndex = Math.floor(random() * professions.length);
+                currentProfession = professions[randomIndex];
+
+                setTimeout(() => {
+                    hideLoading();
+                    displayResult(currentProfession, currentImageHash);
+                }, 3000); // Show loading for exactly 3 seconds
+            };
+            img.onerror = () => {
+                hideLoading();
+                alert('이미지를 로드하는 데 실패했습니다. 올바른 이미지 파일인지 확인해주세요.');
+                resetUI();
+            };
+            img.src = imagePreview.src; // Trigger image loading
+        });
+
+        retryBtn.addEventListener('click', () => {
+            resetUI();
+        });
+
+        copyBtn.addEventListener('click', async () => {
+            if (!currentProfession) {
+                alert('먼저 전생을 분석해주세요!');
+                return;
+            }
+
+            const copyText = `[나의 전생 직업은?]
+직업명: ${currentProfession.name} ${currentProfession.emoji}
+설명: ${currentProfession.description}
+스토리: ${currentProfession.story}
+오늘의 조언: ${currentProfession.advice}
+행운 요소: ${currentProfession.luckyElements}
+분석 코드 (일부): ${currentImageHash.substring(0, 10)}...
+
+#전생알아보기 #PastLifeFinder`;
+
+            try {
+                await navigator.clipboard.writeText(copyText);
+                alert('결과가 클립보드에 복사되었습니다!');
+            } catch (err) {
+                console.error('클립보드 복사 실패:', err);
+                alert('클립보드 복사에 실패했습니다. 수동으로 복사해주세요.');
+            }
+        });
+    </script>
+</body>
+</html>
