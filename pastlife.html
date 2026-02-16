@@ -963,7 +963,7 @@
       let w = 1.0;
       const el = j.element.includes("목") ? "목(木)"
                : j.element.includes("화") ? "화(火)"
-               : j.element.includes("토") ? "토(토)"
+               : j.element.includes("토") ? "토(土)"
                : j.element.includes("금") ? "금(金)"
                : "수(水)";
       if(el === vibeElement) w += 0.55;
@@ -975,6 +975,9 @@
     });
 
     const picked = weightedPick(JOBS, weights, rand);
+
+    // TEMPORARY DEBUG LINE:
+    showToast(`Debug: Picked - ${picked.title}, Hash - ${currentHash.slice(0, 10)}`);
 
     // render
     artBox.innerHTML = picked.art;
