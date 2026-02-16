@@ -189,6 +189,26 @@
             box-shadow: var(--subtle-shadow);
         }
 
+        /* New camera specific styles */
+        #camera-feed {
+            display: block;
+            margin: 0 auto;
+            background-color: #000;
+            width: 100%; /* Ensure video fits parent */
+            max-width: 400px; /* Limit max width */
+            border-radius: 8px;
+            margin-bottom: 15px;
+        }
+        #photo-canvas {
+            position: absolute; /* Hide off-screen */
+            left: -9999px;
+            top: -9999px;
+        }
+        #camera-controls button {
+            margin-top: 15px;
+        }
+
+
         .loading-screen {
             display: none; /* Hidden by default */
             flex-direction: column;
@@ -323,8 +343,17 @@
 
             <!-- Image Input Area -->
             <div class="image-input-area">
-                <p id="input-prompt" style="margin-bottom: 10px; color: var(--text-color);">클릭하여 사진을 선택해주세요!</p>
-                <input type="file" id="image-input" accept="image/*" capture="user">
+                <p id="input-prompt" style="margin-bottom: 10px; color: var(--text-color);">사진 파일을 업로드하려면 클릭하세요!</p>
+                <!-- File Upload Input -->
+                <input type="file" id="image-input" accept="image/*">
+                
+                <!-- Camera Input Elements (Hidden by default) -->
+                <div id="camera-controls" class="hidden">
+                    <video id="camera-feed" autoplay playsinline></video>
+                    <button id="take-photo-btn">사진 찍기</button>
+                    <canvas id="photo-canvas" class="hidden"></canvas> <!-- Hidden canvas for capturing frame -->
+                </div>
+
                 <img id="image-preview" src="#" alt="Image Preview">
             </div>
 
@@ -378,10 +407,20 @@
         const retryBtn = document.getElementById('retry-btn');
         const copyBtn = document.getElementById('copy-btn');
         const mainContainer = document.querySelector('.container'); // Main content container
+        const inputPrompt = document.getElementById('input-prompt'); // Get reference to the prompt
+        
+        // New Camera Elements
+        const cameraControls = document.getElementById('camera-controls');
+        const cameraFeed = document.getElementById('camera-feed');
+        const photoCanvas = document.getElementById('photo-canvas');
+        const takePhotoBtn = document.getElementById('take-photo-btn');
+
 
         let currentImageHash = null;
         let currentProfession = null;
         let currentSeed = null;
+        let cameraStream = null; // To hold the MediaStream object
+
 
         // --- 1. Professions Data (Easy to modify) ---
         const professions = [
@@ -564,12 +603,19 @@
             currentProfession = null;
             currentSeed = null;
             mainContainer.classList.remove('hidden'); // Ensure main container is visible
+            
+            // Stop camera if active and hide camera controls
+            stopCamera();
+            cameraControls.classList.add('hidden');
+            imageInput.classList.remove('hidden'); // Ensure file input is visible by default
+            inputPrompt.textContent = '사진 파일을 업로드하려면 클릭하세요!'; // Default prompt
         }
 
         function showLoading() {
             mainContainer.classList.add('hidden');
             resultCard.classList.add('hidden');
             loadingScreen.classList.remove('hidden');
+            stopCamera(); // Ensure camera is off during analysis
         }
 
         function hideLoading() {
@@ -588,6 +634,74 @@
 
             resultCard.classList.remove('hidden');
         }
+
+        // --- Camera Functions ---
+        let cameraStream = null; // To hold the MediaStream object
+
+        async function startCamera() {
+            try {
+                // Request camera access (facingMode: 'user' for front camera on mobile, or default on desktop)
+                cameraStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } });
+                cameraFeed.srcObject = cameraStream;
+                cameraFeed.play();
+                
+                // Hide file input, show camera feed and controls
+                imageInput.classList.add('hidden');
+                imagePreview.style.display = 'none'; // Hide image preview if visible
+                cameraControls.classList.remove('hidden');
+                inputPrompt.textContent = '카메라를 통해 얼굴을 맞춰주세요!';
+                analyzeBtn.disabled = true; // Disable analyze button until photo is taken
+                takePhotoBtn.disabled = false;
+            } catch (err) {
+                console.error('카메라 접근 에러:', err);
+                alert('카메라에 접근할 수 없습니다. 권한을 확인하거나 다른 입력 방식을 선택해주세요.');
+                // Fallback to upload mode if camera fails
+                document.getElementById('upload-select').checked = true;
+                inputPrompt.textContent = '사진 파일을 업로드하려면 클릭하세요!';
+                imageInput.classList.remove('hidden');
+                cameraControls.classList.add('hidden');
+                analyzeBtn.disabled = true;
+            }
+        }
+
+        function stopCamera() {
+            if (cameraStream) {
+                cameraStream.getTracks().forEach(track => track.stop()); // Stop all tracks in the stream
+                cameraStream = null;
+                cameraFeed.srcObject = null;
+            }
+            cameraControls.classList.add('hidden');
+            takePhotoBtn.disabled = true;
+        }
+
+        function takePhoto() {
+            if (!cameraFeed.srcObject) {
+                alert('카메라가 활성화되지 않았습니다.');
+                return;
+            }
+
+            const context = photoCanvas.getContext('2d');
+            // Set canvas dimensions to match video feed
+            photoCanvas.width = cameraFeed.videoWidth;
+            photoCanvas.height = cameraFeed.videoHeight;
+
+            // Draw current video frame onto canvas
+            context.drawImage(cameraFeed, 0, 0, photoCanvas.width, photoCanvas.height);
+
+            // Get image data from canvas as Data URL
+            const imageDataUrl = photoCanvas.toDataURL('image/png');
+            
+            // Display captured photo in image preview
+            imagePreview.src = imageDataUrl;
+            imagePreview.style.display = 'block';
+            analyzeBtn.disabled = false; // Enable analyze button
+
+            // Hide camera and stop stream
+            stopCamera();
+            cameraControls.classList.add('hidden');
+            inputPrompt.textContent = '촬영된 사진입니다.';
+        }
+
 
         // --- 4. Event Handlers ---
 
@@ -610,30 +724,31 @@
             } else {
                 themeToggle.querySelector('.icon').textContent = '🌙';
             }
-            resetUI(); // Initialize UI state
-
-            // Set initial state for upload default and trigger its change event
-            // This ensures the inputPrompt text and capture attribute are correct from the start.
-            const uploadRadio = document.getElementById('upload-select');
-            if (uploadRadio.checked) {
-                inputPrompt.textContent = '사진 파일을 업로드하려면 클릭하세요!';
-                imageInput.removeAttribute('capture');
-            }
-            // If camera is checked by default (which is not the case now), it would trigger its own logic.
+            // Initial setup for upload mode
+            resetUI();
+            document.getElementById('upload-select').checked = true; // Explicitly set upload as checked
+            inputPrompt.textContent = '사진 파일을 업로드하려면 클릭하세요!';
+            imageInput.classList.remove('hidden'); // Ensure file input is visible
+            cameraControls.classList.add('hidden'); // Ensure camera controls are hidden
         });
 
 
         const inputPrompt = document.getElementById('input-prompt'); // Get reference to the prompt
+        const cameraControls = document.getElementById('camera-controls'); // Needs to be re-referenced after HTML change
+        const cameraFeed = document.getElementById('camera-feed');
+        const photoCanvas = document.getElementById('photo-canvas');
+        const takePhotoBtn = document.getElementById('take-photo-btn');
+
 
         inputMethodRadios.forEach(radio => {
             radio.addEventListener('change', (event) => {
                 resetUI(); // Reset UI when input method changes
                 if (event.target.value === 'camera') {
-                    imageInput.setAttribute('capture', 'user');
-                    inputPrompt.textContent = '카메라로 촬영하려면 클릭하세요!';
-                    imageInput.click(); // Programmatically click to open camera
-                } else {
-                    imageInput.removeAttribute('capture');
+                    startCamera();
+                    imageInput.classList.add('hidden'); // Hide file input
+                } else { // upload
+                    stopCamera();
+                    imageInput.classList.remove('hidden'); // Show file input
                     inputPrompt.textContent = '사진 파일을 업로드하려면 클릭하세요!';
                 }
             });
@@ -653,6 +768,9 @@
                 resetUI(); // If file selection is cancelled
             }
         });
+
+        takePhotoBtn.addEventListener('click', takePhoto);
+
 
         analyzeBtn.addEventListener('click', async () => {
             if (imagePreview.src === '#' || imagePreview.src === window.location.href) {
