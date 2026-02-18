@@ -31,12 +31,15 @@ const dinnerMenus = [
 
 // 테마 적용 함수
 function applyTheme(theme) {
+    if (!themeToggle) return;
     if (theme === 'dark') {
         body.classList.add('dark-mode');
-        themeToggle.querySelector('.icon').textContent = '☀️'; // 라이트 모드용 해 아이콘
+        const icon = themeToggle.querySelector('.icon');
+        if (icon) icon.textContent = '☀️'; 
     } else {
         body.classList.remove('dark-mode');
-        themeToggle.querySelector('.icon').textContent = '🌙'; // 다크 모드용 달 아이콘
+        const icon = themeToggle.querySelector('.icon');
+        if (icon) icon.textContent = '🌙';
     }
 }
 
@@ -62,6 +65,7 @@ function applySavedTheme() {
 
 // 저녁 메뉴 추천 함수
 function recommendDinnerMenu() {
+    if (!dinnerMenuText) return;
     const randomIndex = Math.floor(Math.random() * dinnerMenus.length);
     const selectedMenu = dinnerMenus[randomIndex];
     
@@ -70,32 +74,38 @@ function recommendDinnerMenu() {
 }
 
 // 테마 토글 버튼 이벤트 리스너
-themeToggle.addEventListener('click', toggleTheme);
+if (themeToggle) {
+    themeToggle.addEventListener('click', toggleTheme);
+}
 
 // 페이지 로드 시 테마 적용
 applySavedTheme();
 
 // 로또 번호 생성 버튼 이벤트 리스너
-generateBtn.addEventListener('click', () => {
-    lottoNumbersContainer.innerHTML = '';
-    const numbers = new Set();
-    while (numbers.size < 6) {
-        const randomNumber = Math.floor(Math.random() * 45) + 1;
-        numbers.add(randomNumber);
-    }
+if (generateBtn && lottoNumbersContainer) {
+    generateBtn.addEventListener('click', () => {
+        lottoNumbersContainer.innerHTML = '';
+        const numbers = new Set();
+        while (numbers.size < 6) {
+            const randomNumber = Math.floor(Math.random() * 45) + 1;
+            numbers.add(randomNumber);
+        }
 
-    const sortedNumbers = Array.from(numbers).sort((a, b) => a - b);
+        const sortedNumbers = Array.from(numbers).sort((a, b) => a - b);
 
-    sortedNumbers.forEach(number => {
-        const numberElement = document.createElement('div');
-        numberElement.classList.add('lotto-number');
-        numberElement.textContent = number;
-        lottoNumbersContainer.appendChild(numberElement);
+        sortedNumbers.forEach(number => {
+            const numberElement = document.createElement('div');
+            numberElement.classList.add('lotto-number');
+            numberElement.textContent = number;
+            lottoNumbersContainer.appendChild(numberElement);
+        });
     });
-});
+}
 
 // 저녁 메뉴 추천 버튼 이벤트 리스너
-recommendBtn.addEventListener('click', recommendDinnerMenu);
+if (recommendBtn) {
+    recommendBtn.addEventListener('click', recommendDinnerMenu);
+}
 
 // "레시피 보기" 버튼 이벤트 리스너
 const showRecipeBtn = document.getElementById('show-recipe-btn');
@@ -111,28 +121,31 @@ if (showRecipeBtn) {
 }
 
 // 페이지 로드 시 첫 저녁 메뉴 추천
-recommendDinnerMenu();
+if (dinnerMenuText) {
+    recommendDinnerMenu();
+}
 
 // Disqus 스크립트 로드
 window.disqus_config = function () {
     this.page.url = window.location.href;
-    // Dynamically set identifier based on the page
     if (window.location.pathname.includes('recipe.html')) {
         const urlParams = new URLSearchParams(window.location.search);
         const recipeName = urlParams.get('name');
-        this.page.identifier = `/recipe/${recipeName || 'default-recipe'}`; // Use recipe name for unique identifier
+        this.page.identifier = `/recipe/${recipeName || 'default-recipe'}`;
     } else {
         this.page.identifier = window.location.pathname;
     }
 };
 
 document.addEventListener('DOMContentLoaded', function() {
-    (function() { // DON'T EDIT BELOW THIS LINE
-        var d = document, s = d.createElement('script');
-        s.src = 'https://surfer-1.disqus.com/embed.js';
-        s.setAttribute('data-timestamp', +new Date());
-        (d.head || d.body).appendChild(s);
-    })();
+    if (document.getElementById('disqus_thread')) {
+        (function() { 
+            var d = document, s = d.createElement('script');
+            s.src = 'https://surfer-1.disqus.com/embed.js';
+            s.setAttribute('data-timestamp', +new Date());
+            (d.head || d.body).appendChild(s);
+        })();
+    }
 });
 
 
@@ -144,7 +157,7 @@ let playerScore = 0;
 let computerScore = 0;
 let playerLastChoice = "";
 let computerLastChoice = "";
-let countdownValue = 0; // New variable for countdown
+let countdownValue = 0; 
 
 // DOM Elements for RPS Game
 const webcamContainer = document.getElementById("webcam-container");
@@ -157,56 +170,56 @@ const computerScoreDisplay = document.getElementById("computer-score");
 const playRoundBtn = document.getElementById("play-round-btn");
 const rpsGameStartButton = document.querySelector(".rps-game-container button[onclick='initRPS()']");
 
-let animationFrameId; // To store the requestAnimationFrame ID for stopping the loop
+let animationFrameId; 
 
 async function initRPS() {
-    rpsGameStartButton.style.display = 'none'; // Hide start button
+    if (rpsGameStartButton) rpsGameStartButton.style.display = 'none';
 
     const modelURL = URL + "model.json";
     const metadataURL = URL + "metadata.json";
 
-    // load the model and metadata
     model = await tmImage.load(modelURL, metadataURL);
     maxPredictions = model.getTotalClasses();
 
-    // Convenience function to setup a webcam
-    const flip = true; // whether to flip the webcam
-    webcam = new tmImage.Webcam(200, 200, flip); // width, height, flip
-    await webcam.setup(); // request access to the webcam
+    const flip = true; 
+    webcam = new tmImage.Webcam(200, 200, flip); 
+    await webcam.setup(); 
     await webcam.play();
     
-    webcamContainer.innerHTML = ''; // Clear existing content
-    webcamContainer.appendChild(webcam.canvas); // Add webcam canvas
+    if (webcamContainer) {
+        webcamContainer.innerHTML = ''; 
+        webcamContainer.appendChild(webcam.canvas);
+    }
 
-    labelContainer.innerHTML = ''; // Clear existing content
-    for (let i = 0; i < maxPredictions; i++) { // and class labels
-        labelContainer.appendChild(document.createElement("div"));
+    if (labelContainer) {
+        labelContainer.innerHTML = ''; 
+        for (let i = 0; i < maxPredictions; i++) {
+            labelContainer.appendChild(document.createElement("div"));
+        }
     }
 
     resetGame();
-    startCountdown(); // Start countdown instead of directly starting game
-    // window.requestAnimationFrame(loopRPS); // loopRPS will be called after countdown
-    playRoundBtn.onclick = startNewRound; // Set handler for next round
+    startCountdown(); 
+    if (playRoundBtn) playRoundBtn.onclick = startNewRound; 
 }
 
 function startCountdown() {
-    countdownValue = 3; // Start from 3
-    rpsGameRunning = false; // Disable prediction during countdown
-    playRoundBtn.style.display = 'none'; // Hide next round button
+    countdownValue = 3; 
+    rpsGameRunning = false; 
+    if (playRoundBtn) playRoundBtn.style.display = 'none'; 
 
-    gameStatusDisplay.textContent = "준비!";
-    playerChoiceDisplay.textContent = "";
-    computerChoiceDisplay.textContent = "";
+    if (gameStatusDisplay) gameStatusDisplay.textContent = "준비!";
+    if (playerChoiceDisplay) playerChoiceDisplay.textContent = "";
+    if (computerChoiceDisplay) computerChoiceDisplay.textContent = "";
 
     const countdownInterval = setInterval(() => {
         if (countdownValue > 0) {
-            gameStatusDisplay.textContent = `가위바위보! ${countdownValue}...`;
+            if (gameStatusDisplay) gameStatusDisplay.textContent = `가위바위보! ${countdownValue}...`;
             countdownValue--;
         } else {
             clearInterval(countdownInterval);
-            gameStatusDisplay.textContent = "시작!";
-            rpsGameRunning = true; // Enable prediction after countdown
-            // Start the loop only if it's not already running
+            if (gameStatusDisplay) gameStatusDisplay.textContent = "시작!";
+            rpsGameRunning = true; 
             if (!animationFrameId) {
                 animationFrameId = window.requestAnimationFrame(loopRPS);
             }
@@ -216,8 +229,8 @@ function startCountdown() {
 
 
 async function loopRPS() {
-    if (webcam) { // Ensure webcam is initialized
-        webcam.update(); // update the webcam frame
+    if (webcam) { 
+        webcam.update(); 
         if (rpsGameRunning) {
             await predictRPS();
         }
@@ -230,33 +243,33 @@ async function predictRPS() {
     let highestPrediction = { className: "없음", probability: 0 };
 
     for (let i = 0; i < maxPredictions; i++) {
-        const classPrediction =
-            prediction[i].className + ": " + prediction[i].probability.toFixed(2);
-        labelContainer.childNodes[i].innerHTML = classPrediction;
+        if (labelContainer) {
+            const classPrediction =
+                prediction[i].className + ": " + prediction[i].probability.toFixed(2);
+            labelContainer.childNodes[i].innerHTML = classPrediction;
+        }
 
         if (prediction[i].probability > highestPrediction.probability) {
             highestPrediction = prediction[i];
         }
     }
 
-    // Only set player choice if confidence is high enough
-    if (rpsGameRunning && highestPrediction.probability > 0.85) { // Confidence threshold
+    if (rpsGameRunning && highestPrediction.probability > 0.85) { 
         playerLastChoice = highestPrediction.className;
-        playerChoiceDisplay.textContent = playerLastChoice;
+        if (playerChoiceDisplay) playerChoiceDisplay.textContent = playerLastChoice;
         
-        rpsGameRunning = false; // Stop prediction until next round
+        rpsGameRunning = false; 
         playRound();
     } else if (rpsGameRunning) {
-        playerChoiceDisplay.textContent = "고르는 중...";
+        if (playerChoiceDisplay) playerChoiceDisplay.textContent = "고르는 중...";
     }
 }
 
 function stopWebcam() {
     if (webcam) {
         webcam.stop();
-        webcamContainer.innerHTML = '';
-        labelContainer.innerHTML = '';
-        // Stop the animation frame loop as well
+        if (webcamContainer) webcamContainer.innerHTML = '';
+        if (labelContainer) labelContainer.innerHTML = '';
         if (animationFrameId) {
             cancelAnimationFrame(animationFrameId);
             animationFrameId = null;
@@ -265,7 +278,7 @@ function stopWebcam() {
 }
 
 function getComputerChoice() {
-    const choices = ["바위", "보", "가위"]; // Assuming model output matches these Korean terms
+    const choices = ["바위", "보", "가위"]; 
     const randomIndex = Math.floor(Math.random() * choices.length);
     return choices[randomIndex];
 }
@@ -286,10 +299,10 @@ function determineWinner(player, computer) {
 
 function playRound() {
     computerLastChoice = getComputerChoice();
-    computerChoiceDisplay.textContent = computerLastChoice;
+    if (computerChoiceDisplay) computerChoiceDisplay.textContent = computerLastChoice;
 
     const result = determineWinner(playerLastChoice, computerLastChoice);
-    gameStatusDisplay.textContent = result;
+    if (gameStatusDisplay) gameStatusDisplay.textContent = result;
 
     if (result === "당신 승리!") {
         playerScore++;
@@ -297,12 +310,12 @@ function playRound() {
         computerScore++;
     }
     updateScoreDisplay();
-    playRoundBtn.style.display = 'block'; // Show next round button
+    if (playRoundBtn) playRoundBtn.style.display = 'block'; 
 }
 
 function updateScoreDisplay() {
-    playerScoreDisplay.textContent = playerScore;
-    computerScoreDisplay.textContent = computerScore;
+    if (playerScoreDisplay) playerScoreDisplay.textContent = playerScore;
+    if (computerScoreDisplay) computerScoreDisplay.textContent = computerScore;
 }
 
 function resetGame() {
@@ -310,34 +323,34 @@ function resetGame() {
     computerScore = 0;
     playerLastChoice = "";
     computerLastChoice = "";
-    gameStatusDisplay.textContent = "게임을 시작하세요!";
-    playerChoiceDisplay.textContent = "";
-    computerChoiceDisplay.textContent = "";
+    if (gameStatusDisplay) gameStatusDisplay.textContent = "게임을 시작하세요!";
+    if (playerChoiceDisplay) playerChoiceDisplay.textContent = "";
+    if (computerChoiceDisplay) computerChoiceDisplay.textContent = "";
     updateScoreDisplay();
-    playRoundBtn.style.display = 'none'; // Hide next round button initially
+    if (playRoundBtn) playRoundBtn.style.display = 'none'; 
 }
 
 function startNewRound() {
-    // gameStatusDisplay.textContent = "준비! 가위바위보!"; // This will be handled by startCountdown
-    playerChoiceDisplay.textContent = "";
-    computerChoiceDisplay.textContent = "";
-    // rpsGameRunning = true; // This will be handled by startCountdown
-    playRoundBtn.style.display = 'none'; // Hide next round button until next prediction
-    startCountdown(); // Start countdown for the new round
+    if (playerChoiceDisplay) playerChoiceDisplay.textContent = "";
+    if (computerChoiceDisplay) computerChoiceDisplay.textContent = "";
+    if (playRoundBtn) playRoundBtn.style.display = 'none'; 
+    startCountdown(); 
 }
 
-function togglePostContent(button) {
+window.togglePostContent = function(button) {
     const postCard = button.closest('.blog-post-card');
     const fullContent = postCard.querySelector('.full-post-content');
     const ellipsis = postCard.querySelector('.ellipsis');
 
     if (fullContent.style.display === 'none' || fullContent.style.display === '') {
-        fullContent.style.display = 'inline'; // Show full content
-        if (ellipsis) ellipsis.style.display = 'none'; // Hide ellipsis if present
-        button.textContent = '간략히 보기'; // Change button text
+        fullContent.style.display = 'inline'; 
+        if (ellipsis) ellipsis.style.display = 'none'; 
+        button.textContent = '간략히 보기'; 
     } else {
-        fullContent.style.display = 'none'; // Hide full content
-        if (ellipsis) ellipsis.style.display = 'inline'; // Show ellipsis if present
-        button.textContent = '더 읽어보기'; // Change button text
+        fullContent.style.display = 'none'; 
+        if (ellipsis) ellipsis.style.display = 'inline'; 
+        button.textContent = '더 읽어보기'; 
     }
-}
+};
+
+window.initRPS = initRPS;

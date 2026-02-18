@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <!-- Google tag (gtag.js) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-KTWR2LH66T"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'G-KTWR2LH66T');
+    </script>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>가위바위보 게임 | 유용한 도구</title>
+    <link href='/style.css' rel='stylesheet'>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest/dist/tf.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@latest/dist/teachablemachine-image.min.js"></script>
+</head>
+<body>
+    <nav class="main-nav">
+        <a href="/" class="nav-link">홈</a>
+        <a href="/lotto.html" class="nav-link">로또번호추출기</a>
+        <a href="/dinner.html" class="nav-link">저녁메뉴추천</a>
+        <a href="/pastlife.html" class="nav-link">전생알아보기</a>
+        <a href="/rps.html" class="nav-link active">가위바위보게임</a>
+    </nav>
+    <div class="main-layout">
+        <div class="rps-game-container" style="flex: 1; max-width: 700px;">
+            <button id="theme-toggle" class="theme-toggle">
+                <span class="icon">🌙</span>
+            </button>
+            <h2>가위바위보 게임</h2>
+            <p class="section-description">
+                인공지능과 함께 즐기는 신나는 가위바위보 게임!
+                당신의 손동작을 웹캠으로 인식하여 인공지능 상대와 대결할 수 있습니다.
+            </p>
+            <button type="button" onclick="initRPS()">게임 시작</button>
+            <div id="webcam-container"></div>
+            <div id="label-container"></div>
+            <div id="game-status"></div>
+            <div class="choices">
+                <p>당신: <span id="player-choice"></span></p>
+                <p>컴퓨터: <span id="computer-choice"></span></p>
+            </div>
+            <div class="score">
+                <p>점수 - 당신: <span id="player-score">0</span> 컴퓨터: <span id="computer-score">0</span></p>
+            </div>
+            <button type="button" id="play-round-btn" style="display: none; margin-left: auto; margin-right: auto;">다음 라운드</button>
+        </div>
+        <div id="disqus_thread"></div>
+    </div>
+    <script defer type="text/javascript" src="/main.js"></script>
+</body>
+</html>

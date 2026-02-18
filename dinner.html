@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <!-- Google tag (gtag.js) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-KTWR2LH66T"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'G-KTWR2LH66T');
+    </script>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>저녁 메뉴 추천 | 유용한 도구</title>
+    <link href='/style.css' rel='stylesheet'>
+</head>
+<body>
+    <nav class="main-nav">
+        <a href="/" class="nav-link">홈</a>
+        <a href="/lotto.html" class="nav-link">로또번호추출기</a>
+        <a href="/dinner.html" class="nav-link active">저녁메뉴추천</a>
+        <a href="/pastlife.html" class="nav-link">전생알아보기</a>
+        <a href="/rps.html" class="nav-link">가위바위보게임</a>
+    </nav>
+    <div class="main-layout">
+        <div class="container">
+            <button id="theme-toggle" class="theme-toggle">
+                <span class="icon">🌙</span>
+            </button>
+            <h2>저녁 메뉴 추천</h2>
+            <p class="section-description">
+                오늘 저녁은 뭘 먹어야 할지 고민이신가요? 매일 반복되는 메뉴 고민은 이제 그만!
+                저희 저녁 메뉴 추천 서비스는 당신의 소중한 시간을 절약해 드립니다.
+            </p>
+            <div class="dinner-menu" id="dinner-menu">
+                <p id="dinner-menu-text"></p>
+            </div>
+            <button id="recommend-btn">메뉴 추천받기</button>
+            <button id="show-recipe-btn">레시피 보기</button>
+        </div>
+        <div id="disqus_thread"></div>
+    </div>
+    <script defer type="text/javascript" src="/main.js"></script>
+</body>
+</html>
