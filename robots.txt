@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://productweek1.web.app/sitemap.xml
+Sitemap: https://product-builder-lecture-9n4.pages.dev/sitemap.xml
