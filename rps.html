@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ko">
 <head>
     <!-- Google tag (gtag.js) -->
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-KTWR2LH66T"></script>
@@ -14,7 +14,8 @@
     <link rel="icon" href="/favicon.ico" type="image/x-icon">
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>가위바위보 게임 | 유용한 도구</title>
+    <title>AI 가위바위보 게임 | 인공지능과 대결하기</title>
+    <meta name="description" content="웹캠을 이용한 인공지능 가위바위보 게임을 즐겨보세요. 당신의 손동작을 AI가 실시간으로 인식하여 승부를 겨룹니다.">
     <link href='/style.css' rel='stylesheet'>
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest/dist/tf.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@latest/dist/teachablemachine-image.min.js"></script>
@@ -29,7 +30,7 @@
     </nav>
     <div class="main-layout">
         <div class="rps-game-container" style="flex: 1; max-width: 700px;">
-            <button id="theme-toggle" class="theme-toggle">
+            <button id="theme-toggle" class="theme-toggle" aria-label="테마 변경">
                 <span class="icon">🌙</span>
             </button>
             <h2>가위바위보 게임</h2>
@@ -38,9 +39,9 @@
                 당신의 손동작을 웹캠으로 인식하여 인공지능 상대와 대결할 수 있습니다.
             </p>
             <button type="button" onclick="initRPS()">게임 시작</button>
-            <div id="webcam-container"></div>
+            <div id="webcam-container" aria-label="웹캠 화면"></div>
             <div id="label-container"></div>
-            <div id="game-status"></div>
+            <div id="game-status" aria-live="polite"></div>
             <div class="choices">
                 <p>당신: <span id="player-choice"></span></p>
                 <p>컴퓨터: <span id="computer-choice"></span></p>

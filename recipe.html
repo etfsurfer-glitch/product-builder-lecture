@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ko">
 <head>
     <!-- Google tag (gtag.js) -->
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-KTWR2LH66T"></script>
@@ -15,7 +15,8 @@
     <link rel="icon" href="/favicon.ico" type="image/x-icon">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>레시피 상세 보기</title>
+    <title>레시피 상세 정보 | 맛있는 요리 가이드</title>
+    <meta name="description" content="추천 메뉴의 상세 레시피를 확인하세요. 필요한 재료부터 단계별 조리 방법까지 누구나 쉽게 따라 할 수 있도록 상세히 안내합니다.">
     <link href='/style.css' rel='stylesheet'>
     <style>
         /* 기존 스타일 유지 및 개선 */
@@ -108,12 +109,12 @@
 <body>
     <div class="main-layout">
         <div class="container">
-            <button id="theme-toggle" class="theme-toggle">
+            <button id="theme-toggle" class="theme-toggle" aria-label="테마 변경">
                 <span class="icon">🌙</span> <!-- Moon icon for dark mode -->
             </button>
             <h1 class="recipe-title" id="recipe-title">선택된 레시피 제목</h1>
             <p id="recipe-description" class="recipe-description">레시피에 대한 간략한 설명이 이곳에 표시됩니다.</p>
-            <img id="recipe-image" src="" alt="Recipe Image" class="recipe-image" style="display:none;">
+            <img id="recipe-image" src="" alt="요리 완성 사진" class="recipe-image" style="display:none;">
             
             <div class="recipe-container">
                 <h2 class="recipe-section-title">재료</h2>
