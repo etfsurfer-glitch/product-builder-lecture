@@ -1011,6 +1011,16 @@
 
   function renderJobResult(picked, hashShort){
     lastPickedJob = picked;
+    
+    // 동적 메타 태그 및 타이틀 업데이트 (일부 스크래퍼 및 브라우저 대응)
+    const shareTitle = `나의 전생은 [${picked.title}]이었습니다!`;
+    const shareDesc = `${picked.one} - 지금 당신의 전생을 확인해보세요.`;
+    
+    document.title = `${picked.title} | 전생 직업 감별소`;
+    document.querySelector('meta[name="description"]').setAttribute('content', shareDesc);
+    document.querySelector('meta[property="og:title"]').setAttribute('content', shareTitle);
+    document.querySelector('meta[property="og:description"]').setAttribute('content', shareDesc);
+
     artBox.innerHTML = picked.art;
     hashShortEl.textContent = hashShort || "SHARING";
     elementText.textContent = picked.element;
@@ -1086,25 +1096,27 @@ ${job.one}
       showToast("공유할 결과가 없습니다.");
       return;
     }
-    const shareData = {
-      title: '전생 직업 감별소 결과',
-      text: getShareText(lastPickedJob),
-      url: `${window.location.origin}${window.location.pathname}?result=${lastPickedJob.id}`
-    };
+    const shareTitle = `나의 전생은 [${lastPickedJob.title}]!`;
+    const shareText = getShareText(lastPickedJob);
+    const shareUrl = `${window.location.origin}${window.location.pathname}?result=${lastPickedJob.id}`;
 
     if (navigator.share) {
       try {
-        await navigator.share(shareData);
+        await navigator.share({
+          title: shareTitle,
+          text: shareText,
+          url: shareUrl
+        });
       } catch (err) {
         console.log('공유 취소 또는 오류:', err);
       }
     } else {
       // Fallback: Copy to clipboard
       try {
-        await navigator.clipboard.writeText(`${shareData.text}`);
+        await navigator.clipboard.writeText(`${shareText}`);
         showToast("공유 링크와 결과가 복사되었습니다!");
       } catch (err) {
-        prompt("공유 링크입니다:", shareData.url);
+        prompt("공유 링크입니다:", shareUrl);
       }
     }
   });
