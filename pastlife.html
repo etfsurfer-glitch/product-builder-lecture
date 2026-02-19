@@ -25,7 +25,7 @@
   <meta property="og:url" content="https://product-builder-lecture-9n4.pages.dev/pastlife.html" />
   
   <!-- 핵심: 절대 경로 사용 및 권장 이미지 설정 -->
-  <meta property="og:image" content="https://product-builder-lecture-9n4.pages.dev/og-image.png" />
+  <meta property="og:image" content="https://product-builder-lecture-9n4.pages.dev/img/og.png" />
   <meta property="og:image:width" content="1200" />
   <meta property="og:image:height" content="630" />
 
@@ -33,7 +33,7 @@
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:title" content="전생 직업 테스트 | 인공지능 얼굴 인식" />
   <meta name="twitter:description" content="내 얼굴로 보는 전생 직업은? AI 분석으로 재미있는 전생 이야기!" />
-  <meta name="twitter:image" content="https://product-builder-lecture-9n4.pages.dev/og-image.png" />
+  <meta name="twitter:image" content="https://product-builder-lecture-9n4.pages.dev/img/og.png" />
 
   <link rel="canonical" href="https://product-builder-lecture-9n4.pages.dev/pastlife.html">
 
@@ -296,9 +296,10 @@
       justify-content:center;
       overflow:hidden;
     }
-    .art svg{
+    .art svg, .art img{
       width: 100%;
       height: 100%;
+      object-fit: cover;
       display:block;
     }
     .resultText{
@@ -566,84 +567,84 @@
       id: 1, title: "서원 유생", one: "목(木)의 기운이 강한 ‘사색형’ 전생",
       element: "목(木)", lucky: { color: "청색", number: 3, item: "책" },
       story: "당신의 기운은 고요하지만 뻗어 나가려는 힘이 있습니다. 예전 삶에서는 글을 통해 길을 찾던 서원 유생의 결이 보입니다. 성급히 결론을 내리기보다, 기록과 관찰로 답을 모으는 편이 운을 키웁니다. 오늘의 선택도 ‘깊이’가 기준이 되면 흔들림이 적습니다.",
-      art: makeArt("wood", "📜"),
+      image: "img/yousang.png",
       advice: "성급히 결론을 내리기보다, 기록과 관찰로 답을 모으는 편이 운을 키웁니다. 오늘의 선택도 ‘깊이’가 기준이 되면 흔들림이 적습니다."
     },
     {
       id: 2, title: "궁중 책사", one: "금(金)의 기운이 강한 ‘분석형’ 전생",
       element: "금(金)", lucky: { color: "백색", number: 7, item: "부채" },
       story: "얼굴의 결에 ‘정리’와 ‘선택’의 기운이 또렷합니다. 전생에는 궁중 책사로서 흐름을 읽고 판을 설계하던 흔적이 보입니다. 감정에 휩쓸리기보다 구조를 먼저 잡으면 운이 따라옵니다. 오늘은 한 번에 크게 바꾸기보다, 핵심 하나만 정리해 보세요.",
-      art: makeArt("metal", "🧠"),
+      image: "img/chksa.png",
       advice: "감정에 휩쓸리기보다 구조를 먼저 잡으면 운이 따라옵니다. 오늘은 한 번에 크게 바꾸기보다, 핵심 하나만 정리해 보세요."
     },
     {
       id: 3, title: "기마 장수", one: "화(火)의 기운이 강한 ‘행동형’ 전생",
       element: "화(火)", lucky: { color: "적색", number: 9, item: "띠끈" },
       story: "당신은 멈추면 오히려 불안해지는 불꽃의 기운이 있습니다. 전생에는 기마 장수로 결단과 돌파가 생존의 기술이었습니다. 망설임이 길어지면 운이 식을 수 있으니, 작은 실행으로 불씨를 살리면 좋습니다. 오늘은 ‘시작’이 곧 반입니다.",
-      art: makeArt("fire", "⚔️"),
+      image: "img/gima.png",
       advice: "망설임이 길어지면 운이 식을 수 있으니, 작은 실행으로 불씨를 살리면 좋습니다. 오늘은 ‘시작’이 곧 반입니다."
     },
     {
       id: 4, title: "산중 수행자", one: "토(土)의 기운이 강한 ‘내면형’ 전생",
       element: "토(土)", lucky: { color: "황색", number: 5, item: "염주" },
       story: "당신의 기운에는 ‘버티는 힘’과 ‘가라앉는 중심’이 보입니다. 전생에는 산중 수행자로서 말보다 침묵으로 답을 찾곤 했습니다. 지금도 과열될수록 한 발 물러서면 운이 정돈됩니다. 오늘은 속도를 줄이고, 한 가지 루틴을 지키는 게 길합니다.",
-      art: makeArt("earth", "🧘"),
+      image: "img/sanjung.png",
       advice: "과열될수록 한 발 물러서면 운이 정돈됩니다. 오늘은 속도를 줄이고, 한 가지 루틴을 지키는 게 길합니다."
     },
     {
       id: 5, title: "약초 의원", one: "목(木)의 기운이 섬세한 ‘치유형’ 전생",
       element: "목(木)", lucky: { color: "연두", number: 2, item: "약첩" },
       story: "당신의 기운에는 ‘돌봄’과 ‘조율’이 흐릅니다. 전생에는 약초를 다루는 의원으로 사람의 기색을 먼저 읽던 흔적이 보입니다. 남을 챙기다 나를 잊기 쉬우니, 오늘은 내 컨디션부터 점검하면 운이 열립니다. 작은 회복이 큰 흐름을 바꿉니다.",
-      art: makeArt("wood2", "🌿"),
+      image: "img/doctor.png",
       advice: "남을 챙기다 나를 잊기 쉬우니, 오늘은 내 컨디션부터 점검하면 운이 열립니다. 작은 회복이 큰 흐름을 바꿉니다."
     },
     {
       id: 6, title: "비단 상단 행수", one: "금(金)의 기운이 강한 ‘현실형’ 전생",
       element: "금(金)", lucky: { color: "회색", number: 8, item: "계산주판" },
       story: "당신의 기운은 ‘기회 포착’에 강점이 있습니다. 전생에는 비단 상단의 행수로서 거래와 사람의 마음을 함께 다루었습니다. 오늘은 감으로만 밀기보다, 한 번 더 숫자로 확인하면 운이 단단해집니다. 작은 손익 계산이 큰 행운을 부릅니다.",
-      art: makeArt("metal2", "💰"),
+      image: "img/market.png",
       advice: "감으로만 밀기보다, 한 번 더 숫자로 확인하면 운이 단단해집니다. 작은 손익 계산이 큰 행운을 부릅니다."
     },
     {
       id: 7, title: "궁중 악사", one: "수(水)의 기운이 강한 ‘감성형’ 전생",
       element: "수(水)", lucky: { color: "남색", number: 1, item: "거문고" },
       story: "당신은 분위기의 결을 빠르게 읽는 물의 기운이 있습니다. 전생에는 궁중 악사로 감정의 파동을 다루며 살아갔습니다. 오늘은 사람과의 흐름을 조율하면 운이 부드럽게 풀립니다. 말 한마디의 리듬이 일을 쉽게 만들 수 있습니다.",
-      art: makeArt("water", "🎼"),
+      image: "img/music.png",
       advice: "사람과의 흐름을 조율하면 운이 부드럽게 풀립니다. 말 한마디의 리듬이 일을 쉽게 만들 수 있습니다."
     },
     {
       id: 8, title: "암행어사", one: "화(火)의 기운이 곧은 ‘정의형’ 전생",
       element: "화(火)", lucky: { color: "흑색", number: 4, item: "패" },
       story: "당신의 기운은 ‘숨은 것을 드러내는 힘’이 있습니다. 전생에는 암행어사로서 틀어진 질서를 바로잡는 역할이었습니다. 오늘은 애매함을 그대로 두지 말고, 기준을 한 줄로 정리하면 운이 열립니다. 다만 말은 짧게, 증거는 단단하게가 길합니다.",
-      art: makeArt("fire2", "🕵️"),
+      image: "img/amhang.png",
       advice: "애매함을 그대로 두지 말고, 기준을 한 줄로 정리하면 운이 열립니다. 다만 말은 짧게, 증거는 단단하게가 길합니다."
     },
     {
       id: 9, title: "별 관측관", one: "수(水)의 기운이 깊은 ‘관찰형’ 전생",
       element: "수(水)", lucky: { color: "보라", number: 6, item: "별지도" },
       story: "당신의 기운에는 ‘멀리 보는 눈’이 있습니다. 전생에는 별 관측관으로 하늘의 흐름을 기록하며 인간의 때를 재었습니다. 오늘은 급한 결론보다, 한 박자 늦춘 판단이 더 정확합니다. 기분이 흔들릴수록 하늘처럼 크게 보세요.",
-      art: makeArt("water2", "🌌"),
+      image: "img/star.png",
       advice: "급한 결론보다, 한 박자 늦춘 판단이 더 정확합니다. 기분이 흔들릴수록 하늘처럼 크게 보세요."
     },
     {
       id: 10, title: "떠돌이 무당", one: "수(水) + 화(火)의 직관이 강한 ‘신비형’ 전생",
       element: "수(水)", lucky: { color: "청록", number: 11, item: "방울" },
       story: "당신의 기운은 논리보다 ‘느낌’이 먼저 닿는 편입니다. 전생에는 떠돌이 무당으로 반은 신의 뜻, 반은 사람의 결을 읽으며 살아갔습니다. 오늘은 이유가 설명되지 않아도 맞는 감이 있습니다. 다만 과열되면 흔들리니, 직감에 ‘한 번의 확인’을 더하면 길합니다.",
-      art: makeArt("shaman", "🔮"),
+      image: "img/mudang.png",
       advice: "이유가 설명되지 않아도 맞는 감이 있습니다. 다만 과열되면 흔들리니, 직감에 ‘한 번의 확인’을 더하면 길합니다."
     },
     {
       id: 11, title: "거리의 거지", one: "토(土)의 내려놓음이 강한 ‘방랑형’ 전생",
       element: "토(土)", lucky: { color: "갈색", number: 10, item: "낡은 주머니" },
       story: "당신의 기운에는 ‘집착을 줄이는 힘’이 있습니다. 전생에는 거리의 방랑자로 세상의 이야기를 가장 가까이에서 듣곤 했습니다. 오늘은 움켜쥐기보다 내려놓는 쪽에서 운이 열립니다. 손을 비워야 새 기회가 들어옵니다.",
-      art: makeArt("wander", "🥣"),
+      image: "img/geoji.png",
       advice: "움켜쥐기보다 내려놓는 쪽에서 운이 열립니다. 손을 비워야 새 기회가 들어옵니다."
     },
     {
       id: 12, title: "백정 장인", one: "금(金)의 현실감이 강한 ‘기술형’ 전생",
       element: "금(金)", lucky: { color: "은색", number: 12, item: "칼자루" },
       story: "당신의 기운은 현실을 직시하는 힘이 있습니다. 전생에는 날카로운 기술로 삶을 버티던 장인의 흔적이 보입니다. 오늘은 감정보다 ‘결정’을 먼저 두면 일이 풀립니다. 다만 말이 차게 들릴 수 있으니, 마지막 한 마디는 부드럽게 마무리하면 길합니다.",
-      art: makeArt("butcher", "🔪"),
+      image: "img/bakjeong.png",
       advice: "감정보다 ‘결정’을 먼저 두면 일이 풀립니다. 다만 말이 차게 들릴 수 있으니, 마지막 한 마디는 부드럽게 마무리하면 길합니다."
     },
   ];
@@ -1034,7 +1035,7 @@
     document.querySelector('meta[property="og:title"]').setAttribute('content', shareTitle);
     document.querySelector('meta[property="og:description"]').setAttribute('content', shareDesc);
 
-    artBox.innerHTML = picked.art;
+    artBox.innerHTML = `<img src="${picked.image}" alt="${picked.title}">`;
     hashShortEl.textContent = hashShort || "SHARING";
     elementText.textContent = picked.element;
 
@@ -1195,52 +1196,6 @@ ${jobStory.textContent}
     btnAnalyze.disabled = true;
 
     if(resetFileInput) fileInput.value = "";
-  }
-
-  // ---------------------------
-  // 11) Art generator (inline SVG, no external assets)
-  // ---------------------------
-  function makeArt(theme, emoji){
-    const gradients = {
-      wood: ["#1f7a3f","#0b1020"],
-      wood2: ["#2cb67d","#0b1020"],
-      fire: ["#ff6b6b","#0b1020"],
-      fire2: ["#ff9f43","#0b1020"],
-      earth: ["#f6c177","#0b1020"],
-      metal: ["#aab3cf","#0b1020"],
-      metal2: ["#7aa2ff","#0b1020"],
-      water: ["#3aa0ff","#0b1020"],
-      water2: ["#7c3aed","#0b1020"],
-      shaman: ["#22c55e","#7c3aed"],
-      wander: ["#b45309","#0b1020"],
-      butcher: ["#ef4444","#94a3b8"],
-    };
-    const [c1,c2] = gradients[theme] || ["#7aa2ff","#0b1020"];
-    // Simple emblem: gradient bg + circle + emoji
-    return `
-      <svg viewBox="0 0 240 240" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="대표 이미지">
-        <defs>
-          <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
-            <stop offset="0" stop-color="${c1}" stop-opacity="0.95"/>
-            <stop offset="1" stop-color="${c2}" stop-opacity="1"/>
-          </linearGradient>
-          <radialGradient id="r" cx="30%" cy="25%" r="70%">
-            <stop offset="0" stop-color="white" stop-opacity="0.18"/>
-            <stop offset="1" stop-color="white" stop-opacity="0"/>
-          </radialGradient>
-          <filter id="s" x="-30%" y="-30%" width="160%" height="160%">
-            <feDropShadow dx="0" dy="10" stdDeviation="14" flood-color="rgba(0,0,0,.55)"/>
-          </filter>
-        </defs>
-        <rect x="0" y="0" width="240" height="240" rx="26" fill="url(#g)"/>
-        <rect x="0" y="0" width="240" height="240" rx="26" fill="url(#r)"/>
-        <g filter="url(#s)">
-          <circle cx="120" cy="122" r="70" fill="rgba(0,0,0,.26)" stroke="rgba(255,255,255,.22)" stroke-width="2"/>
-          <text x="120" y="142" text-anchor="middle" font-size="64">${emoji}</text>
-        </g>
-        <path d="M24 198 C70 160, 110 210, 216 160" fill="none" stroke="rgba(255,255,255,.14)" stroke-width="3" stroke-linecap="round"/>
-      </svg>
-    `;
   }
 
   // ---------------------------
