@@ -522,6 +522,7 @@
               </div>
 
               <div class="actions">
+                <button id="btnShare" class="btn primary" type="button">📤 결과 공유하기</button>
                 <button id="btnCopy" class="btn" type="button">📋 결과 복사</button>
                 <button id="btnAgain" class="btn" type="button">🔁 다시 하기</button>
               </div>
@@ -670,6 +671,7 @@
   const todayTip = document.getElementById("todayTip");
   const luckyBox = document.getElementById("luckyBox");
 
+  const btnShare = document.getElementById("btnShare");
   const btnCopy = document.getElementById("btnCopy");
   const btnAgain = document.getElementById("btnAgain");
   const toast = document.getElementById("toast");
@@ -683,6 +685,7 @@
   let currentHash = null; // hex string
   let currentSeedInt = null; // 32-bit int for PRNG
   let lastSelectedDataURL = null;
+  let lastPickedJob = null;
 
   // ---------------------------
   // 3) Mode switching
@@ -1006,6 +1009,22 @@
     }, 3000);
   });
 
+  function renderJobResult(picked, hashShort){
+    lastPickedJob = picked;
+    artBox.innerHTML = picked.art;
+    hashShortEl.textContent = hashShort || "SHARING";
+    elementText.textContent = picked.element;
+
+    jobTitle.textContent = picked.title;
+    jobOne.textContent = picked.one;
+    jobStory.textContent = picked.story;
+    todayTip.textContent = picked.advice;
+    luckyBox.textContent = `색 ${picked.lucky.color} · 숫자 ${picked.lucky.number} · 아이템 ${picked.lucky.item}`;
+
+    result.classList.add("show");
+    resultEmpty.style.display = "none";
+  }
+
   function showDeterministicResult(){
     const rand = mulberry32(currentSeedInt);
 
@@ -1031,20 +1050,7 @@
     });
 
     const picked = weightedPick(JOBS, weights, rand);
-
-    // render
-    artBox.innerHTML = picked.art;
-    hashShortEl.textContent = currentHash.slice(0, 10);
-    elementText.textContent = picked.element;
-
-    jobTitle.textContent = picked.title;
-    jobOne.textContent = picked.one;
-    jobStory.textContent = picked.story;
-    todayTip.textContent = picked.advice;
-    luckyBox.textContent = `색 ${picked.lucky.color} · 숫자 ${picked.lucky.number} · 아이템 ${picked.lucky.item}`;
-
-    result.classList.add("show");
-    resultEmpty.style.display = "none";
+    renderJobResult(picked, currentHash.slice(0, 10));
   }
 
   function weightedPick(items, weights, randFn){
@@ -1062,8 +1068,47 @@
   }
 
   // ---------------------------
-  // 10) Copy / Again / Reset
+  // 10) Copy / Again / Reset / Share
   // ---------------------------
+  function getShareText(job){
+    return `[전생 직업 결과]
+직업: ${job.title}
+${job.one}
+
+"${job.story.slice(0, 50)}..."
+
+나의 전생이 궁금하다면? 지금 테스트해보세요!
+링크: ${window.location.origin}${window.location.pathname}?result=${job.id}`;
+  }
+
+  btnShare.addEventListener("click", async () => {
+    if(!lastPickedJob){
+      showToast("공유할 결과가 없습니다.");
+      return;
+    }
+    const shareData = {
+      title: '전생 직업 감별소 결과',
+      text: getShareText(lastPickedJob),
+      url: `${window.location.origin}${window.location.pathname}?result=${lastPickedJob.id}`
+    };
+
+    if (navigator.share) {
+      try {
+        await navigator.share(shareData);
+      } catch (err) {
+        console.log('공유 취소 또는 오류:', err);
+      }
+    } else {
+      // Fallback: Copy to clipboard
+      try {
+        await navigator.clipboard.writeText(`${shareData.text}`);
+        showToast("공유 링크와 결과가 복사되었습니다!");
+      } catch (err) {
+        prompt("공유 링크입니다:", shareData.url);
+      }
+    }
+  });
+
   btnCopy.addEventListener("click", async () => {
     if(!result.classList.contains("show")){
       showToast("복사할 결과가 없습니다.");
@@ -1097,18 +1142,22 @@ ${jobStory.textContent}
     resultEmpty.style.display = "block";
     setStatus("다시 시도할 수 있습니다. 전생 알아보기를 눌러주세요.", "ok");
     window.scrollTo({ top: 0, behavior: "smooth" });
+    // URL 파라미터 제거 (선택 사항)
+    window.history.replaceState({}, '', window.location.pathname);
   });
 
   btnReset.addEventListener("click", () => {
     stopCamera();
     clearSelection(true);
     setStatus("초기화 완료. 사진을 다시 입력해주세요.", "neutral");
+    window.history.replaceState({}, '', window.location.pathname);
   });
 
   function clearSelection(resetFileInput){
     lastSelectedDataURL = null;
     currentHash = null;
     currentSeedInt = null;
+    lastPickedJob = null;
 
     previewEl.style.display = "none";
     previewEl.src = "";
@@ -1170,11 +1219,28 @@ ${jobStory.textContent}
   }
 
   // ---------------------------
-  // 12) Init
+  // 12) Init & Shared Result Handling
   // ---------------------------
+  function checkSharedResult(){
+    const urlParams = new URLSearchParams(window.location.search);
+    const resultId = urlParams.get('result');
+    if(resultId){
+      const picked = JOBS.find(j => j.id == resultId);
+      if(picked){
+        renderJobResult(picked, "SHARED");
+        showToast(`${picked.title} 결과를 공유받았습니다!`);
+        // 스크롤 이동
+        setTimeout(() => {
+          result.scrollIntoView({ behavior: 'smooth' });
+        }, 500);
+      }
+    }
+  }
+
   // Default mode: Upload Photo.
-  setMode("upload"); // Set to upload mode by default
+  setMode("upload"); 
   setStatus("입력 방식을 선택하고 사진을 준비해주세요.", "neutral");
+  checkSharedResult();
 
 </script>
 </body>
