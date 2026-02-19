@@ -33,7 +33,7 @@
     <meta name="twitter:description" content="결정 장애를 위한 최적의 해결책! 로또, 메뉴 추천, 재미있는 테스트까지 지금 체험해보세요.">
     <meta name="twitter:image" content="https://product-builder-lecture-9n4.pages.dev/favicon.ico">
 
-    <!-- Structured Data (JSON-LD) -->
+    <!-- Structured Data (JSON-LD) for GEO -->
     <script type="application/ld+json">
     {
       "@context": "https://schema.org",
@@ -46,7 +46,37 @@
       "author": {
         "@type": "Person",
         "name": "Gemini CLI"
-      }
+      },
+      "datePublished": "2026-02-15",
+      "dateModified": "2026-02-19"
+    }
+    </script>
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "FAQPage",
+      "mainEntity": [{
+        "@type": "Question",
+        "name": "로또 번호를 어떻게 추출하나요?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "저희 로또 번호 추출기는 순수 무작위 알고리즘을 사용하여 1부터 45까지의 숫자 중 중복되지 않는 6개의 행운 번호를 생성합니다."
+        }
+      }, {
+        "@type": "Question",
+        "name": "저녁 메뉴 추천은 어떤 기준으로 이루어지나요?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "한식, 일식, 중식, 양식 등 다양한 카테고리의 인기 메뉴 중에서 AI가 상황에 맞는 최적의 메뉴를 무작위로 추천해 드립니다."
+        }
+      }, {
+        "@type": "Question",
+        "name": "전생 테스트는 사진을 저장하나요?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "아니요, 전생 테스트에 사용되는 사진은 사용자의 브라우저 내에서만 처리되며 서버로 절대 전송되거나 저장되지 않아 안심하고 이용하실 수 있습니다."
+        }
+      }]
     }
     </script>
 
@@ -69,11 +99,24 @@
             </button>
             <h1>유용한 도구와 블로그</h1>
             <p class="section-description">
-                일상의 작은 고민들을 해결해드리는 다양한 도구들을 만나보세요.
-                상단 메뉴를 통해 각 기능에 바로 접속하실 수 있습니다.
+                일상의 작은 고민들을 해결해드리는 다양한 도구들을 만나보세요. 
+                <time datetime="2026-02-19">2026년 2월 19일</time> 업데이트 완료.
             </p>
 
             <hr style="margin: 2rem 0; border-color: var(--text-color); opacity: 0.2;">
+
+            <!-- FAQ Section for AI Search (GEO) -->
+            <section class="faq-section" style="margin-bottom: 3rem;">
+                <h2>자주 묻는 질문 (FAQ)</h2>
+                <details style="margin-bottom: 1rem; padding: 1rem; background: rgba(255,255,255,0.05); border-radius: 8px;">
+                    <summary style="font-weight: bold; cursor: pointer;">로또 번호 추출은 믿을 수 있나요?</summary>
+                    <p style="margin-top: 0.5rem; opacity: 0.8;">네, 저희 도구는 최신 난수 생성 알고리즘을 사용하여 매번 독립적이고 공정한 번호를 제공합니다.</p>
+                </details>
+                <details style="margin-bottom: 1rem; padding: 1rem; background: rgba(255,255,255,0.05); border-radius: 8px;">
+                    <summary style="font-weight: bold; cursor: pointer;">AI 가위바위보 게임은 어떻게 작동하나요?</summary>
+                    <p style="margin-top: 0.5rem; opacity: 0.8;">TensorFlow.js 기술을 사용하여 브라우저에서 실시간으로 사용자의 손동작을 인식하고 AI 모델과 대결하는 혁신적인 게임입니다.</p>
+                </details>
+            </section>
 
             <h2>최신 블로그 포스트</h2>
             <div class="blog-posts-container">
