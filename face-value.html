@@ -448,26 +448,41 @@
             let gender = (className.includes("man")) ? "남성" : "여성";
             let isA = bestClass.toUpperCase().includes("A");
 
-            // 가치 산정 (A: 5천~1억, B: 1천~5천)
-            let minValue = isA ? 50000000 : 1000;
-            let maxValue = isA ? 100000000 : 50000000;
+            // 가치 산정 로직 조정 (더 넓은 분포를 위해)
+            // A(잘생김/예쁨)라도 확률이 낮으면 낮은 금액부터 시작하도록 변경
+            let minValue = isA ? 30000000 : 1000; 
+            let maxValue = isA ? 100000000 : 70000000;
             
             let value = minValue + (maxValue - minValue) * maxProb;
-            value += (Math.random() - 0.5) * 5000000;
+            // 랜덤 변동폭을 주어 매번 조금씩 다른 결과 유도
+            value += (Math.random() - 0.5) * 10000000; 
             value = Math.floor(Math.max(1000, Math.min(100000000, value)));
 
             let rank = "";
             let rankClass = "";
-            if (value <= 1000000) { rank = "거지 등급"; rankClass = "rank-거지"; }
-            else if (value <= 10000000) { rank = "평민 등급"; rankClass = "rank-평민"; }
-            else if (value <= 50000000) { rank = "먹히는 얼굴"; rankClass = "rank-먹히는"; }
-            else if (value <= 80000000) { rank = "준연예인 급"; rankClass = "rank-준연예인"; }
-            else { rank = "스타급 미모"; rankClass = "rank-스타급"; }
+            
+            // 💰 사용자 요청 구간으로 재설정
+            if (value < 50000000) { 
+                rank = "거지 등급"; 
+                rankClass = "rank-거지"; 
+            } else if (value < 80000000) { 
+                rank = "평민 등급"; 
+                rankClass = "rank-평민"; 
+            } else if (value < 90000000) { 
+                rank = "먹히는 얼굴"; 
+                rankClass = "rank-먹히는"; 
+            } else if (value < 95000000) { 
+                rank = "준연예인 급"; 
+                rankClass = "rank-준연예인"; 
+            } else { 
+                rank = "스타급 미모"; 
+                rankClass = "rank-스타급"; 
+            }
 
             document.getElementById('rank-badge').innerText = rank;
             document.getElementById('rank-badge').className = "rank-badge " + rankClass;
             document.getElementById('value-amount').innerText = value.toLocaleString() + " 원";
-            document.getElementById('gender-info').innerText = "AI 판정: " + gender + " (" + (maxProb * 100).toFixed(1) + "%)";
+            document.getElementById('gender-info').innerText = "AI 판정: " + gender + " (정확도: " + (maxProb * 100).toFixed(1) + "%)";
 
             document.getElementById('loader').style.display = 'none';
             document.getElementById('result-box').style.display = 'block';
