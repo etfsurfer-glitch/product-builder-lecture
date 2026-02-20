@@ -11,52 +11,168 @@
     </script>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>내 얼굴은 얼마? | 인공지능 얼굴 가치 측정</title>
-    <meta name="description" content="Teachable Machine AI를 이용해 내 얼굴의 가치를 한국 돈으로 확인해보세요! 재미로 보는 얼굴 가치 측정 서비스.">
+    <title>내 얼굴은 얼마? | AI 얼굴 가치 측정</title>
+    <meta name="description" content="AI가 분석하는 내 얼굴의 경제적 가치! 카메라 촬영이나 사진 업로드로 지금 바로 확인해보세요.">
+    
     <link href='/style.css' rel='stylesheet'>
     <link rel="icon" href="/favicon.ico" type="image/x-icon">
+    
     <style>
-        .result-container {
-            margin-top: 2rem;
-            padding: 1.5rem;
-            border-radius: 1rem;
-            background-color: var(--lotto-number-bg);
-            display: none;
+        :root {
+            --accent: #ff6b6b;
+            --gold: #ffd700;
+            --silver: #c0c0c0;
+            --bronze: #cd7f32;
         }
-        .value-text {
-            font-size: 2rem;
-            font-weight: bold;
-            color: var(--button-bg);
-            margin: 1rem 0;
+
+        .main-layout {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 20px 14px;
         }
-        .rank-text {
-            font-size: 1.5rem;
-            font-weight: bold;
-            margin-bottom: 0.5rem;
+
+        .card {
+            background: var(--container-bg);
+            border-radius: 1.5rem;
+            box-shadow: var(--box-shadow);
+            padding: 24px;
+            margin-bottom: 24px;
+            border: 1px solid var(--lotto-number-bg);
         }
-        .gender-text {
-            font-size: 1.1rem;
+
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 20px;
+        }
+
+        @media (min-width: 768px) {
+            .grid {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+
+        .seg {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .seg button {
+            flex: 1;
+            padding: 12px;
+            border-radius: 12px;
+            border: 1px solid var(--lotto-number-bg);
+            background: var(--lotto-number-bg);
             color: var(--text-color);
-            opacity: 0.8;
-        }
-        #loading {
-            display: none;
-            margin: 1rem 0;
-        }
-        .start-btn {
-            background-color: var(--button-bg);
-            color: white;
-            border: none;
-            padding: 1rem 2rem;
-            font-size: 1.2rem;
-            border-radius: 0.5rem;
             cursor: pointer;
-            transition: background-color 0.3s ease;
-            margin-bottom: 1rem;
+            font-weight: bold;
+            transition: all 0.2s;
         }
-        .start-btn:hover {
-            background-color: var(--button-hover-bg);
+
+        .seg button.active {
+            background: var(--button-bg);
+            color: white;
+            border-color: var(--button-bg);
         }
+
+        .video-wrap {
+            width: 100%;
+            aspect-ratio: 1/1;
+            background: #000;
+            border-radius: 16px;
+            overflow: hidden;
+            position: relative;
+            margin-bottom: 16px;
+        }
+
+        video, #preview-img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            flex: 1;
+            padding: 12px;
+            border-radius: 10px;
+            border: none;
+            cursor: pointer;
+            font-weight: bold;
+            min-width: 100px;
+        }
+
+        .btn-primary { background: var(--button-bg); color: white; }
+        .btn-secondary { background: var(--lotto-number-bg); color: var(--text-color); }
+
+        .status {
+            margin-top: 12px;
+            padding: 10px;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            background: rgba(0,0,0,0.05);
+            text-align: center;
+        }
+
+        /* 분석 결과 스타일 */
+        .result-box {
+            display: none;
+            text-align: center;
+            animation: fadeIn 0.5s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .rank-badge {
+            display: inline-block;
+            padding: 8px 20px;
+            border-radius: 20px;
+            font-weight: 900;
+            font-size: 1.2rem;
+            margin-bottom: 15px;
+            color: white;
+        }
+
+        .value-amount {
+            font-size: 2.8rem;
+            font-weight: 900;
+            margin: 10px 0;
+            color: var(--button-bg);
+            word-break: keep-all;
+        }
+
+        .loader {
+            display: none;
+            padding: 40px 0;
+        }
+
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid var(--lotto-number-bg);
+            border-top: 4px solid var(--button-bg);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 15px;
+        }
+
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        .rank-거지 { background: #888; }
+        .rank-평민 { background: #4a90e2; }
+        .rank-먹히는 { background: #50e3c2; }
+        .rank-준연예인 { background: #f5a623; }
+        .rank-스타급 { background: #d0021b; box-shadow: 0 0 15px rgba(208,2,27,0.4); }
+
     </style>
 </head>
 <body>
@@ -70,93 +186,174 @@
     </nav>
 
     <div class="main-layout">
-        <div class="container">
-            <button id="theme-toggle" class="theme-toggle">
-                <span class="icon">🌙</span>
-            </button>
-            <h1>내 얼굴은 얼마?</h1>
-            <p class="section-description">
-                인공지능이 당신의 얼굴을 분석하여 가치를 측정해드립니다.<br>
-                (재미로만 즐겨주세요!)
-            </p>
+        <header style="text-align: center; margin-bottom: 30px;">
+            <h1 style="font-size: 2.2rem; margin-bottom: 10px;">💰 내 얼굴은 얼마?</h1>
+            <p style="opacity: 0.7;">인공지능이 당신의 관상과 매력을 분석하여 가치를 환산합니다.</p>
+        </header>
 
-            <div id="start-container">
-                <button type="button" class="start-btn" onclick="init()">분석 시작하기</button>
+        <div class="grid">
+            <!-- 왼쪽: 입력 영역 -->
+            <div class="card">
+                <div class="seg">
+                    <button id="mode-camera" class="active">📷 촬영하기</button>
+                    <button id="mode-upload">🖼️ 업로드</button>
+                </div>
+
+                <div id="camera-section">
+                    <div class="video-wrap">
+                        <video id="webcam" autoplay playsinline muted></video>
+                    </div>
+                    <div class="btn-group">
+                        <button class="btn btn-secondary" onclick="startWebcam()">카메라 켜기</button>
+                        <button id="btn-capture" class="btn btn-primary" disabled onclick="capture()">찰칵! 분석하기</button>
+                    </div>
+                </div>
+
+                <div id="upload-section" style="display: none;">
+                    <div class="video-wrap" style="background: var(--lotto-number-bg); display: flex; align-items: center; justify-content: center;">
+                        <img id="preview-img" style="display: none;">
+                        <div id="upload-placeholder" style="text-align: center; opacity: 0.5;">
+                            <span style="font-size: 3rem;">📁</span><br>사진을 선택해주세요
+                        </div>
+                    </div>
+                    <input type="file" id="file-input" accept="image/*" style="display: none;" onchange="handleFileUpload(this)">
+                    <div class="btn-group">
+                        <button class="btn btn-secondary" onclick="document.getElementById('file-input').click()">파일 선택</button>
+                        <button id="btn-analyze-upload" class="btn btn-primary" disabled onclick="analyzeUploadedImage()">분석 시작</button>
+                    </div>
+                </div>
+
+                <div id="status-msg" class="status">준비되었습니다.</div>
             </div>
 
-            <div id="loading">모델을 로드하는 중...</div>
-            
-            <div id="webcam-container"></div>
-            
-            <div id="result-container" class="result-container">
-                <div id="gender-display" class="gender-text"></div>
-                <div id="rank-display" class="rank-text"></div>
-                <div id="value-display" class="value-text"></div>
-                <div id="label-container" style="display:none;"></div>
+            <!-- 오른쪽: 결과 영역 -->
+            <div class="card" style="display: flex; flex-direction: column; justify-content: center; min-height: 400px;">
+                <div id="loader" class="loader">
+                    <div class="spinner"></div>
+                    <p>AI가 얼굴의 황금비율과<br>경제적 가치를 분석 중입니다...</p>
+                </div>
+
+                <div id="result-box" class="result-box">
+                    <div id="rank-badge" class="rank-badge"></div>
+                    <div style="font-size: 1.1rem; opacity: 0.8; margin-bottom: 5px;">측정된 당신의 가치</div>
+                    <div id="value-amount" class="value-amount"></div>
+                    <div id="gender-info" style="margin-top: 15px; font-weight: bold; opacity: 0.7;"></div>
+                    
+                    <hr style="margin: 25px 0; border: none; border-top: 1px solid var(--lotto-number-bg);">
+                    
+                    <button class="btn btn-secondary" onclick="reset()">다시 검사하기</button>
+                </div>
+
+                <div id="empty-msg" style="text-align: center; opacity: 0.4;">
+                    <span style="font-size: 4rem;">⚖️</span><br>
+                    왼쪽에서 사진을 입력하면<br>분석 결과가 여기에 표시됩니다.
+                </div>
             </div>
         </div>
-        <div id="disqus_thread"></div>
-    </div>
-
-    <div class="footer-links" style="margin: 2rem auto; width: 100%; max-width: 400px;">
-        <a href="/privacy.html">개인정보처리방침</a>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest/dist/tf.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@latest/dist/teachablemachine-image.min.js"></script>
-    <script type="text/javascript">
-        // Teachable Machine 모델 URL
-        const URL = "./my_model/";
 
-        let model, webcam, labelContainer, maxPredictions;
-        let isPredicting = false;
+    <script>
+        const MODEL_URL = "./my_model/";
+        let model, webcam, maxPredictions;
+        let selectedImage = null;
 
-        async function init() {
-            document.getElementById("start-container").style.display = "none";
-            document.getElementById("loading").style.display = "block";
+        // 모드 전환
+        document.getElementById('mode-camera').addEventListener('click', function() {
+            this.classList.add('active');
+            document.getElementById('mode-upload').classList.remove('active');
+            document.getElementById('camera-section').style.display = 'block';
+            document.getElementById('upload-section').style.display = 'none';
+            stopWebcam();
+        });
 
-            try {
-                const modelURL = URL + "model.json";
-                const metadataURL = URL + "metadata.json";
+        document.getElementById('mode-upload').addEventListener('click', function() {
+            this.classList.add('active');
+            document.getElementById('mode-camera').classList.remove('active');
+            document.getElementById('upload-section').style.display = 'block';
+            document.getElementById('camera-section').style.display = 'none';
+            stopWebcam();
+        });
 
-                model = await tmImage.load(modelURL, metadataURL);
+        async function loadModel() {
+            if (!model) {
+                model = await tmImage.load(MODEL_URL + "model.json", MODEL_URL + "metadata.json");
                 maxPredictions = model.getTotalClasses();
+            }
+        }
 
+        async function startWebcam() {
+            try {
                 const flip = true;
-                webcam = new tmImage.Webcam(300, 300, flip);
+                webcam = new tmImage.Webcam(400, 400, flip);
                 await webcam.setup();
                 await webcam.play();
-                window.requestAnimationFrame(loop);
+                document.getElementById('webcam').srcObject = webcam.stream;
+                document.getElementById('btn-capture').disabled = false;
+                document.getElementById('status-msg').innerText = "카메라가 연결되었습니다.";
+            } catch (e) {
+                alert("카메라 연결에 실패했습니다.");
+            }
+        }
 
-                document.getElementById("loading").style.display = "none";
-                document.getElementById("webcam-container").appendChild(webcam.canvas);
-                document.getElementById("result-container").style.display = "block";
-                
-                labelContainer = document.getElementById("label-container");
-                for (let i = 0; i < maxPredictions; i++) {
-                    labelContainer.appendChild(document.createElement("div"));
+        function stopWebcam() {
+            if (webcam && webcam.stream) {
+                webcam.stop();
+                document.getElementById('webcam').srcObject = null;
+            }
+        }
+
+        function handleFileUpload(input) {
+            const file = input.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const img = document.getElementById('preview-img');
+                    img.src = e.target.result;
+                    img.style.display = 'block';
+                    document.getElementById('upload-placeholder').style.display = 'none';
+                    document.getElementById('btn-analyze-upload').disabled = false;
+                    selectedImage = img;
                 }
-                isPredicting = true;
-            } catch (error) {
-                console.error(error);
-                alert("모델을 로드하거나 카메라에 접근하는 중 오류가 발생했습니다.");
-                document.getElementById("start-container").style.display = "block";
-                document.getElementById("loading").style.display = "none";
+                reader.readAsDataURL(file);
             }
         }
 
-        async function loop() {
-            if (isPredicting) {
-                webcam.update();
-                await predict();
-                window.requestAnimationFrame(loop);
-            }
+        async function capture() {
+            const canvas = document.createElement('canvas');
+            canvas.width = 400;
+            canvas.height = 400;
+            canvas.getContext('2d').drawImage(document.getElementById('webcam'), 0, 0, 400, 400);
+            selectedImage = canvas;
+            processAnalysis();
         }
 
-        async function predict() {
-            const prediction = await model.predict(webcam.canvas);
+        async function analyzeUploadedImage() {
+            processAnalysis();
+        }
+
+        async function processAnalysis() {
+            document.getElementById('empty-msg').style.display = 'none';
+            document.getElementById('result-box').style.display = 'none';
+            document.getElementById('loader').style.display = 'block';
             
-            // 가장 높은 확률을 가진 클래스 찾기
+            try {
+                await loadModel();
+                const prediction = await model.predict(selectedImage);
+                
+                // 3초 로딩 연출
+                setTimeout(() => {
+                    displayResult(prediction);
+                }, 2000);
+            } catch (e) {
+                alert("분석 중 오류가 발생했습니다.");
+                reset();
+            }
+        }
+
+        function displayResult(prediction) {
             let maxProb = 0;
             let bestClass = "";
             for (let i = 0; i < maxPredictions; i++) {
@@ -166,56 +363,44 @@
                 }
             }
 
-            if (maxProb > 0.5) {
-                updateResult(bestClass, maxProb);
-            }
+            let gender = bestClass.toLowerCase().includes("man") ? "남성" : "여성";
+            let isA = bestClass.toUpperCase().includes("A");
+
+            // 가치 산정 (A: 5천~1억, B: 1천~5천)
+            let minValue = isA ? 50000000 : 1000;
+            let maxValue = isA ? 100000000 : 50000000;
+            
+            // 확률을 기반으로 가치 결정 + 약간의 랜덤성
+            let value = minValue + (maxValue - minValue) * maxProb;
+            value += (Math.random() - 0.5) * 5000000;
+            value = Math.floor(Math.max(1000, Math.min(100000000, value)));
+
+            let rank = "";
+            let rankClass = "";
+            if (value <= 1000000) { rank = "거지 등급"; rankClass = "rank-거지"; }
+            else if (value <= 10000000) { rank = "평민 등급"; rankClass = "rank-평민"; }
+            else if (value <= 50000000) { rank = "먹히는 얼굴"; rankClass = "rank-먹히는"; }
+            else if (value <= 80000000) { rank = "준연예인 급"; rankClass = "rank-준연예인"; }
+            else { rank = "스타급 미모"; rankClass = "rank-스타급"; }
+
+            document.getElementById('rank-badge').innerText = rank;
+            document.getElementById('rank-badge').className = "rank-badge " + rankClass;
+            document.getElementById('value-amount').innerText = value.toLocaleString() + " 원";
+            document.getElementById('gender-info').innerText = "AI 판정: " + gender;
+
+            document.getElementById('loader').style.display = 'none';
+            document.getElementById('result-box').style.display = 'block';
         }
 
-        function updateResult(className, probability) {
-            let gender = "";
-            let isHandsome = false;
-            
-            // 클래스 분석: "man A", "man B", "girl A" (또는 "gilr A"), "girl B" (또는 "gilr B")
-            if (className.toLowerCase().includes("man")) {
-                gender = "남성";
-            } else if (className.toLowerCase().includes("girl") || className.toLowerCase().includes("gilr")) {
-                gender = "여성";
-            }
-
-            if (className.toUpperCase().includes("A")) {
-                isHandsome = true;
-            }
-
-            // 가치 계산 (확률에 따라 어느 정도 보정)
-            let minValue, maxValue;
-            if (isHandsome) {
-                // A는 잘생김/예쁨 -> 5천만 ~ 1억
-                minValue = 50000000;
-                maxValue = 100000000;
-            } else {
-                // B는 못생김 -> 1천 ~ 5천만
-                minValue = 1000;
-                maxValue = 50000000;
-            }
-
-            // 확률을 반영하여 값 결정 (재미를 위해 랜덤성 추가)
-            let baseValue = minValue + (maxValue - minValue) * probability;
-            let randomOffset = (Math.random() - 0.5) * 1000000; // ±50만원 랜덤
-            let finalValue = Math.floor(Math.max(1000, Math.min(100000000, baseValue + randomOffset)));
-
-            // 랭크 결정
-            let rank = "";
-            if (finalValue <= 1000000) rank = "거지";
-            else if (finalValue <= 10000000) rank = "평민";
-            else if (finalValue <= 50000000) rank = "먹히는 얼굴";
-            else if (finalValue <= 80000000) rank = "준연예인";
-            else rank = "스타급";
-
-            document.getElementById("gender-display").innerText = `분석 결과: ${gender}`;
-            document.getElementById("rank-display").innerText = `등급: ${rank}`;
-            document.getElementById("value-display").innerText = `가치: ${finalValue.toLocaleString()}원`;
+        function reset() {
+            document.getElementById('result-box').style.display = 'none';
+            document.getElementById('empty-msg').style.display = 'block';
+            document.getElementById('loader').style.display = 'none';
+            document.getElementById('preview-img').style.display = 'none';
+            document.getElementById('upload-placeholder').style.display = 'block';
+            document.getElementById('btn-analyze-upload').disabled = true;
+            document.getElementById('file-input').value = "";
         }
     </script>
-    <script defer type="text/javascript" src="/main.js"></script>
 </body>
 </html>
