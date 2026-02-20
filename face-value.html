@@ -460,11 +460,13 @@
 
             let rank = "";
             let rankClass = "";
+            let displayValue = value;
             
             // 💰 사용자 요청 구간으로 재설정
             if (value < 50000000) { 
                 rank = "거지 등급"; 
                 rankClass = "rank-거지"; 
+                displayValue = 100; // 거지 등급은 무조건 100원
             } else if (value < 80000000) { 
                 rank = "평민 등급"; 
                 rankClass = "rank-평민"; 
@@ -481,7 +483,7 @@
 
             document.getElementById('rank-badge').innerText = rank;
             document.getElementById('rank-badge').className = "rank-badge " + rankClass;
-            document.getElementById('value-amount').innerText = value.toLocaleString() + " 원";
+            document.getElementById('value-amount').innerText = displayValue.toLocaleString() + " 원";
             document.getElementById('gender-info').innerText = "AI 판정: " + gender + " (정확도: " + (maxProb * 100).toFixed(1) + "%)";
 
             document.getElementById('loader').style.display = 'none';
