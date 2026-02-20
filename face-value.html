@@ -266,7 +266,8 @@
     <script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@latest/dist/teachablemachine-image.min.js"></script>
 
     <script>
-        const MODEL_URL = "./my_model/"; // ⚠️ 모델 파일이 이 경로에 있어야 합니다.
+        // ✅ Teachable Machine 온라인 모델 주소로 변경
+        const URL = "https://teachablemachine.withgoogle.com/models/eup-eLBVa/"; 
         let model, maxPredictions;
         let selectedImage = null;
         let stream = null;
@@ -295,17 +296,19 @@
             stopWebcam();
         });
 
-        // 모델 로딩 (최초 1회)
+        // 모델 로딩
         async function loadModel() {
             if (!model) {
                 try {
                     statusMsg.innerText = "AI 모델을 불러오는 중...";
-                    model = await tmImage.load(MODEL_URL + "model.json", MODEL_URL + "metadata.json");
+                    const modelURL = URL + "model.json";
+                    const metadataURL = URL + "metadata.json";
+                    model = await tmImage.load(modelURL, metadataURL);
                     maxPredictions = model.getTotalClasses();
                     statusMsg.innerText = "모델 로드 완료.";
                 } catch (e) {
                     console.error("모델 로드 실패:", e);
-                    throw new Error("모델 파일을 찾을 수 없습니다. 경로를 확인해주세요.");
+                    throw new Error("모델을 불러오지 못했습니다. URL을 확인해주세요.");
                 }
             }
         }
@@ -413,21 +416,18 @@
             document.getElementById('loader-text').innerText = "AI 모델을 로드하는 중...";
             
             try {
-                // 1. 모델 로드 확인
                 await loadModel();
-                
                 document.getElementById('loader-text').innerText = "얼굴 특징점을 분석 중입니다...";
                 
-                // 2. 모델 예측
+                // Teachable Machine 모델 예측
                 const prediction = await model.predict(selectedImage);
                 
-                // 2초 정도 로딩 연출 후 결과 표시
                 setTimeout(() => {
                     displayResult(prediction);
                 }, 1500);
             } catch (e) {
-                console.error("분석 상세 에러:", e);
-                alert("오류 내용: " + e.message);
+                console.error("분석 에러:", e);
+                alert("오류 발생: " + e.message);
                 reset();
             }
         }
@@ -436,10 +436,6 @@
             let maxProb = 0;
             let bestClass = "";
             
-            if (!prediction || prediction.length === 0) {
-                throw new Error("예측 결과가 없습니다.");
-            }
-
             for (let i = 0; i < maxPredictions; i++) {
                 if (prediction[i].probability > maxProb) {
                     maxProb = prediction[i].probability;
@@ -447,9 +443,12 @@
                 }
             }
 
-            let gender = (bestClass.toLowerCase().includes("man")) ? "남성" : "여성";
+            // 성별 및 등급 판정 로직
+            const className = bestClass.toLowerCase();
+            let gender = (className.includes("man")) ? "남성" : "여성";
             let isA = bestClass.toUpperCase().includes("A");
 
+            // 가치 산정 (A: 5천~1억, B: 1천~5천)
             let minValue = isA ? 50000000 : 1000;
             let maxValue = isA ? 100000000 : 50000000;
             
