@@ -240,7 +240,7 @@
             <div class="card" style="display: flex; flex-direction: column; justify-content: center; min-height: 400px;">
                 <div id="loader" class="loader">
                     <div class="spinner"></div>
-                    <p>AI가 얼굴의 황금비율과<br>경제적 가치를 분석 중입니다...</p>
+                    <p id="loader-text">AI가 얼굴의 황금비율과<br>경제적 가치를 분석 중입니다...</p>
                 </div>
 
                 <div id="result-box" class="result-box">
@@ -266,7 +266,7 @@
     <script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@latest/dist/teachablemachine-image.min.js"></script>
 
     <script>
-        const MODEL_URL = "./my_model/";
+        const MODEL_URL = "./my_model/"; // ⚠️ 모델 파일이 이 경로에 있어야 합니다.
         let model, maxPredictions;
         let selectedImage = null;
         let stream = null;
@@ -295,10 +295,18 @@
             stopWebcam();
         });
 
+        // 모델 로딩 (최초 1회)
         async function loadModel() {
             if (!model) {
-                model = await tmImage.load(MODEL_URL + "model.json", MODEL_URL + "metadata.json");
-                maxPredictions = model.getTotalClasses();
+                try {
+                    statusMsg.innerText = "AI 모델을 불러오는 중...";
+                    model = await tmImage.load(MODEL_URL + "model.json", MODEL_URL + "metadata.json");
+                    maxPredictions = model.getTotalClasses();
+                    statusMsg.innerText = "모델 로드 완료.";
+                } catch (e) {
+                    console.error("모델 로드 실패:", e);
+                    throw new Error("모델 파일을 찾을 수 없습니다. 경로를 확인해주세요.");
+                }
             }
         }
 
@@ -354,11 +362,14 @@
                 const reader = new FileReader();
                 reader.onload = function(e) {
                     const img = document.getElementById('preview-img');
+                    img.onload = function() {
+                        img.style.display = 'block';
+                        document.getElementById('upload-placeholder').style.display = 'none';
+                        document.getElementById('btn-analyze-upload').disabled = false;
+                        selectedImage = img;
+                        statusMsg.innerText = "사진이 업로드되었습니다.";
+                    };
                     img.src = e.target.result;
-                    img.style.display = 'block';
-                    document.getElementById('upload-placeholder').style.display = 'none';
-                    document.getElementById('btn-analyze-upload').disabled = false;
-                    selectedImage = img;
                 }
                 reader.readAsDataURL(file);
             }
@@ -391,20 +402,32 @@
         }
 
         async function processAnalysis() {
+            if (!selectedImage) {
+                alert("사진을 먼저 입력해주세요.");
+                return;
+            }
+
             document.getElementById('empty-msg').style.display = 'none';
             document.getElementById('result-box').style.display = 'none';
             document.getElementById('loader').style.display = 'block';
+            document.getElementById('loader-text').innerText = "AI 모델을 로드하는 중...";
             
             try {
+                // 1. 모델 로드 확인
                 await loadModel();
+                
+                document.getElementById('loader-text').innerText = "얼굴 특징점을 분석 중입니다...";
+                
+                // 2. 모델 예측
                 const prediction = await model.predict(selectedImage);
                 
+                // 2초 정도 로딩 연출 후 결과 표시
                 setTimeout(() => {
                     displayResult(prediction);
-                }, 2000);
+                }, 1500);
             } catch (e) {
-                console.error(e);
-                alert("분석 중 오류가 발생했습니다.");
+                console.error("분석 상세 에러:", e);
+                alert("오류 내용: " + e.message);
                 reset();
             }
         }
@@ -412,6 +435,11 @@
         function displayResult(prediction) {
             let maxProb = 0;
             let bestClass = "";
+            
+            if (!prediction || prediction.length === 0) {
+                throw new Error("예측 결과가 없습니다.");
+            }
+
             for (let i = 0; i < maxPredictions; i++) {
                 if (prediction[i].probability > maxProb) {
                     maxProb = prediction[i].probability;
@@ -440,7 +468,7 @@
             document.getElementById('rank-badge').innerText = rank;
             document.getElementById('rank-badge').className = "rank-badge " + rankClass;
             document.getElementById('value-amount').innerText = value.toLocaleString() + " 원";
-            document.getElementById('gender-info').innerText = "AI 판정: " + gender;
+            document.getElementById('gender-info').innerText = "AI 판정: " + gender + " (" + (maxProb * 100).toFixed(1) + "%)";
 
             document.getElementById('loader').style.display = 'none';
             document.getElementById('result-box').style.display = 'block';
