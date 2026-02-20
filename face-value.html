@@ -86,10 +86,11 @@
             margin-bottom: 16px;
         }
 
-        video, #preview-img {
+        video, #preview-img, #camera-preview {
             width: 100%;
             height: 100%;
             object-fit: cover;
+            display: block;
         }
 
         .btn-group {
@@ -106,10 +107,17 @@
             cursor: pointer;
             font-weight: bold;
             min-width: 100px;
+            transition: opacity 0.2s;
+        }
+        
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
         }
 
         .btn-primary { background: var(--button-bg); color: white; }
         .btn-secondary { background: var(--lotto-number-bg); color: var(--text-color); }
+        .btn-danger { background: #ff4757; color: white; }
 
         .status {
             margin-top: 12px;
@@ -202,10 +210,12 @@
                 <div id="camera-section">
                     <div class="video-wrap">
                         <video id="webcam" autoplay playsinline muted></video>
+                        <img id="camera-preview" style="display: none; position: absolute; top: 0; left: 0;">
                     </div>
                     <div class="btn-group">
-                        <button class="btn btn-secondary" onclick="startWebcam()">카메라 켜기</button>
+                        <button id="btn-start-cam" class="btn btn-secondary" onclick="startWebcam()">카메라 켜기</button>
                         <button id="btn-capture" class="btn btn-primary" disabled onclick="capture()">찰칵! 분석하기</button>
+                        <button id="btn-stop-cam" class="btn btn-danger" disabled onclick="stopWebcam()">끄기</button>
                     </div>
                 </div>
 
@@ -257,8 +267,16 @@
 
     <script>
         const MODEL_URL = "./my_model/";
-        let model, webcam, maxPredictions;
+        let model, maxPredictions;
         let selectedImage = null;
+        let stream = null;
+
+        const videoEl = document.getElementById('webcam');
+        const statusMsg = document.getElementById('status-msg');
+        const btnCapture = document.getElementById('btn-capture');
+        const btnStartCam = document.getElementById('btn-start-cam');
+        const btnStopCam = document.getElementById('btn-stop-cam');
+        const cameraPreview = document.getElementById('camera-preview');
 
         // 모드 전환
         document.getElementById('mode-camera').addEventListener('click', function() {
@@ -286,23 +304,48 @@
 
         async function startWebcam() {
             try {
-                const flip = true;
-                webcam = new tmImage.Webcam(400, 400, flip);
-                await webcam.setup();
-                await webcam.play();
-                document.getElementById('webcam').srcObject = webcam.stream;
-                document.getElementById('btn-capture').disabled = false;
-                document.getElementById('status-msg').innerText = "카메라가 연결되었습니다.";
+                if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                    statusMsg.innerText = "카메라 API를 지원하지 않는 브라우저입니다.";
+                    return;
+                }
+
+                stream = await navigator.mediaDevices.getUserMedia({
+                    video: { facingMode: "user", width: { ideal: 1280 }, height: { ideal: 720 } },
+                    audio: false
+                });
+                
+                videoEl.srcObject = stream;
+                videoEl.onloadedmetadata = () => {
+                    videoEl.play();
+                };
+                
+                videoEl.style.display = 'block';
+                cameraPreview.style.display = 'none';
+                
+                btnStartCam.disabled = true;
+                btnStopCam.disabled = false;
+                btnCapture.disabled = false;
+                statusMsg.innerText = "카메라가 연결되었습니다.";
             } catch (e) {
-                alert("카메라 연결에 실패했습니다.");
+                console.error(e);
+                let msg = "카메라 연결에 실패했습니다.";
+                if (location.protocol !== 'https:' && location.hostname !== 'localhost') {
+                    msg += " (HTTPS 필요)";
+                }
+                statusMsg.innerText = msg;
             }
         }
 
         function stopWebcam() {
-            if (webcam && webcam.stream) {
-                webcam.stop();
-                document.getElementById('webcam').srcObject = null;
+            if (stream) {
+                stream.getTracks().forEach(track => track.stop());
+                stream = null;
             }
+            videoEl.srcObject = null;
+            btnStartCam.disabled = false;
+            btnStopCam.disabled = true;
+            btnCapture.disabled = true;
+            statusMsg.innerText = "카메라가 꺼졌습니다.";
         }
 
         function handleFileUpload(input) {
@@ -322,11 +365,24 @@
         }
 
         async function capture() {
+            if (!videoEl.videoWidth) return;
+
             const canvas = document.createElement('canvas');
-            canvas.width = 400;
-            canvas.height = 400;
-            canvas.getContext('2d').drawImage(document.getElementById('webcam'), 0, 0, 400, 400);
+            canvas.width = videoEl.videoWidth;
+            canvas.height = videoEl.videoHeight;
+            const ctx = canvas.getContext('2d');
+            
+            // 좌우 반전 보정 (셀카 모드)
+            ctx.translate(canvas.width, 0);
+            ctx.scale(-1, 1);
+            ctx.drawImage(videoEl, 0, 0);
+            
             selectedImage = canvas;
+            cameraPreview.src = canvas.toDataURL('image/jpeg');
+            cameraPreview.style.display = 'block';
+            videoEl.style.display = 'none';
+            
+            stopWebcam();
             processAnalysis();
         }
 
@@ -343,11 +399,11 @@
                 await loadModel();
                 const prediction = await model.predict(selectedImage);
                 
-                // 3초 로딩 연출
                 setTimeout(() => {
                     displayResult(prediction);
                 }, 2000);
             } catch (e) {
+                console.error(e);
                 alert("분석 중 오류가 발생했습니다.");
                 reset();
             }
@@ -363,14 +419,12 @@
                 }
             }
 
-            let gender = bestClass.toLowerCase().includes("man") ? "남성" : "여성";
+            let gender = (bestClass.toLowerCase().includes("man")) ? "남성" : "여성";
             let isA = bestClass.toUpperCase().includes("A");
 
-            // 가치 산정 (A: 5천~1억, B: 1천~5천)
             let minValue = isA ? 50000000 : 1000;
             let maxValue = isA ? 100000000 : 50000000;
             
-            // 확률을 기반으로 가치 결정 + 약간의 랜덤성
             let value = minValue + (maxValue - minValue) * maxProb;
             value += (Math.random() - 0.5) * 5000000;
             value = Math.floor(Math.max(1000, Math.min(100000000, value)));
@@ -397,9 +451,12 @@
             document.getElementById('empty-msg').style.display = 'block';
             document.getElementById('loader').style.display = 'none';
             document.getElementById('preview-img').style.display = 'none';
+            document.getElementById('camera-preview').style.display = 'none';
             document.getElementById('upload-placeholder').style.display = 'block';
             document.getElementById('btn-analyze-upload').disabled = true;
             document.getElementById('file-input').value = "";
+            videoEl.style.display = 'block';
+            stopWebcam();
         }
     </script>
 </body>
