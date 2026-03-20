@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git add:*)",
+      "Bash(git commit -m \"$\\(cat <<''EOF''\nfeat: Nself 프로그램 배포 사이트로 전면 개편\n\n기존 소스 파일 삭제 후 Nself 블로그 자동화 프로그램 배포 사이트 구축\n- 개발자소개, 다운로드, 사용법\\(8개 섹션\\), 고객센터 4개 메뉴\n- 다크 테마 UI, 사이드바 네비게이션, 모바일 반응형\n- 카카오톡 오픈채팅 고객센터 연동\n\nCo-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>\nEOF\n\\)\")",
+      "Bash(git rm:*)",
+      "Bash(git checkout:*)",
+      "Bash(git rebase:*)"
+    ]
+  }
+}

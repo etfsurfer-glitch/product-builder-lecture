@@ -1,190 +1,946 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-    <!-- Google tag (gtag.js) -->
-<script async src="https://www.googletagmanager.com/gtag/js?id=G-KTWR2LH66T"></script>
-<script>
-  window.dataLayer = window.dataLayer || [];
-  function gtag(){dataLayer.push(arguments);}
-  gtag('js', new Date());
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Nself - 네이버 블로그 자동화 프로그램</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#1a1b2e;--bg2:#232440;--bg3:#2a2b4a;
+  --accent:#7c6af7;--accent2:#9b8aff;--accent3:#6c5ce7;
+  --text:#e0e0e0;--text2:#a0a0b8;--text3:#70708a;
+  --warn:#f0c040;--danger:#ff6b6b;--success:#51cf66;--info:#339af0;
+  --sidebar-w:280px;--header-h:60px;
+}
+html{scroll-behavior:smooth;scroll-padding-top:80px}
+body{font-family:'Segoe UI','Apple SD Gothic Neo','Malgun Gothic',sans-serif;background:var(--bg);color:var(--text);line-height:1.7;overflow-x:hidden}
+a{color:var(--accent2);text-decoration:none;transition:color .2s}
+a:hover{color:#fff}
 
-  gtag('config', 'G-KTWR2LH66T');
-</script>
-    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6463103751493710"
-     crossorigin="anonymous"></script>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>유용한 도구 모음 | 로또 번호, 메뉴 추천, 가위바위보, 전생 테스트</title>
-    <meta name="description" content="일상의 고민을 해결하는 다양한 도구를 만나보세요. 로또 번호 추출기, AI 가위바위보 게임, 저녁 메뉴 추천, 재미로 보는 전생 테스트까지 무료로 제공합니다.">
-    <meta name="keywords" content="로또 번호 추출기, 저녁 메뉴 추천, 전생 테스트, 가위바위보 게임, 무료 도구, 일상 해결, AI 추천">
-    <link rel="canonical" href="https://product-builder-lecture-9n4.pages.dev/">
+/* Header */
+.header{position:fixed;top:0;left:0;right:0;height:var(--header-h);background:rgba(26,27,46,.95);backdrop-filter:blur(12px);border-bottom:1px solid rgba(124,106,247,.15);display:flex;align-items:center;justify-content:space-between;padding:0 24px;z-index:1000}
+.header-logo{display:flex;align-items:center;gap:12px;font-size:1.4rem;font-weight:700;color:#fff}
+.header-logo span{background:linear-gradient(135deg,var(--accent),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.header-badge{font-size:.65rem;padding:3px 8px;background:var(--accent3);color:#fff;border-radius:20px;font-weight:500}
+.hamburger{display:none;flex-direction:column;gap:5px;cursor:pointer;padding:8px}
+.hamburger span{display:block;width:24px;height:2px;background:#fff;border-radius:2px;transition:all .3s}
+.hamburger.active span:nth-child(1){transform:rotate(45deg) translate(5px,5px)}
+.hamburger.active span:nth-child(2){opacity:0}
+.hamburger.active span:nth-child(3){transform:rotate(-45deg) translate(5px,-5px)}
 
-    <!-- Open Graph (Kakao, Naver, Facebook) -->
-    <meta property="og:type" content="website">
-    <meta property="og:title" content="유용한 도구 모음 | 로또, 메뉴추천, 가위바위보, 전생테스트">
-    <meta property="og:description" content="일상의 고민을 해결하는 무료 도구 모음! 로또 번호, 메뉴 추천부터 전생 테스트까지 한 번에 이용하세요.">
-    <meta property="og:url" content="https://product-builder-lecture-9n4.pages.dev/">
-    <meta property="og:image" content="https://product-builder-lecture-9n4.pages.dev/img/og.png">
-    <meta property="og:site_name" content="데일리 유틸">
+/* Top Nav */
+.top-nav{display:flex;gap:4px;align-items:center}
+.top-nav-item{position:relative;padding:8px 16px;color:var(--text2);font-size:.9rem;font-weight:500;border-radius:8px;cursor:pointer;transition:all .2s;user-select:none}
+.top-nav-item:hover,.top-nav-item.active{color:#fff;background:rgba(124,106,247,.15)}
+.top-nav-item.active{color:var(--accent2)}
+.top-nav-item .sub-indicator{font-size:.6rem;margin-left:4px;opacity:.5}
+.dropdown{position:absolute;top:100%;left:0;min-width:200px;background:var(--bg2);border:1px solid rgba(124,106,247,.2);border-radius:10px;padding:6px;opacity:0;visibility:hidden;transform:translateY(8px);transition:all .2s;z-index:100;margin-top:8px}
+.top-nav-item:hover .dropdown{opacity:1;visibility:visible;transform:translateY(0)}
+.dropdown a{display:block;padding:8px 14px;color:var(--text2);border-radius:6px;font-size:.85rem;transition:all .15s}
+.dropdown a:hover{background:rgba(124,106,247,.15);color:#fff}
 
-    <!-- Twitter Card -->
-    <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:title" content="유용한 도구 모음 | 무료 온라인 도구">
-    <meta name="twitter:description" content="결정 장애를 위한 최적의 해결책! 로또, 메뉴 추천, 재미있는 테스트까지 지금 체험해보세요.">
-    <meta name="twitter:image" content="https://product-builder-lecture-9n4.pages.dev/img/og.png">
+/* Sidebar (사용법 전용) */
+.sidebar{position:fixed;top:var(--header-h);left:0;width:var(--sidebar-w);height:calc(100vh - var(--header-h));background:var(--bg2);border-right:1px solid rgba(124,106,247,.1);overflow-y:auto;padding:20px 0;z-index:900;transform:translateX(-100%);transition:transform .3s}
+.sidebar.visible{transform:translateX(0)}
+.sidebar::-webkit-scrollbar{width:4px}
+.sidebar::-webkit-scrollbar-thumb{background:var(--accent3);border-radius:4px}
+.sidebar-title{padding:0 20px 16px;font-size:.75rem;text-transform:uppercase;letter-spacing:2px;color:var(--text3);font-weight:600}
+.sidebar-nav a{display:flex;align-items:center;gap:10px;padding:10px 20px;color:var(--text2);font-size:.88rem;transition:all .2s;border-left:3px solid transparent}
+.sidebar-nav a:hover{color:#fff;background:rgba(124,106,247,.08)}
+.sidebar-nav a.active{color:var(--accent2);background:rgba(124,106,247,.12);border-left-color:var(--accent)}
+.sidebar-nav a .nav-icon{width:20px;text-align:center;font-size:.9rem}
 
-    <!-- Structured Data (JSON-LD) for GEO -->
-    <script type="application/ld+json">
-    {
-      "@context": "https://schema.org",
-      "@type": "WebApplication",
-      "name": "데일리 유틸",
-      "description": "로또 번호 추출기, 메뉴 추천, 전생 테스트 등 일상에 유용한 도구들을 제공하는 서비스입니다.",
-      "url": "https://product-builder-lecture-9n4.pages.dev/",
-      "applicationCategory": "UtilitiesApplication",
-      "operatingSystem": "All",
-      "datePublished": "2026-02-15",
-      "dateModified": "2026-02-24"
-    }
-    </script>
-    <script type="application/ld+json">
-    {
-      "@context": "https://schema.org",
-      "@type": "FAQPage",
-      "mainEntity": [{
-        "@type": "Question",
-        "name": "로또 번호를 어떻게 추출하나요?",
-        "acceptedAnswer": {
-          "@type": "Answer",
-          "text": "저희 로또 번호 추출기는 순수 무작위 알고리즘을 사용하여 1부터 45까지의 숫자 중 중복되지 않는 6개의 행운 번호를 생성합니다."
-        }
-      }, {
-        "@type": "Question",
-        "name": "저녁 메뉴 추천은 어떤 기준으로 이루어지나요?",
-        "acceptedAnswer": {
-          "@type": "Answer",
-          "text": "한식, 일식, 중식, 양식 등 다양한 카테고리의 인기 메뉴 중에서 상황에 맞는 최적의 메뉴를 무작위로 추천해 드립니다."
-        }
-      }, {
-        "@type": "Question",
-        "name": "전생 테스트는 사진을 저장하나요?",
-        "acceptedAnswer": {
-          "@type": "Answer",
-          "text": "아니요, 전생 테스트에 사용되는 사진은 사용자의 브라우저 내에서만 처리되며 서버로 절대 전송되거나 저장되지 않아 안심하고 이용하실 수 있습니다."
-        }
-      }]
-    }
-    </script>
+/* Main Content */
+.main{margin-top:var(--header-h);padding:40px 24px;max-width:900px;margin-left:auto;margin-right:auto;transition:margin-left .3s}
+.main.with-sidebar{margin-left:var(--sidebar-w);max-width:calc(900px + var(--sidebar-w));padding-left:60px}
 
-    <link href='/style.css' rel='stylesheet'>
-    <link rel="icon" href="/favicon.ico" type="image/x-icon">
-    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest/dist/tf.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@latest/dist/teachablemachine-image.min.js"></script>
+/* Page Sections */
+.page{display:none}
+.page.active{display:block}
+
+/* Hero */
+.hero{text-align:center;padding:80px 0 60px}
+.hero-icon{font-size:4rem;margin-bottom:20px}
+.hero h1{font-size:2.4rem;font-weight:800;margin-bottom:12px;background:linear-gradient(135deg,#fff,var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.hero p{font-size:1.1rem;color:var(--text2);max-width:600px;margin:0 auto 32px}
+.hero-buttons{display:flex;gap:12px;justify-content:center;flex-wrap:wrap}
+
+/* Buttons */
+.btn{display:inline-flex;align-items:center;gap:8px;padding:12px 28px;border-radius:10px;font-size:.95rem;font-weight:600;cursor:pointer;border:none;transition:all .25s}
+.btn-primary{background:linear-gradient(135deg,var(--accent),var(--accent3));color:#fff;box-shadow:0 4px 20px rgba(124,106,247,.3)}
+.btn-primary:hover{transform:translateY(-2px);box-shadow:0 6px 28px rgba(124,106,247,.45);color:#fff}
+.btn-outline{background:transparent;color:var(--accent2);border:1.5px solid var(--accent)}
+.btn-outline:hover{background:rgba(124,106,247,.1);color:#fff}
+.btn-kakao{background:#FEE500;color:#3C1E1E;font-weight:700}
+.btn-kakao:hover{background:#ffd700;transform:translateY(-2px);color:#3C1E1E}
+
+/* Section */
+.section{margin-bottom:56px}
+.section-header{display:flex;align-items:center;gap:12px;margin-bottom:24px;padding-bottom:12px;border-bottom:1px solid rgba(124,106,247,.15)}
+.section-num{width:36px;height:36px;background:linear-gradient(135deg,var(--accent),var(--accent3));color:#fff;border-radius:10px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:.95rem;flex-shrink:0}
+.section h2{font-size:1.4rem;font-weight:700;color:#fff}
+.section h3{font-size:1.1rem;color:var(--accent2);margin:24px 0 12px;font-weight:600}
+
+/* Cards */
+.card{background:var(--bg2);border:1px solid rgba(124,106,247,.1);border-radius:14px;padding:24px;margin-bottom:16px;transition:border-color .2s}
+.card:hover{border-color:rgba(124,106,247,.3)}
+.card-title{font-weight:600;color:#fff;margin-bottom:8px;display:flex;align-items:center;gap:8px}
+
+/* Info Boxes */
+.info-box{border-radius:12px;padding:16px 20px;margin:16px 0;display:flex;gap:12px;align-items:flex-start;font-size:.9rem}
+.info-box .icon{font-size:1.1rem;flex-shrink:0;margin-top:2px}
+.info-warn{background:rgba(240,192,64,.08);border:1px solid rgba(240,192,64,.25);color:var(--warn)}
+.info-danger{background:rgba(255,107,107,.08);border:1px solid rgba(255,107,107,.25);color:var(--danger)}
+.info-tip{background:rgba(81,207,102,.08);border:1px solid rgba(81,207,102,.25);color:var(--success)}
+.info-info{background:rgba(51,154,240,.08);border:1px solid rgba(51,154,240,.25);color:var(--info)}
+
+/* Steps */
+.steps{counter-reset:step}
+.step{position:relative;padding:0 0 24px 48px;border-left:2px solid rgba(124,106,247,.2);margin-left:15px}
+.step:last-child{border-left-color:transparent;padding-bottom:0}
+.step::before{counter-increment:step;content:counter(step);position:absolute;left:-16px;top:0;width:30px;height:30px;background:var(--accent);color:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:.8rem}
+.step-title{font-weight:600;color:#fff;margin-bottom:6px}
+.step p{color:var(--text2);font-size:.9rem}
+
+/* Code inline */
+code{background:rgba(124,106,247,.15);color:var(--accent2);padding:2px 8px;border-radius:5px;font-size:.85rem;font-family:'Consolas','D2Coding',monospace}
+
+/* Toggle visual */
+.toggle-demo{display:inline-flex;align-items:center;gap:8px;margin:6px 0}
+.toggle-track{width:42px;height:24px;background:var(--bg);border-radius:12px;position:relative;border:2px solid var(--text3);cursor:pointer;transition:all .3s}
+.toggle-track.on{background:var(--accent);border-color:var(--accent)}
+.toggle-track::after{content:'';position:absolute;width:16px;height:16px;background:#fff;border-radius:50%;top:2px;left:2px;transition:transform .3s}
+.toggle-track.on::after{transform:translateX(18px)}
+.toggle-label{font-size:.9rem;color:var(--text2)}
+
+/* Mode Tabs */
+.mode-tabs{display:flex;gap:8px;margin:16px 0;flex-wrap:wrap}
+.mode-tab{padding:8px 18px;background:var(--bg);border:1px solid rgba(124,106,247,.2);border-radius:8px;color:var(--text2);font-size:.85rem;cursor:pointer;transition:all .2s}
+.mode-tab.active,.mode-tab:hover{background:rgba(124,106,247,.15);color:var(--accent2);border-color:var(--accent)}
+
+/* FAQ */
+.faq-item{background:var(--bg2);border:1px solid rgba(124,106,247,.1);border-radius:12px;margin-bottom:10px;overflow:hidden}
+.faq-q{padding:16px 20px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;font-weight:600;color:#fff;transition:background .2s}
+.faq-q:hover{background:rgba(124,106,247,.08)}
+.faq-q .arrow{transition:transform .3s;color:var(--accent2);font-size:.8rem}
+.faq-q.open .arrow{transform:rotate(180deg)}
+.faq-a{padding:0 20px;max-height:0;overflow:hidden;transition:all .3s;color:var(--text2);font-size:.9rem}
+.faq-a.open{padding:0 20px 16px;max-height:400px}
+
+/* Combination Table */
+.combo-table{width:100%;border-collapse:collapse;margin:16px 0;font-size:.85rem}
+.combo-table th{background:var(--bg);color:var(--accent2);padding:10px 14px;text-align:left;font-weight:600;border-bottom:2px solid rgba(124,106,247,.2)}
+.combo-table td{padding:10px 14px;border-bottom:1px solid rgba(124,106,247,.08);color:var(--text2)}
+.combo-table tr:hover td{background:rgba(124,106,247,.04)}
+.check{color:var(--success)}
+.cross{color:var(--text3)}
+
+/* Developer page */
+.dev-profile{text-align:center;padding:40px 0}
+.dev-avatar{width:120px;height:120px;background:linear-gradient(135deg,var(--accent),var(--accent3));border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:3rem;margin:0 auto 20px}
+.dev-name{font-size:1.8rem;font-weight:800;color:#fff;margin-bottom:8px}
+.dev-role{color:var(--accent2);font-size:1rem;margin-bottom:24px}
+.dev-tags{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-bottom:32px}
+.dev-tag{padding:6px 16px;background:rgba(124,106,247,.1);border:1px solid rgba(124,106,247,.2);border-radius:20px;color:var(--text2);font-size:.82rem}
+.dev-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:16px;margin-top:32px}
+.dev-card{background:var(--bg2);border:1px solid rgba(124,106,247,.1);border-radius:14px;padding:24px;text-align:center}
+.dev-card-icon{font-size:2rem;margin-bottom:12px}
+.dev-card h3{color:#fff;font-size:1rem;margin-bottom:8px}
+.dev-card p{color:var(--text2);font-size:.85rem}
+
+/* Download page */
+.download-hero{text-align:center;padding:60px 0 40px}
+.download-card{background:var(--bg2);border:1px solid rgba(124,106,247,.15);border-radius:18px;padding:36px;max-width:500px;margin:0 auto;text-align:center}
+.download-card h3{font-size:1.3rem;color:#fff;margin-bottom:8px}
+.download-card .version{color:var(--accent2);font-size:.9rem;margin-bottom:20px}
+.download-card .dl-features{text-align:left;margin:20px 0;padding:16px;background:var(--bg);border-radius:10px}
+.download-card .dl-features li{color:var(--text2);font-size:.88rem;padding:4px 0;list-style:none}
+.download-card .dl-features li::before{content:'✓ ';color:var(--success);font-weight:700}
+
+/* Contact page */
+.contact-center{text-align:center;padding:60px 0}
+.contact-card{background:var(--bg2);border:1px solid rgba(124,106,247,.15);border-radius:18px;padding:40px;max-width:500px;margin:24px auto 0}
+.kakao-icon{font-size:3.5rem;margin-bottom:16px}
+
+/* Diagram box */
+.diagram{background:var(--bg);border:1px solid rgba(124,106,247,.15);border-radius:12px;padding:20px;margin:16px 0;font-family:'Consolas','D2Coding',monospace;font-size:.82rem;color:var(--text2);line-height:1.9;overflow-x:auto;white-space:pre}
+
+/* Category grid */
+.cat-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:8px;margin:12px 0}
+.cat-item{background:var(--bg);padding:8px 12px;border-radius:8px;font-size:.82rem;color:var(--text2);text-align:center;border:1px solid rgba(124,106,247,.1)}
+
+/* Scroll to top */
+.scroll-top{position:fixed;bottom:24px;right:24px;width:44px;height:44px;background:var(--accent);color:#fff;border:none;border-radius:50%;cursor:pointer;font-size:1.1rem;opacity:0;visibility:hidden;transition:all .3s;z-index:999;box-shadow:0 4px 16px rgba(124,106,247,.3)}
+.scroll-top.visible{opacity:1;visibility:visible}
+.scroll-top:hover{transform:translateY(-3px);background:var(--accent2)}
+
+/* Footer */
+.footer{margin-top:60px;padding:24px;text-align:center;border-top:1px solid rgba(124,106,247,.1);color:var(--text3);font-size:.8rem}
+
+/* Mobile */
+@media(max-width:900px){
+  .top-nav{display:none}
+  .hamburger{display:flex}
+  .mobile-menu{position:fixed;top:var(--header-h);left:0;right:0;background:var(--bg2);border-bottom:1px solid rgba(124,106,247,.15);padding:12px;z-index:950;transform:translateY(-100%);opacity:0;transition:all .3s;pointer-events:none}
+  .mobile-menu.open{transform:translateY(0);opacity:1;pointer-events:all}
+  .mobile-menu a{display:block;padding:12px 16px;color:var(--text2);border-radius:8px;font-size:.95rem}
+  .mobile-menu a:hover,.mobile-menu a.active{background:rgba(124,106,247,.1);color:#fff}
+  .mobile-menu .sub{padding-left:32px;font-size:.88rem;color:var(--text3)}
+  .sidebar{z-index:850}
+  .sidebar.visible{box-shadow:4px 0 30px rgba(0,0,0,.4)}
+  .main.with-sidebar{margin-left:0;padding-left:24px}
+  .hero h1{font-size:1.7rem}
+  .hero{padding:40px 0 30px}
+}
+@media(max-width:600px){
+  .dev-cards{grid-template-columns:1fr}
+  .combo-table{font-size:.75rem}
+  .combo-table th,.combo-table td{padding:8px}
+}
+</style>
 </head>
 <body>
-    <nav class="main-nav">
-        <a href="/" class="nav-link active">홈</a>
-        <a href="/pastlife.html" class="nav-link">전생 테스트</a>
-        <a href="/about.html" class="nav-link">소개</a>
-        <a href="/terms.html" class="nav-link">이용약관</a>
-        <a href="/privacy.html" class="nav-link">개인정보처리방침</a>
-    </nav>
 
-    <div class="main-layout">
-        <div class="container">
-            <button id="theme-toggle" class="theme-toggle">
-                <span class="icon">🌙</span>
-            </button>
-            <h1>유용한 도구와 블로그</h1>
-            <p class="section-description">
-                일상의 작은 고민들을 해결해드리는 다양한 도구들을 만나보세요.
-                <time datetime="2026-02-24">2026년 2월 24일</time> 업데이트 완료.
-            </p>
+<!-- Header -->
+<header class="header">
+  <div class="header-logo">
+    <span>Nself</span>
+    <div class="header-badge">Software</div>
+  </div>
+  <nav class="top-nav">
+    <div class="top-nav-item" data-page="developer" onclick="showPage('developer')">개발자소개</div>
+    <div class="top-nav-item" data-page="download" onclick="showPage('download')">
+      다운로드 <span class="sub-indicator">▾</span>
+      <div class="dropdown">
+        <a href="#" onclick="event.stopPropagation();showPage('download')">Nself (Blog 자동화)</a>
+      </div>
+    </div>
+    <div class="top-nav-item" data-page="guide" onclick="showPage('guide')">
+      사용법 <span class="sub-indicator">▾</span>
+      <div class="dropdown">
+        <a href="#" onclick="event.stopPropagation();showPage('guide')">Nself (Blog 자동화)</a>
+      </div>
+    </div>
+    <div class="top-nav-item" data-page="contact" onclick="showPage('contact')">고객센터</div>
+  </nav>
+  <div class="hamburger" onclick="toggleMobile()">
+    <span></span><span></span><span></span>
+  </div>
+</header>
 
-            <hr style="margin: 2rem 0; border-color: var(--text-color); opacity: 0.2;">
+<!-- Mobile Menu -->
+<div class="mobile-menu" id="mobileMenu">
+  <a href="#" onclick="showPage('developer');closeMobile()">개발자소개</a>
+  <a href="#" onclick="showPage('download');closeMobile()">다운로드</a>
+  <a href="#" class="sub" onclick="showPage('download');closeMobile()">└ Nself (Blog 자동화)</a>
+  <a href="#" onclick="showPage('guide');closeMobile()">사용법</a>
+  <a href="#" class="sub" onclick="showPage('guide');closeMobile()">└ Nself (Blog 자동화)</a>
+  <a href="#" onclick="showPage('contact');closeMobile()">고객센터</a>
+</div>
 
-            <!-- FAQ Section for AI Search (GEO) -->
-            <section class="faq-section" style="margin-bottom: 3rem;">
-                <h2>자주 묻는 질문 (FAQ)</h2>
-                <details style="margin-bottom: 1rem; padding: 1rem; background: rgba(255,255,255,0.05); border-radius: 8px;">
-                    <summary style="font-weight: bold; cursor: pointer;">로또 번호 추출은 믿을 수 있나요?</summary>
-                    <p style="margin-top: 0.5rem; opacity: 0.8;">네, 저희 도구는 최신 난수 생성 알고리즘을 사용하여 매번 독립적이고 공정한 번호를 제공합니다.</p>
-                </details>
-                <details style="margin-bottom: 1rem; padding: 1rem; background: rgba(255,255,255,0.05); border-radius: 8px;">
-                    <summary style="font-weight: bold; cursor: pointer;">AI 가위바위보 게임은 어떻게 작동하나요?</summary>
-                    <p style="margin-top: 0.5rem; opacity: 0.8;">TensorFlow.js 기술을 사용하여 브라우저에서 실시간으로 사용자의 손동작을 인식하고 AI 모델과 대결하는 혁신적인 게임입니다.</p>
-                </details>
-            </section>
+<!-- Sidebar (사용법 페이지 전용) -->
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-title">Nself 사용 가이드</div>
+  <nav class="sidebar-nav">
+    <a href="#sec-start" class="active"><span class="nav-icon">🚀</span>시작하기</a>
+    <a href="#sec-signup"><span class="nav-icon">👤</span>회원가입 & 로그인</a>
+    <a href="#sec-chrome"><span class="nav-icon">🌐</span>크롬 브라우저 설정</a>
+    <a href="#sec-visit"><span class="nav-icon">📋</span>방문 설정</a>
+    <a href="#sec-features"><span class="nav-icon">⚙️</span>기능 설정</a>
+    <a href="#sec-comment"><span class="nav-icon">💬</span>댓글 문구 설정</a>
+    <a href="#sec-run"><span class="nav-icon">▶️</span>실행 & 긴급정지</a>
+    <a href="#sec-faq"><span class="nav-icon">❓</span>주의사항 & FAQ</a>
+  </nav>
+</aside>
 
-            <h2>최신 블로그 포스트</h2>
-            <div class="blog-posts-container">
-                <div class="blog-post-card">
-                    <h3>📊 로또 번호 분석: 통계로 본 당첨 확률의 비밀</h3>
-                    <p class="post-meta">2026년 2월 24일 · 로또 · 통계</p>
-                    <p>로또 당첨은 순전히 운일까요? 역대 당첨 데이터를 기반으로 핫 번호, 홀짝 비율, 번호 합계 분포 등 흥미로운 통계 패턴을 파헤칩니다.</p>
-                    <a href="/blog/lotto-analysis.html" class="read-more">자세히 읽기 →</a>
-                </div>
-                <div class="blog-post-card">
-                    <h3>🍽️ 오늘 저녁 뭐 먹지? 결정 장애를 위한 메뉴 선택 가이드</h3>
-                    <p class="post-meta">2026년 2월 24일 · 식사 · 심리학</p>
-                    <p>결정 피로(Decision Fatigue)와 선택의 역설로 인해 저녁 메뉴 고르기가 왜 이렇게 어려운지, 심리학적으로 쉽게 해결하는 방법을 알려드립니다.</p>
-                    <a href="/blog/dinner-guide.html" class="read-more">자세히 읽기 →</a>
-                </div>
-                <div class="blog-post-card">
-                    <h3>✂️ 가위바위보 심리학: 단순한 게임 뒤에 숨겨진 전략</h3>
-                    <p class="post-meta">2026년 2월 24일 · 게임 · 심리학</p>
-                    <p>인간이 무의식적으로 바위를 더 많이 내는 이유, 승자와 패자의 다음 수 선택 패턴, 그리고 AI가 인간을 이기는 비결까지 공개합니다.</p>
-                    <a href="/blog/rps-psychology.html" class="read-more">자세히 읽기 →</a>
-                </div>
-                <div class="blog-post-card">
-                    <h3>🔮 전생 직업 테스트의 원리: 오행 이론이란?</h3>
-                    <p class="post-meta">2026년 2월 24일 · 전생 · 동양철학</p>
-                    <p>목·화·토·금·수 오행 이론이 어떻게 사람의 기질과 직업 성향으로 연결되는지, 수천 년 전통 사상의 현대적 재해석을 살펴봅니다.</p>
-                    <a href="/blog/pastlife-theory.html" class="read-more">자세히 읽기 →</a>
-                </div>
-                <div class="blog-post-card">
-                    <h3>⭐ 데일리 유틸 이용 후기 모음</h3>
-                    <p class="post-meta">2026년 2월 24일 · 후기 · 리뷰</p>
-                    <p>로또 추출기로 2등 당첨, 전생 테스트에서 소름 돋은 결과, 저녁 메뉴 고민 해결까지! 실제 사용자들의 생생한 후기를 모았습니다.</p>
-                    <a href="/blog/user-reviews.html" class="read-more">자세히 읽기 →</a>
-                </div>
-            </div>
+<!-- ==================== PAGE: 개발자소개 ==================== -->
+<main class="main" id="mainContent">
+<div class="page active" id="page-developer">
+  <div class="dev-profile">
+    <div class="dev-avatar">👨‍💻</div>
+    <div class="dev-name">개인 개발자</div>
+    <div class="dev-role">Automation Tool Creator</div>
+    <div class="dev-tags">
+      <span class="dev-tag">업무 자동화</span>
+      <span class="dev-tag">블로그 자동화</span>
+      <span class="dev-tag">데이터 수집</span>
+      <span class="dev-tag">RPA 솔루션</span>
+      <span class="dev-tag">Windows 앱 개발</span>
+    </div>
+    <p style="color:var(--text2);max-width:600px;margin:0 auto;font-size:.95rem;line-height:1.8">
+      반복적인 업무를 자동화하여 시간과 비용을 절약할 수 있도록<br>
+      다양한 자동화 도구를 개발하고 있습니다.
+    </p>
+  </div>
 
-            <hr style="margin: 2rem 0; border-color: var(--text-color); opacity: 0.2;">
+  <div class="dev-cards">
+    <div class="dev-card">
+      <div class="dev-card-icon">🤖</div>
+      <h3>업무 자동화</h3>
+      <p>반복 작업을 자동으로 처리하는 효율적인 도구를 제작합니다.</p>
+    </div>
+    <div class="dev-card">
+      <div class="dev-card-icon">📊</div>
+      <h3>데이터 수집 & 분석</h3>
+      <p>웹 데이터를 자동으로 수집하고 정리하는 크롤링 도구를 개발합니다.</p>
+    </div>
+    <div class="dev-card">
+      <div class="dev-card-icon">🔧</div>
+      <h3>맞춤형 솔루션</h3>
+      <p>고객의 니즈에 맞는 맞춤형 자동화 솔루션을 제공합니다.</p>
+    </div>
+  </div>
+</div>
 
-            <h2>제휴 문의</h2>
-            <form id="contact-form" action="https://formspree.io/f/xlgwgljw" method="POST">
-                <div class="form-group">
-                    <label for="name">이름:</label>
-                    <input type="text" id="name" name="이름" required>
-                </div>
-                <div class="form-group">
-                    <label for="email">이메일:</label>
-                    <input type="email" id="email" name="이메일" required>
-                </div>
-                <div class="form-group">
-                    <label for="message">문의 내용:</label>
-                    <textarea id="message" name="문의 내용" rows="5" required></textarea>
-                </div>
-                <button type="submit">제출하기</button>
-            </form>
-        </div>
-        <div id="disqus_thread"></div>
+<!-- ==================== PAGE: 다운로드 ==================== -->
+<div class="page" id="page-download">
+  <div class="download-hero">
+    <h1 style="font-size:2rem;color:#fff;margin-bottom:8px">다운로드</h1>
+    <p style="color:var(--text2)">프로그램을 다운로드하고 바로 시작하세요</p>
+  </div>
+
+  <div class="download-card">
+    <div style="font-size:2.5rem;margin-bottom:12px">📦</div>
+    <h3>Nself</h3>
+    <p style="color:var(--text2);font-size:.9rem;margin-bottom:4px">네이버 블로그 자동화 프로그램</p>
+    <div class="version">v1.0.0 | Windows 전용</div>
+    <ul class="dl-features">
+      <li>네이버 블로그 자동 방문</li>
+      <li>좋아요 / 댓글 자동 작성</li>
+      <li>이웃추가 / 서로이웃 자동 신청</li>
+      <li>분야별 / 인기글 / 이웃블로그 모드</li>
+      <li>간편한 원클릭 실행</li>
+    </ul>
+    <a href="#" class="btn btn-primary" style="width:100%;justify-content:center;margin-top:8px" onclick="alert('다운로드 링크 준비 중입니다.')">
+      ⬇️ Nself 다운로드
+    </a>
+    <div style="margin-top:12px;font-size:.78rem;color:var(--text3)">시스템 요구사항: Windows 10/11 · Chrome 브라우저</div>
+  </div>
+</div>
+
+<!-- ==================== PAGE: 사용법 (Nself 가이드) ==================== -->
+<div class="page" id="page-guide">
+
+  <!-- Hero -->
+  <div class="hero">
+    <div class="hero-icon">📖</div>
+    <h1>Nself 사용 가이드</h1>
+    <p>네이버 블로그 자동화 프로그램 Nself의 모든 기능을 단계별로 안내합니다.</p>
+  </div>
+
+  <!-- 1. 시작하기 -->
+  <div class="section" id="sec-start">
+    <div class="section-header">
+      <div class="section-num">1</div>
+      <h2>시작하기</h2>
+    </div>
+    <div class="card">
+      <div class="card-title">💡 프로그램 소개</div>
+      <p style="color:var(--text2);font-size:.92rem">
+        <strong style="color:#fff">Nself</strong>는 네이버 블로그 방문, 좋아요, 댓글, 이웃추가 등을 자동으로 처리해주는 Windows 전용 자동화 도구입니다.
+      </p>
     </div>
 
-    <footer class="site-footer">
-        <div class="footer-content">
-            <div class="footer-nav">
-                <a href="/">홈</a>
-                <a href="/pastlife.html">전생 테스트</a>
-                <a href="/about.html">소개</a>
-                <a href="/terms.html">이용약관</a>
-                <a href="/privacy.html">개인정보처리방침</a>
-            </div>
-            <p>© 2026 데일리 유틸. All rights reserved.</p>
-            <p class="footer-contact">문의: etfsurfer@gmail.com</p>
+    <h3>시스템 요구사항</h3>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin:12px 0">
+      <div class="card" style="text-align:center">
+        <div style="font-size:1.5rem;margin-bottom:8px">🖥️</div>
+        <div style="color:#fff;font-weight:600;margin-bottom:4px">운영체제</div>
+        <div style="color:var(--text2);font-size:.85rem">Windows 10 / 11</div>
+      </div>
+      <div class="card" style="text-align:center">
+        <div style="font-size:1.5rem;margin-bottom:8px">🌐</div>
+        <div style="color:#fff;font-weight:600;margin-bottom:4px">브라우저</div>
+        <div style="color:var(--text2);font-size:.85rem">Chrome 설치 필수</div>
+      </div>
+    </div>
+
+    <h3>프로그램 실행 방법</h3>
+    <div class="steps">
+      <div class="step">
+        <div class="step-title"><code>Nself.exe</code> 파일을 더블클릭하여 실행</div>
+        <p>다운로드한 파일을 실행합니다.</p>
+      </div>
+      <div class="step">
+        <div class="step-title">UAC 관리자 권한 팝업이 나타나면 <code>예</code> 클릭</div>
+        <p>프로그램이 정상 작동하려면 관리자 권한이 필요합니다.</p>
+      </div>
+      <div class="step">
+        <div class="step-title">Windows SmartScreen 경고 처리</div>
+        <p>경고 화면이 나타나면 아래 순서대로 진행하세요.</p>
+      </div>
+    </div>
+
+    <div class="info-box info-warn">
+      <span class="icon">⚠️</span>
+      <div>
+        <strong>Windows SmartScreen 경고가 표시되는 경우</strong><br>
+        개인 개발자 프로그램의 경우 Microsoft 인증서가 없어 경고가 나타날 수 있습니다. 이는 정상적인 현상입니다.
+      </div>
+    </div>
+
+    <div class="diagram">┌─────────────────────────────────────────┐
+│   Windows의 PC 보호                       │
+│                                           │
+│   Windows SmartScreen이(가)               │
+│   인식할 수 없는 앱의 시작을               │
+│   방지했습니다.                            │
+│                                           │
+│   ┌──────────────┐                       │
+│   │  추가 정보    │ ← ① 클릭             │
+│   └──────────────┘                       │
+│                                           │
+│   ┌────────────────────────────────┐     │
+│   │         실행          │ ← ② 클릭     │
+│   └────────────────────────────────┘     │
+└─────────────────────────────────────────┘</div>
+  </div>
+
+  <!-- 2. 회원가입 & 로그인 -->
+  <div class="section" id="sec-signup">
+    <div class="section-header">
+      <div class="section-num">2</div>
+      <h2>회원가입 & 로그인</h2>
+    </div>
+
+    <h3>회원가입</h3>
+    <div class="steps">
+      <div class="step">
+        <div class="step-title"><code>회원가입</code> 버튼 클릭</div>
+        <p>프로그램 하단의 회원가입 버튼을 클릭합니다.</p>
+      </div>
+      <div class="step">
+        <div class="step-title">이메일 / 비밀번호 입력</div>
+        <p>사용할 이메일과 비밀번호를 입력합니다.</p>
+      </div>
+      <div class="step">
+        <div class="step-title">이용약관 스크롤 후 동의 체크</div>
+        <p>이용약관을 끝까지 스크롤한 뒤 <code>동의</code> 체크박스를 체크합니다.</p>
+      </div>
+      <div class="step">
+        <div class="step-title"><code>가입하기</code> 클릭</div>
+        <p>모든 정보 입력 후 가입하기 버튼을 클릭합니다.</p>
+      </div>
+    </div>
+
+    <div class="info-box info-danger">
+      <span class="icon">🔴</span>
+      <div>
+        <strong>이메일 인증 필수!</strong><br>
+        가입 후 반드시 등록한 이메일의 받은 편지함을 확인하고 인증을 완료하세요. 인증하지 않으면 로그인이 불가합니다.
+      </div>
+    </div>
+
+    <h3>로그인</h3>
+    <div class="steps">
+      <div class="step">
+        <div class="step-title">이메일 / 비밀번호 입력</div>
+        <p>가입 시 등록한 이메일과 비밀번호를 입력합니다.</p>
+      </div>
+      <div class="step">
+        <div class="step-title"><code>로그인</code> 버튼 클릭</div>
+        <p><code>아이디/비밀번호 저장</code> 체크 시 다음 실행부터 자동 입력됩니다.</p>
+      </div>
+    </div>
+
+    <div class="info-box info-info">
+      <span class="icon">ℹ️</span>
+      <div>
+        <strong>Pro 플랜 안내</strong><br>
+        Nself의 모든 기능은 Pro 플랜에서만 이용 가능합니다. Free 플랜 사용자는 결제가 필요합니다.
+      </div>
+    </div>
+  </div>
+
+  <!-- 3. 크롬 브라우저 설정 -->
+  <div class="section" id="sec-chrome">
+    <div class="section-header">
+      <div class="section-num">3</div>
+      <h2>크롬 브라우저 설정</h2>
+    </div>
+    <div class="steps">
+      <div class="step">
+        <div class="step-title">프로그램에서 <code>크롬 열기</code> 버튼 클릭</div>
+        <p>자동화 전용 크롬 브라우저가 열립니다.</p>
+      </div>
+      <div class="step">
+        <div class="step-title">열린 크롬에서 네이버 로그인</div>
+        <p>naver.com에 접속하여 자동화에 사용할 네이버 계정으로 로그인합니다.</p>
+      </div>
+      <div class="step">
+        <div class="step-title">로그인 완료 후 프로그램으로 복귀</div>
+        <p>로그인이 완료되면 크롬 창은 그대로 두고 Nself 프로그램으로 돌아옵니다.</p>
+      </div>
+    </div>
+
+    <div class="info-box info-warn">
+      <span class="icon">⚠️</span>
+      <div>
+        <strong>반드시 프로그램에서 연 크롬에서 로그인하세요!</strong><br>
+        기존에 열려있는 크롬이 아닌, <code>크롬 열기</code> 버튼으로 열린 브라우저에서 로그인해야 자동화가 정상 작동합니다.
+      </div>
+    </div>
+  </div>
+
+  <!-- 4. 방문 설정 -->
+  <div class="section" id="sec-visit">
+    <div class="section-header">
+      <div class="section-num">4</div>
+      <h2>방문 설정</h2>
+    </div>
+    <p style="color:var(--text2);margin-bottom:20px">방문할 블로그를 수집하는 3가지 모드를 제공합니다.</p>
+
+    <div class="mode-tabs">
+      <div class="mode-tab active" onclick="showMode(this,'mode-field')">📂 분야별</div>
+      <div class="mode-tab" onclick="showMode(this,'mode-popular')">🔥 인기글</div>
+      <div class="mode-tab" onclick="showMode(this,'mode-neighbor')">👥 이웃블로그</div>
+    </div>
+
+    <div id="mode-field" class="mode-content">
+      <div class="card">
+        <div class="card-title">📂 분야별 모드</div>
+        <p style="color:var(--text2);font-size:.9rem;margin-bottom:12px">카테고리를 선택하면 해당 분야의 블로그를 자동 수집하여 방문합니다.</p>
+        <div class="cat-grid">
+          <div class="cat-item">문화/엔터</div>
+          <div class="cat-item">라이프스타일</div>
+          <div class="cat-item">취미/여행</div>
+          <div class="cat-item">지식/정보</div>
+          <div class="cat-item">비즈니스</div>
+          <div class="cat-item">IT/테크</div>
+          <div class="cat-item">스포츠</div>
+          <div class="cat-item">건강/의학</div>
+          <div class="cat-item">패션/뷰티</div>
+          <div class="cat-item">푸드</div>
+          <div class="cat-item">인테리어</div>
+          <div class="cat-item">육아/교육</div>
+          <div class="cat-item">반려동물</div>
+          <div class="cat-item">게임</div>
+          <div class="cat-item">음악</div>
+          <div class="cat-item">영화/드라마</div>
+          <div class="cat-item">도서/문학</div>
+          <div class="cat-item">자동차</div>
+          <div class="cat-item">사진/영상</div>
+          <div class="cat-item">원예/식물</div>
+          <div class="cat-item">경제/재테크</div>
+          <div class="cat-item">부동산</div>
+          <div class="cat-item">자기계발</div>
+          <div class="cat-item">종교/철학</div>
+          <div class="cat-item">정치/사회</div>
+          <div class="cat-item">기타</div>
         </div>
-    </footer>
-    <script defer type="text/javascript" src="/main.js"></script>
+      </div>
+    </div>
+
+    <div id="mode-popular" class="mode-content" style="display:none">
+      <div class="card">
+        <div class="card-title">🔥 인기글 모드</div>
+        <p style="color:var(--text2);font-size:.9rem">네이버에서 현재 인기 있는 블로그를 자동으로 수집하여 방문합니다. 별도 설정이 필요 없으며, 트렌드에 맞는 블로그를 효율적으로 방문할 수 있습니다.</p>
+      </div>
+    </div>
+
+    <div id="mode-neighbor" class="mode-content" style="display:none">
+      <div class="card">
+        <div class="card-title">👥 이웃블로그 모드</div>
+        <p style="color:var(--text2);font-size:.9rem">내 이웃으로 등록된 블로그를 순차적으로 방문합니다. 이웃 관리와 소통을 자동화하는 데 유용합니다.</p>
+      </div>
+    </div>
+
+    <h3>URL 수 설정</h3>
+    <div class="card">
+      <div class="card-title">🎚️ 방문 수 슬라이더</div>
+      <p style="color:var(--text2);font-size:.9rem">슬라이더를 조절하여 한 번에 방문할 블로그 수를 설정합니다. 수가 많을수록 실행 시간이 길어집니다.</p>
+      <div style="margin-top:12px;background:var(--bg);padding:16px;border-radius:10px">
+        <div style="display:flex;justify-content:space-between;margin-bottom:8px;font-size:.82rem;color:var(--text3)">
+          <span>적음</span><span>많음</span>
+        </div>
+        <div style="height:6px;background:var(--bg3);border-radius:3px;position:relative">
+          <div style="width:40%;height:100%;background:linear-gradient(90deg,var(--accent),var(--accent2));border-radius:3px"></div>
+          <div style="position:absolute;top:-7px;left:38%;width:20px;height:20px;background:#fff;border-radius:50%;box-shadow:0 2px 8px rgba(0,0,0,.3)"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 5. 기능 설정 -->
+  <div class="section" id="sec-features">
+    <div class="section-header">
+      <div class="section-num">5</div>
+      <h2>기능 설정</h2>
+    </div>
+    <p style="color:var(--text2);margin-bottom:20px">4개의 토글 스위치로 원하는 기능을 ON/OFF 할 수 있습니다.</p>
+
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin-bottom:24px">
+      <div class="card">
+        <div class="toggle-demo"><div class="toggle-track on"></div><span class="toggle-label" style="font-weight:600;color:#fff">👍 좋아요</span></div>
+        <p style="color:var(--text2);font-size:.85rem;margin-top:8px">방문한 블로그 포스트에 자동으로 좋아요를 누릅니다.</p>
+      </div>
+      <div class="card">
+        <div class="toggle-demo"><div class="toggle-track on"></div><span class="toggle-label" style="font-weight:600;color:#fff">💬 댓글</span></div>
+        <p style="color:var(--text2);font-size:.85rem;margin-top:8px">등록한 댓글 문구 중 랜덤으로 하나를 선택하여 자동 작성합니다.</p>
+      </div>
+      <div class="card">
+        <div class="toggle-demo"><div class="toggle-track"></div><span class="toggle-label" style="font-weight:600;color:#fff">➕ 이웃추가</span></div>
+        <p style="color:var(--text2);font-size:.85rem;margin-top:8px">일방 이웃을 자동으로 신청합니다.</p>
+      </div>
+      <div class="card">
+        <div class="toggle-demo"><div class="toggle-track"></div><span class="toggle-label" style="font-weight:600;color:#fff">🤝 서로이웃추가</span></div>
+        <p style="color:var(--text2);font-size:.85rem;margin-top:8px">서로이웃 신청과 함께 메시지를 입력할 수 있습니다. (최대 2줄)</p>
+      </div>
+    </div>
+
+    <h3>조합별 동작 방식</h3>
+    <table class="combo-table">
+      <thead>
+        <tr>
+          <th>조합</th>
+          <th>좋아요</th>
+          <th>댓글</th>
+          <th>이웃추가</th>
+          <th>동작 순서</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>좋아요 단독</td>
+          <td><span class="check">✔</span></td>
+          <td><span class="cross">—</span></td>
+          <td><span class="cross">—</span></td>
+          <td style="color:var(--text)">좋아요 실행</td>
+        </tr>
+        <tr>
+          <td>댓글 단독</td>
+          <td><span class="cross">—</span></td>
+          <td><span class="check">✔</span></td>
+          <td><span class="cross">—</span></td>
+          <td style="color:var(--text)">댓글 작성</td>
+        </tr>
+        <tr>
+          <td>좋아요 + 댓글</td>
+          <td><span class="check">✔</span></td>
+          <td><span class="check">✔</span></td>
+          <td><span class="cross">—</span></td>
+          <td style="color:var(--text)">1패스 동시 처리</td>
+        </tr>
+        <tr>
+          <td>전체 기능</td>
+          <td><span class="check">✔</span></td>
+          <td><span class="check">✔</span></td>
+          <td><span class="check">✔</span></td>
+          <td style="color:var(--text)">좋아요+댓글 → 이웃추가</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="info-box info-info">
+      <span class="icon">ℹ️</span>
+      <div>
+        <strong>이웃추가 / 서로이웃추가는 동시 선택 불가</strong><br>
+        두 기능은 상호 배타적이며, 활성화 시 항상 마지막에 실행됩니다.
+      </div>
+    </div>
+  </div>
+
+  <!-- 6. 댓글 문구 설정 -->
+  <div class="section" id="sec-comment">
+    <div class="section-header">
+      <div class="section-num">6</div>
+      <h2>댓글 문구 설정</h2>
+    </div>
+
+    <div class="steps">
+      <div class="step">
+        <div class="step-title">댓글 토글을 <code>ON</code>으로 변경</div>
+        <p>댓글 기능을 켜면 하단에 댓글 문구 설정 섹션이 나타납니다.</p>
+      </div>
+      <div class="step">
+        <div class="step-title">연필 아이콘 ✏️ 클릭</div>
+        <p>댓글 입력 팝업이 열립니다.</p>
+      </div>
+      <div class="step">
+        <div class="step-title">댓글 1~3개 등록</div>
+        <p>최대 3개의 댓글을 미리 등록할 수 있으며, 실행 시 랜덤으로 하나가 선택됩니다.</p>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:16px">
+      <div class="card-title">💡 댓글 예시</div>
+      <div style="display:grid;gap:8px;margin-top:12px">
+        <div style="background:var(--bg);padding:12px 16px;border-radius:8px;color:var(--text2);font-size:.88rem;border-left:3px solid var(--accent)">
+          댓글 1: "좋은 글 잘 읽었습니다! 😊"
+        </div>
+        <div style="background:var(--bg);padding:12px 16px;border-radius:8px;color:var(--text2);font-size:.88rem;border-left:3px solid var(--accent2)">
+          댓글 2: "유익한 정보 감사합니다~"
+        </div>
+        <div style="background:var(--bg);padding:12px 16px;border-radius:8px;color:var(--text2);font-size:.88rem;border-left:3px solid var(--accent3)">
+          댓글 3: "글이 정말 도움이 됐어요 👍"
+        </div>
+      </div>
+    </div>
+
+    <div class="info-box info-tip">
+      <span class="icon">💡</span>
+      <div>
+        <strong>팁</strong><br>
+        자연스러운 다양한 문구를 등록하면 자동 댓글이 더 자연스럽게 보입니다.
+      </div>
+    </div>
+  </div>
+
+  <!-- 7. 실행 & 긴급정지 -->
+  <div class="section" id="sec-run">
+    <div class="section-header">
+      <div class="section-num">7</div>
+      <h2>실행 & 긴급정지</h2>
+    </div>
+
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;margin-bottom:20px">
+      <div class="card" style="text-align:center;border-color:rgba(81,207,102,.3)">
+        <div style="font-size:2rem;margin-bottom:8px">▶️</div>
+        <div style="color:var(--success);font-weight:700;font-size:1.1rem;margin-bottom:8px">시작</div>
+        <p style="color:var(--text2);font-size:.85rem"><code>시작</code> 버튼을 클릭하면 설정한 내용대로 자동화가 시작됩니다.</p>
+      </div>
+      <div class="card" style="text-align:center;border-color:rgba(255,107,107,.3)">
+        <div style="font-size:2rem;margin-bottom:8px">⏹️</div>
+        <div style="color:var(--danger);font-weight:700;font-size:1.1rem;margin-bottom:8px">긴급정지</div>
+        <p style="color:var(--text2);font-size:.85rem"><code>긴급정지</code> 버튼으로 진행 중인 모든 작업을 즉시 중단합니다.</p>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">📊 실시간 로그 창</div>
+      <p style="color:var(--text2);font-size:.9rem;margin-bottom:12px">하단 로그 창에서 자동화 진행 상황을 실시간으로 확인할 수 있습니다.</p>
+      <div style="background:#0d0e1a;border-radius:8px;padding:16px;font-family:'Consolas','D2Coding',monospace;font-size:.8rem;line-height:1.8">
+        <div style="color:#51cf66">[10:32:15] 자동화를 시작합니다...</div>
+        <div style="color:#339af0">[10:32:18] 블로그 URL 수집 중... (분야별: IT/테크)</div>
+        <div style="color:var(--text2)">[10:32:25] blog.naver.com/user1 방문 완료</div>
+        <div style="color:var(--accent2)">[10:32:28] ✓ 좋아요 완료</div>
+        <div style="color:var(--accent2)">[10:32:31] ✓ 댓글 작성 완료</div>
+        <div style="color:var(--text2)">[10:32:35] blog.naver.com/user2 방문 완료</div>
+        <div style="color:#f0c040">[10:32:38] ⚡ 이웃추가 진행 중...</div>
+      </div>
+    </div>
+
+    <div class="info-box info-warn">
+      <span class="icon">⚠️</span>
+      <div>
+        <strong>작업 중 제한사항</strong><br>
+        자동화 실행 중에는 <code>로그아웃</code>과 <code>크롬 열기</code> 기능을 사용할 수 없습니다.
+      </div>
+    </div>
+  </div>
+
+  <!-- 8. 주의사항 & FAQ -->
+  <div class="section" id="sec-faq">
+    <div class="section-header">
+      <div class="section-num">8</div>
+      <h2>주의사항 & FAQ</h2>
+    </div>
+
+    <h3>주의사항</h3>
+    <div class="info-box info-danger">
+      <span class="icon">🚨</span>
+      <div>
+        <strong>반드시 지켜주세요!</strong>
+        <ul style="margin-top:8px;padding-left:18px;line-height:2">
+          <li>크롬 브라우저에서 <strong>네이버 로그인</strong>은 필수입니다.</li>
+          <li>실행 중 <strong>크롬 창을 닫지 마세요.</strong></li>
+          <li>과도한 자동화는 <strong>네이버 계정 제재</strong> 위험이 있습니다.</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="info-box info-tip">
+      <span class="icon">✅</span>
+      <div>
+        <strong>하루 적정 사용량 권장</strong>
+        <ul style="margin-top:8px;padding-left:18px;line-height:2">
+          <li>이웃추가: <strong>10~20개</strong></li>
+          <li>좋아요: <strong>50~100개</strong></li>
+          <li>과도하게 사용하지 않으면 계정 제재 위험이 크게 줄어듭니다.</li>
+        </ul>
+      </div>
+    </div>
+
+    <h3>자주 묻는 질문</h3>
+    <div class="faq-item">
+      <div class="faq-q" onclick="toggleFaq(this)">
+        <span>Q. 이웃추가 버튼이 없다고 나와요</span>
+        <span class="arrow">▼</span>
+      </div>
+      <div class="faq-a">
+        이미 이웃으로 등록된 블로그이거나 비공개 블로그인 경우 이웃추가 버튼이 표시되지 않을 수 있습니다. 이 경우 해당 블로그는 자동으로 건너뜁니다.
+      </div>
+    </div>
+    <div class="faq-item">
+      <div class="faq-q" onclick="toggleFaq(this)">
+        <span>Q. 크롬이 안 열려요</span>
+        <span class="arrow">▼</span>
+      </div>
+      <div class="faq-a">
+        Chrome 브라우저가 PC에 설치되어 있는지 확인하세요. 설치되어 있지 않다면 <a href="https://www.google.com/chrome" target="_blank">Google Chrome 공식 사이트</a>에서 다운로드 후 설치해주세요.
+      </div>
+    </div>
+    <div class="faq-item">
+      <div class="faq-q" onclick="toggleFaq(this)">
+        <span>Q. 로그인이 안 돼요</span>
+        <span class="arrow">▼</span>
+      </div>
+      <div class="faq-a">
+        이메일 인증이 완료되었는지 확인하세요. 가입 시 등록한 이메일의 받은 편지함(스팸 폴더 포함)을 확인하고 인증 링크를 클릭해주세요.
+      </div>
+    </div>
+    <div class="faq-item">
+      <div class="faq-q" onclick="toggleFaq(this)">
+        <span>Q. SmartScreen 경고가 떠요</span>
+        <span class="arrow">▼</span>
+      </div>
+      <div class="faq-a">
+        Windows SmartScreen 경고 창에서 <code>추가 정보</code>를 클릭한 뒤 <code>실행</code> 버튼을 클릭하면 프로그램이 정상적으로 실행됩니다. 이는 개인 개발자 프로그램에서 나타나는 정상적인 경고입니다.
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== PAGE: 고객센터 ==================== -->
+<div class="page" id="page-contact">
+  <div class="contact-center">
+    <h1 style="font-size:2rem;color:#fff;margin-bottom:8px">고객센터</h1>
+    <p style="color:var(--text2);margin-bottom:32px">궁금한 점이 있으시면 카카오톡으로 편하게 문의하세요.</p>
+    <div class="contact-card">
+      <div class="kakao-icon">💬</div>
+      <h3 style="color:#fff;font-size:1.2rem;margin-bottom:8px">카카오톡 오픈채팅 문의</h3>
+      <p style="color:var(--text2);font-size:.9rem;margin-bottom:24px;line-height:1.7">
+        프로그램 관련 질문, 오류 신고, 기능 요청 등<br>
+        무엇이든 편하게 문의해주세요.
+      </p>
+      <a href="https://open.kakao.com/o/svB0Npmi" target="_blank" class="btn btn-kakao" style="width:100%;justify-content:center">
+        💬 카카오톡으로 문의하기
+      </a>
+      <div style="margin-top:16px;font-size:.78rem;color:var(--text3)">
+        운영시간: 평일 10:00 ~ 18:00 (주말/공휴일 제외)
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Footer -->
+<div class="footer">
+  &copy; 2026 Nself. All rights reserved.
+</div>
+</main>
+
+<!-- Scroll to top -->
+<button class="scroll-top" id="scrollTop" onclick="window.scrollTo({top:0,behavior:'smooth'})">↑</button>
+
+<script>
+// Page navigation
+function showPage(page) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.top-nav-item').forEach(n => n.classList.remove('active'));
+
+  const target = document.getElementById('page-' + page);
+  if (target) target.classList.add('active');
+
+  const navItem = document.querySelector(`.top-nav-item[data-page="${page}"]`);
+  if (navItem) navItem.classList.add('active');
+
+  const sidebar = document.getElementById('sidebar');
+  const main = document.getElementById('mainContent');
+
+  if (page === 'guide') {
+    sidebar.classList.add('visible');
+    if (window.innerWidth > 900) main.classList.add('with-sidebar');
+  } else {
+    sidebar.classList.remove('visible');
+    main.classList.remove('with-sidebar');
+  }
+
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+  closeMobile();
+}
+
+// Mobile menu
+function toggleMobile() {
+  const menu = document.getElementById('mobileMenu');
+  const btn = document.querySelector('.hamburger');
+  menu.classList.toggle('open');
+  btn.classList.toggle('active');
+}
+function closeMobile() {
+  document.getElementById('mobileMenu').classList.remove('open');
+  document.querySelector('.hamburger').classList.remove('active');
+}
+
+// Mode tabs (방문 설정)
+function showMode(tab, id) {
+  tab.parentElement.querySelectorAll('.mode-tab').forEach(t => t.classList.remove('active'));
+  tab.classList.add('active');
+  document.querySelectorAll('.mode-content').forEach(c => c.style.display = 'none');
+  document.getElementById(id).style.display = 'block';
+}
+
+// FAQ accordion
+function toggleFaq(el) {
+  const answer = el.nextElementSibling;
+  const isOpen = el.classList.contains('open');
+
+  document.querySelectorAll('.faq-q').forEach(q => q.classList.remove('open'));
+  document.querySelectorAll('.faq-a').forEach(a => a.classList.remove('open'));
+
+  if (!isOpen) {
+    el.classList.add('open');
+    answer.classList.add('open');
+  }
+}
+
+// Sidebar active tracking (scroll spy)
+function updateSidebarActive() {
+  const sections = document.querySelectorAll('.section[id]');
+  const navLinks = document.querySelectorAll('.sidebar-nav a');
+  let current = '';
+
+  sections.forEach(sec => {
+    const top = sec.getBoundingClientRect().top;
+    if (top < 150) current = '#' + sec.id;
+  });
+
+  navLinks.forEach(link => {
+    link.classList.remove('active');
+    if (link.getAttribute('href') === current) link.classList.add('active');
+  });
+}
+
+// Scroll to top button
+function updateScrollTop() {
+  const btn = document.getElementById('scrollTop');
+  if (window.scrollY > 400) btn.classList.add('visible');
+  else btn.classList.remove('visible');
+}
+
+window.addEventListener('scroll', () => {
+  updateSidebarActive();
+  updateScrollTop();
+});
+
+// Responsive sidebar
+window.addEventListener('resize', () => {
+  const main = document.getElementById('mainContent');
+  const sidebar = document.getElementById('sidebar');
+  if (window.innerWidth <= 900) {
+    main.classList.remove('with-sidebar');
+  } else if (sidebar.classList.contains('visible')) {
+    main.classList.add('with-sidebar');
+  }
+});
+
+// Toggle demo clicks
+document.querySelectorAll('.toggle-track').forEach(t => {
+  t.addEventListener('click', () => t.classList.toggle('on'));
+});
+
+// Init
+showPage('developer');
+</script>
 </body>
 </html>
