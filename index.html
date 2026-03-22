@@ -219,7 +219,7 @@ code{background:rgba(108,92,231,.1);color:var(--accent);padding:2px 8px;border-r
 
 <!-- Header -->
 <header class="header">
-  <div class="header-logo">
+  <div class="header-logo" onclick="showPage('developer')" style="cursor:pointer">
     <span>RUNTO</span>
     <div class="header-badge">Software</div>
   </div>
@@ -307,6 +307,16 @@ code{background:rgba(108,92,231,.1);color:var(--accent);padding:2px 8px;border-r
     </p>
   </div>
 
+  <!-- 스마트 앱 컨트롤 배너 -->
+  <div onclick="showPage('guide');setTimeout(()=>{document.getElementById('sec-install').scrollIntoView({behavior:'smooth'})},150)" style="cursor:pointer;margin-bottom:32px;padding:18px 24px;background:linear-gradient(135deg,rgba(220,38,38,.08),rgba(220,38,38,.04));border:1px solid rgba(220,38,38,.25);border-radius:14px;display:flex;align-items:center;gap:16px;transition:all .2s" onmouseover="this.style.borderColor='rgba(220,38,38,.5)';this.style.background='linear-gradient(135deg,rgba(220,38,38,.13),rgba(220,38,38,.07))'" onmouseout="this.style.borderColor='rgba(220,38,38,.25)';this.style.background='linear-gradient(135deg,rgba(220,38,38,.08),rgba(220,38,38,.04))'">
+    <div style="font-size:2rem;flex-shrink:0">🛡️</div>
+    <div style="flex:1">
+      <div style="font-weight:700;color:#dc2626;font-size:.95rem;margin-bottom:4px">프로그램이 실행되지 않나요? — 스마트 앱 컨트롤 해제</div>
+      <div style="color:var(--text2);font-size:.84rem">Windows 스마트 앱 컨트롤이 켜져 있으면 설치·실행이 차단될 수 있습니다. 해제 방법을 확인하세요.</div>
+    </div>
+    <div style="color:var(--text3);font-size:.85rem;flex-shrink:0">자세히 보기 →</div>
+  </div>
+
   <div class="dev-cards">
     <div class="dev-card">
       <div class="dev-card-icon">🤖</div>
@@ -323,16 +333,6 @@ code{background:rgba(108,92,231,.1);color:var(--accent);padding:2px 8px;border-r
       <h3>맞춤형 솔루션</h3>
       <p>고객의 니즈에 맞는 맞춤형 자동화 솔루션을 제공합니다.</p>
     </div>
-  </div>
-
-  <!-- 스마트 앱 컨트롤 배너 -->
-  <div onclick="showPage('guide');setTimeout(()=>{document.getElementById('sec-install').scrollIntoView({behavior:'smooth'})},150)" style="cursor:pointer;margin-top:32px;padding:18px 24px;background:linear-gradient(135deg,rgba(220,38,38,.08),rgba(220,38,38,.04));border:1px solid rgba(220,38,38,.25);border-radius:14px;display:flex;align-items:center;gap:16px;transition:all .2s" onmouseover="this.style.borderColor='rgba(220,38,38,.5)';this.style.background='linear-gradient(135deg,rgba(220,38,38,.13),rgba(220,38,38,.07))'" onmouseout="this.style.borderColor='rgba(220,38,38,.25)';this.style.background='linear-gradient(135deg,rgba(220,38,38,.08),rgba(220,38,38,.04))'">
-    <div style="font-size:2rem;flex-shrink:0">🛡️</div>
-    <div style="flex:1">
-      <div style="font-weight:700;color:#dc2626;font-size:.95rem;margin-bottom:4px">프로그램이 실행되지 않나요? — 스마트 앱 컨트롤 해제</div>
-      <div style="color:var(--text2);font-size:.84rem">Windows 스마트 앱 컨트롤이 켜져 있으면 설치·실행이 차단될 수 있습니다. 해제 방법을 확인하세요.</div>
-    </div>
-    <div style="color:var(--text3);font-size:.85rem;flex-shrink:0">자세히 보기 →</div>
   </div>
 </div>
 
