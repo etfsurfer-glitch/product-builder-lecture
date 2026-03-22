@@ -345,7 +345,7 @@ code{background:rgba(108,92,231,.1);color:var(--accent);padding:2px 8px;border-r
       <li>분야별 / 인기글 / 이웃블로그 모드</li>
       <li>간편한 원클릭 실행</li>
     </ul>
-    <a href="https://github.com/etfsurfer-glitch/nselfupdate/releases/latest/download/NSITE_v1.1_Setup.exe" target="_blank" class="btn btn-primary" style="width:100%;justify-content:center;margin-top:8px">
+    <a id="dl-btn" href="https://github.com/etfsurfer-glitch/nselfupdate/releases/latest" target="_blank" class="btn btn-primary" style="width:100%;justify-content:center;margin-top:8px">
       ⬇️ NSITE 다운로드
     </a>
     <div style="margin-top:12px;font-size:.78rem;color:var(--text3)">시스템 요구사항: Windows 10/11 · Chrome 브라우저</div>
@@ -491,7 +491,7 @@ code{background:rgba(108,92,231,.1);color:var(--accent);padding:2px 8px;border-r
     <div class="steps">
       <div class="step">
         <div class="step-title">홈페이지에서 설치 파일 다운로드</div>
-        <p>다운로드 페이지에서 최신 버전 설치 파일(<code>NSITE_v1.1_Setup.exe</code>)을 받습니다.</p>
+        <p>다운로드 페이지에서 최신 버전 설치 파일(<code>NSITE_vX.X_setup.exe</code>)을 받습니다.</p>
       </div>
       <div class="step">
         <div class="step-title">설치 파일 더블클릭 실행</div>
@@ -1502,6 +1502,19 @@ document.querySelectorAll('.toggle-track').forEach(t => {
 
 // Init
 showPage('developer');
+
+// 다운로드 버튼 — GitHub 최신 릴리즈 .exe 자동 연결
+(function() {
+  const btn = document.getElementById('dl-btn');
+  if (!btn) return;
+  fetch('https://api.github.com/repos/etfsurfer-glitch/nselfupdate/releases/latest')
+    .then(r => r.json())
+    .then(data => {
+      const asset = (data.assets || []).find(a => a.name.toLowerCase().endsWith('.exe'));
+      if (asset) btn.href = asset.browser_download_url;
+    })
+    .catch(() => { /* 실패 시 releases 페이지로 유지 */ });
+})();
 </script>
 </body>
 </html>
