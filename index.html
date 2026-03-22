@@ -508,10 +508,6 @@ code{background:rgba(108,92,231,.1);color:var(--accent);padding:2px 8px;border-r
         <p>다운로드한 파일을 더블클릭합니다.</p>
       </div>
       <div class="step">
-        <div class="step-title">Windows SmartScreen 경고 처리</div>
-        <p>"Windows가 PC를 보호했습니다" 창이 뜨면 <code>추가 정보</code> 클릭 → <code>실행</code> 클릭합니다.</p>
-      </div>
-      <div class="step">
         <div class="step-title">UAC 관리자 권한 허용</div>
         <p>사용자 계정 컨트롤 창에서 <code>예</code>를 클릭합니다.</p>
       </div>
@@ -529,32 +525,7 @@ code{background:rgba(108,92,231,.1);color:var(--accent);padding:2px 8px;border-r
       </div>
     </div>
 
-    <div class="info-box info-warn">
-      <span class="icon">⚠️</span>
-      <div>
-        <strong>Windows SmartScreen 경고가 표시되는 경우</strong><br>
-        개인 개발자 프로그램은 Microsoft 인증서가 없어 경고가 나타날 수 있습니다. 이는 정상적인 현상입니다.<br>
-        <code>추가 정보</code> → <code>실행</code> 순서로 진행해주세요.
-      </div>
-    </div>
-
-    <div class="diagram">┌─────────────────────────────────────────┐
-│   Windows의 PC 보호                       │
-│                                           │
-│   Windows SmartScreen이(가)               │
-│   인식할 수 없는 앱의 시작을               │
-│   방지했습니다.                            │
-│                                           │
-│   ┌──────────────┐                       │
-│   │  추가 정보    │ ← ① 클릭             │
-│   └──────────────┘                       │
-│                                           │
-│   ┌────────────────────────────────┐     │
-│   │         실행          │ ← ② 클릭     │
-│   └────────────────────────────────┘     │
-└─────────────────────────────────────────┘</div>
-
-    <div class="info-box info-danger" style="margin-top:20px">
+    <div class="info-box info-danger">
       <span class="icon">🛡️</span>
       <div>
         <strong>경고창조차 안 뜨고 실행이 완전히 막히는 경우 — 스마트 앱 컨트롤</strong><br>
@@ -993,16 +964,7 @@ code{background:rgba(108,92,231,.1);color:var(--accent);padding:2px 8px;border-r
 
     <div class="faq-item">
       <div class="faq-q" onclick="toggleFaq(this)">
-        <span>Q1. 설치 시 "Windows가 PC를 보호했습니다" 경고가 떠요.</span>
-        <span class="arrow">▼</span>
-      </div>
-      <div class="faq-a">
-        <code>추가 정보</code> → <code>실행</code>을 클릭해주세요. 신규 배포 프로그램은 초기에 이 경고가 표시될 수 있습니다. 이는 정상적인 현상입니다.
-      </div>
-    </div>
-    <div class="faq-item">
-      <div class="faq-q" onclick="toggleFaq(this)">
-        <span>Q2. 경고창도 안 뜨고 실행 자체가 안 돼요 (스마트 앱 컨트롤).</span>
+        <span>Q1. 프로그램이 실행되지 않아요 (스마트 앱 컨트롤).</span>
         <span class="arrow">▼</span>
       </div>
       <div class="faq-a">
@@ -1015,7 +977,7 @@ code{background:rgba(108,92,231,.1);color:var(--accent);padding:2px 8px;border-r
     </div>
     <div class="faq-item">
       <div class="faq-q" onclick="toggleFaq(this)">
-        <span>Q3. 로그인 버튼이 회색으로 비활성화되어 있어요.</span>
+        <span>Q2. 로그인 버튼이 회색으로 비활성화되어 있어요.</span>
         <span class="arrow">▼</span>
       </div>
       <div class="faq-a">
@@ -1024,7 +986,7 @@ code{background:rgba(108,92,231,.1);color:var(--accent);padding:2px 8px;border-r
     </div>
     <div class="faq-item">
       <div class="faq-q" onclick="toggleFaq(this)">
-        <span>Q4. "최신 버전으로 업데이트 후 이용 가능합니다" 메시지가 뜹니다.</span>
+        <span>Q3. "최신 버전으로 업데이트 후 이용 가능합니다" 메시지가 뜹니다.</span>
         <span class="arrow">▼</span>
       </div>
       <div class="faq-a">
@@ -1033,7 +995,7 @@ code{background:rgba(108,92,231,.1);color:var(--accent);padding:2px 8px;border-r
     </div>
     <div class="faq-item">
       <div class="faq-q" onclick="toggleFaq(this)">
-        <span>Q5. Chrome이 열리지 않거나 오류가 발생합니다.</span>
+        <span>Q4. Chrome이 열리지 않거나 오류가 발생합니다.</span>
         <span class="arrow">▼</span>
       </div>
       <div class="faq-a">
@@ -1043,7 +1005,7 @@ code{background:rgba(108,92,231,.1);color:var(--accent);padding:2px 8px;border-r
     </div>
     <div class="faq-item">
       <div class="faq-q" onclick="toggleFaq(this)">
-        <span>Q6. 자동화 실행 중 Chrome이 갑자기 꺼졌습니다.</span>
+        <span>Q5. 자동화 실행 중 Chrome이 갑자기 꺼졌습니다.</span>
         <span class="arrow">▼</span>
       </div>
       <div class="faq-a">
@@ -1052,7 +1014,7 @@ code{background:rgba(108,92,231,.1);color:var(--accent);padding:2px 8px;border-r
     </div>
     <div class="faq-item">
       <div class="faq-q" onclick="toggleFaq(this)">
-        <span>Q7. 하루 50개 제한은 언제 다시 채워지나요?</span>
+        <span>Q6. 하루 50개 제한은 언제 다시 채워지나요?</span>
         <span class="arrow">▼</span>
       </div>
       <div class="faq-a">
@@ -1061,7 +1023,7 @@ code{background:rgba(108,92,231,.1);color:var(--accent);padding:2px 8px;border-r
     </div>
     <div class="faq-item">
       <div class="faq-q" onclick="toggleFaq(this)">
-        <span>Q8. 방문했던 블로그에 또 방문하는 것 같아요.</span>
+        <span>Q7. 방문했던 블로그에 또 방문하는 것 같아요.</span>
         <span class="arrow">▼</span>
       </div>
       <div class="faq-a">
@@ -1070,7 +1032,7 @@ code{background:rgba(108,92,231,.1);color:var(--accent);padding:2px 8px;border-r
     </div>
     <div class="faq-item">
       <div class="faq-q" onclick="toggleFaq(this)">
-        <span>Q9. 댓글·서로이웃 메시지를 저장했는데 다음에 사라졌습니다.</span>
+        <span>Q8. 댓글·서로이웃 메시지를 저장했는데 다음에 사라졌습니다.</span>
         <span class="arrow">▼</span>
       </div>
       <div class="faq-a">
@@ -1079,7 +1041,7 @@ code{background:rgba(108,92,231,.1);color:var(--accent);padding:2px 8px;border-r
     </div>
     <div class="faq-item">
       <div class="faq-q" onclick="toggleFaq(this)">
-        <span>Q10. 무료 회원도 쓸 수 있나요?</span>
+        <span>Q9. 무료 회원도 쓸 수 있나요?</span>
         <span class="arrow">▼</span>
       </div>
       <div class="faq-a">
@@ -1088,7 +1050,7 @@ code{background:rgba(108,92,231,.1);color:var(--accent);padding:2px 8px;border-r
     </div>
     <div class="faq-item">
       <div class="faq-q" onclick="toggleFaq(this)">
-        <span>Q11. N 계정이 활동 제한을 받았습니다.</span>
+        <span>Q10. N 계정이 활동 제한을 받았습니다.</span>
         <span class="arrow">▼</span>
       </div>
       <div class="faq-a">
@@ -1097,7 +1059,7 @@ code{background:rgba(108,92,231,.1);color:var(--accent);padding:2px 8px;border-r
     </div>
     <div class="faq-item">
       <div class="faq-q" onclick="toggleFaq(this)">
-        <span>Q12. 이웃블로그 방문 모드에서 이웃추가가 비활성화됩니다.</span>
+        <span>Q11. 이웃블로그 방문 모드에서 이웃추가가 비활성화됩니다.</span>
         <span class="arrow">▼</span>
       </div>
       <div class="faq-a">
@@ -1106,7 +1068,7 @@ code{background:rgba(108,92,231,.1);color:var(--accent);padding:2px 8px;border-r
     </div>
     <div class="faq-item">
       <div class="faq-q" onclick="toggleFaq(this)">
-        <span>Q13. 분야별/키워드별 카드에 "현재수집: 0개"라고 표시됩니다.</span>
+        <span>Q12. 분야별/키워드별 카드에 "현재수집: 0개"라고 표시됩니다.</span>
         <span class="arrow">▼</span>
       </div>
       <div class="faq-a">
@@ -1115,7 +1077,7 @@ code{background:rgba(108,92,231,.1);color:var(--accent);padding:2px 8px;border-r
     </div>
     <div class="faq-item">
       <div class="faq-q" onclick="toggleFaq(this)">
-        <span>Q14. 랜덤댓글/랜덤메시지는 어떻게 동작하나요?</span>
+        <span>Q13. 랜덤댓글/랜덤메시지는 어떻게 동작하나요?</span>
         <span class="arrow">▼</span>
       </div>
       <div class="faq-a">
@@ -1124,7 +1086,7 @@ code{background:rgba(108,92,231,.1);color:var(--accent);padding:2px 8px;border-r
     </div>
     <div class="faq-item">
       <div class="faq-q" onclick="toggleFaq(this)">
-        <span>Q15. 같은 컴퓨터에서 여러 계정을 사용할 수 있나요?</span>
+        <span>Q14. 같은 컴퓨터에서 여러 계정을 사용할 수 있나요?</span>
         <span class="arrow">▼</span>
       </div>
       <div class="faq-a">
