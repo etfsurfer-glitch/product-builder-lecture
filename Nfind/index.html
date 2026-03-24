@@ -279,7 +279,7 @@ code{background:rgba(108,92,231,.1);color:var(--accent);padding:2px 8px;border-r
 
   <div class="hero">
     <div class="hero-icon">🏢</div>
-    <div class="version-badge">v1.2 · 아파트 매물 조회 시스템</div>
+    <div class="version-badge" id="heroBadge">아파트 매물 조회 시스템</div>
     <h1>Nfind</h1>
     <p>아파트 단지를 검색하고 매물 정보를 빠르게 조회·정리하는 데스크톱 프로그램.<br>중개사무소 업무 효율을 높이는 스마트 매물 추출 도구입니다.</p>
     <div class="hero-buttons">
@@ -411,7 +411,7 @@ code{background:rgba(108,92,231,.1);color:var(--accent);padding:2px 8px;border-r
     <div class="steps">
       <div class="step">
         <div class="step-title">설치 파일 다운로드</div>
-        <div>위 다운로드 버튼을 클릭해 <code>Nfind_Setup_v1.2.exe</code> 파일을 내려받습니다.</div>
+        <div>위 다운로드 버튼을 클릭해 <code>Nfind_Setup.exe</code> 파일을 내려받습니다.</div>
       </div>
       <div class="step">
         <div class="step-title">관리자 권한으로 실행</div>
@@ -498,7 +498,7 @@ code{background:rgba(108,92,231,.1);color:var(--accent);padding:2px 8px;border-r
     <div class="steps">
       <div class="step">
         <div class="step-title">설치 파일 다운로드</div>
-        <div>홈페이지에서 <code>Nfind_Setup_v1.2.exe</code> 설치 파일을 내려받습니다.</div>
+        <div>홈페이지에서 <code>Nfind_Setup.exe</code> 설치 파일을 내려받습니다.</div>
       </div>
       <div class="step">
         <div class="step-title">관리자 권한으로 실행</div>
@@ -926,7 +926,7 @@ code{background:rgba(108,92,231,.1);color:var(--accent);padding:2px 8px;border-r
     <div class="steps">
       <div class="step">
         <div class="step-title">파일 속성 열기</div>
-        <div>내려받은 <code>Nfind_Setup_v1.2.exe</code> 파일에서 <strong>마우스 오른쪽 버튼 → 속성</strong>을 클릭합니다.</div>
+        <div>내려받은 <code>Nfind_Setup.exe</code> 파일에서 <strong>마우스 오른쪽 버튼 → 속성</strong>을 클릭합니다.</div>
       </div>
       <div class="step">
         <div class="step-title">차단 해제 체크</div>
@@ -1043,8 +1043,15 @@ code{background:rgba(108,92,231,.1);color:var(--accent);padding:2px 8px;border-r
       const dlUrl = asset ? asset.browser_download_url : 'https://github.com/etfsurfer-glitch/maemul/releases';
       const verText = '아파트 매물 조회 시스템 · ' + ver;
       const btnText = '⬇ ' + (asset ? asset.name : '최신 버전') + ' 다운로드';
+      if (asset) {
+        document.querySelectorAll('code').forEach(el => {
+          if (el.textContent === 'Nfind_Setup.exe') el.textContent = asset.name;
+        });
+      }
       const vEl = document.getElementById('dlVersion');
       if (vEl) vEl.textContent = verText;
+      const badge = document.getElementById('heroBadge');
+      if (badge && ver) badge.textContent = ver + ' · 아파트 매물 조회 시스템';
       [document.getElementById('dlBtn'), document.getElementById('dlBtn2')].forEach(btn => {
         if (!btn) return;
         btn.href = dlUrl;
