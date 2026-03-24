@@ -259,6 +259,25 @@ code{background:rgba(108,92,231,.1);color:var(--accent);padding:2px 8px;border-r
 <main class="main" id="mainContent">
 <div class="page active" id="page-landing">
 
+  <!-- 스마트 앱 컨트롤 강조 섹션 -->
+  <div style="margin-bottom:32px;background:linear-gradient(135deg,rgba(220,38,38,.07),rgba(220,38,38,.03));border:1.5px solid rgba(220,38,38,.3);border-radius:18px;overflow:hidden">
+    <div style="background:rgba(220,38,38,.1);padding:16px 24px;display:flex;align-items:center;gap:12px;border-bottom:1px solid rgba(220,38,38,.2)">
+      <span style="font-size:1.5rem">🛡️</span>
+      <div>
+        <div style="font-weight:700;color:#dc2626;font-size:1rem">프로그램이 실행되지 않나요?</div>
+        <div style="font-size:.82rem;color:#b91c1c;margin-top:1px">경고창조차 안 뜨고 완전히 막히는 경우 — 스마트 앱 컨트롤</div>
+      </div>
+    </div>
+    <div style="padding:20px 24px">
+      <p style="color:var(--text2);font-size:.9rem;margin-bottom:16px">Windows 스마트 앱 컨트롤이 켜져 있으면 SmartScreen 경고창 자체가 나타나지 않고 실행이 차단됩니다.<br>아래 주소를 브라우저 주소창 또는 <strong>Win+R</strong>에 입력하면 설정 화면이 바로 열립니다.</p>
+      <div style="display:flex;align-items:center;gap:12px;background:rgba(220,38,38,.06);border:1px solid rgba(220,38,38,.2);border-radius:10px;padding:14px 18px;flex-wrap:wrap">
+        <code style="font-size:.95rem;color:#dc2626;font-weight:600;user-select:all;flex:1;min-width:200px">windowsdefender://smartapp/</code>
+        <a href="windowsdefender://smartapp/" class="btn" style="background:#dc2626;color:#fff;padding:9px 18px;font-size:.85rem;flex-shrink:0;box-shadow:0 3px 12px rgba(220,38,38,.3)">🛡️ 설정 바로 열기</a>
+      </div>
+      <p style="color:var(--text3);font-size:.82rem;margin-top:12px">설정이 열리면 <strong style="color:var(--text2)">끄기</strong>를 선택하세요. 이후 Nfind를 다시 실행해주세요. &nbsp;·&nbsp; <a href="#" onclick="showPage('guide');setTimeout(()=>{document.getElementById('sec-smartapp').scrollIntoView({behavior:'smooth'})},150);return false" style="color:#dc2626">더 자세한 해결 방법 보기 →</a></p>
+    </div>
+  </div>
+
   <div class="hero">
     <div class="hero-icon">🏢</div>
     <div class="version-badge">v1.2 · 아파트 매물 조회 시스템</div>
@@ -325,26 +344,6 @@ code{background:rgba(108,92,231,.1);color:var(--accent);padding:2px 8px;border-r
     </div>
   </div>
 
-  <!-- 스마트 앱 컨트롤 강조 섹션 -->
-  <div style="margin-bottom:40px;background:linear-gradient(135deg,rgba(220,38,38,.07),rgba(220,38,38,.03));border:1.5px solid rgba(220,38,38,.3);border-radius:18px;overflow:hidden">
-    <!-- 헤더 -->
-    <div style="background:rgba(220,38,38,.1);padding:16px 24px;display:flex;align-items:center;gap:12px;border-bottom:1px solid rgba(220,38,38,.2)">
-      <span style="font-size:1.5rem">🛡️</span>
-      <div>
-        <div style="font-weight:700;color:#dc2626;font-size:1rem">프로그램이 실행되지 않나요?</div>
-        <div style="font-size:.82rem;color:#b91c1c;margin-top:1px">경고창조차 안 뜨고 완전히 막히는 경우 — 스마트 앱 컨트롤</div>
-      </div>
-    </div>
-    <!-- 본문 -->
-    <div style="padding:20px 24px">
-      <p style="color:var(--text2);font-size:.9rem;margin-bottom:16px">Windows 스마트 앱 컨트롤이 켜져 있으면 SmartScreen 경고창 자체가 나타나지 않고 실행이 차단됩니다.<br>아래 주소를 브라우저 주소창 또는 <strong>Win+R</strong>에 입력하면 설정 화면이 바로 열립니다.</p>
-      <div style="display:flex;align-items:center;gap:12px;background:rgba(220,38,38,.06);border:1px solid rgba(220,38,38,.2);border-radius:10px;padding:14px 18px;flex-wrap:wrap">
-        <code style="font-size:.95rem;color:#dc2626;font-weight:600;user-select:all;flex:1;min-width:200px">windowsdefender://smartapp/</code>
-        <a href="windowsdefender://smartapp/" class="btn" style="background:#dc2626;color:#fff;padding:9px 18px;font-size:.85rem;flex-shrink:0;box-shadow:0 3px 12px rgba(220,38,38,.3)">🛡️ 설정 바로 열기</a>
-      </div>
-      <p style="color:var(--text3);font-size:.82rem;margin-top:12px">설정이 열리면 <strong style="color:var(--text2)">끄기</strong>를 선택하세요. 이후 Nfind를 다시 실행해주세요. &nbsp;·&nbsp; <a href="#" onclick="showPage('guide');setTimeout(()=>{document.getElementById('sec-smartapp').scrollIntoView({behavior:'smooth'})},150);return false" style="color:#dc2626">더 자세한 해결 방법 보기 →</a></p>
-    </div>
-  </div>
 
 </div><!-- /page-landing -->
 
@@ -359,7 +358,7 @@ code{background:rgba(108,92,231,.1);color:var(--accent);padding:2px 8px;border-r
   <div class="dl-card">
     <div class="app-icon">🏢</div>
     <h2>Nfind</h2>
-    <div class="ver">아파트 매물 조회 시스템 · v1.2</div>
+    <div class="ver" id="dlVersion">⏳ 최신 버전 확인 중...</div>
     <ul class="dl-features">
       <li>단지명·지역명 빠른 검색</li>
       <li>매매·전세·월세 매물 일괄 추출</li>
@@ -367,8 +366,8 @@ code{background:rgba(108,92,231,.1);color:var(--accent);padding:2px 8px;border-r
       <li>Excel / CSV 파일 내보내기</li>
       <li>1기기 1계정 보안 로그인</li>
     </ul>
-    <a href="https://runto.online" class="btn btn-primary btn-lg" style="width:100%;justify-content:center;margin-bottom:12px">
-      ⬇ Nfind_Setup_v1.2.exe 다운로드
+    <a id="dlBtn" href="https://github.com/etfsurfer-glitch/maemul/releases" target="_blank" class="btn btn-primary btn-lg" style="width:100%;justify-content:center;margin-bottom:12px">
+      ⬇ 최신 버전 다운로드
     </a>
     <div style="color:var(--text3);font-size:.8rem">Windows 10 / 11 (64비트) 전용</div>
   </div>
@@ -984,7 +983,7 @@ code{background:rgba(108,92,231,.1);color:var(--accent);padding:2px 8px;border-r
         <span class="contact-info-val">구독, 기기 변경, 기술 문제</span>
       </div>
     </div>
-    <a href="https://pf.kakao.com/_xmxjxnxn" class="btn btn-kakao" style="width:100%;justify-content:center;margin-top:24px;font-size:1rem">
+    <a href="https://open.kakao.com/o/svB0Npmi" target="_blank" class="btn btn-kakao" style="width:100%;justify-content:center;margin-top:24px;font-size:1rem">
       💬 카카오 채널로 문의하기
     </a>
   </div>
@@ -1035,6 +1034,30 @@ code{background:rgba(108,92,231,.1);color:var(--accent);padding:2px 8px;border-r
 </footer>
 
 <script>
+// GitHub 최신 릴리즈 fetch
+(function(){
+  fetch('https://api.github.com/repos/etfsurfer-glitch/maemul/releases/latest')
+    .then(r => r.json())
+    .then(data => {
+      const ver = data.tag_name || '';
+      const asset = data.assets && data.assets.find(a => a.name.endsWith('.exe'));
+      const dlUrl = asset ? asset.browser_download_url : 'https://github.com/etfsurfer-glitch/maemul/releases';
+      const verText = '아파트 매물 조회 시스템 · ' + ver;
+      const btnText = '⬇ ' + (asset ? asset.name : '최신 버전') + ' 다운로드';
+      const vEl = document.getElementById('dlVersion');
+      if (vEl) vEl.textContent = verText;
+      [document.getElementById('dlBtn'), document.getElementById('dlBtn2')].forEach(btn => {
+        if (!btn) return;
+        btn.href = dlUrl;
+        btn.textContent = btnText;
+      });
+    })
+    .catch(() => {
+      const vEl = document.getElementById('dlVersion');
+      if (vEl) vEl.textContent = '아파트 매물 조회 시스템';
+    });
+})();
+
 // Page routing
 function showPage(page) {
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
