@@ -124,6 +124,21 @@ section{padding:56px 20px;max-width:480px;margin:0 auto}
 .section-sub{font-size:.9rem;color:var(--text2);line-height:1.75;margin-bottom:24px}
 .divider{height:1px;background:var(--border);max-width:480px;margin:0 auto}
 
+/* ── Video Demo ── */
+.video-section{background:var(--bg2)}
+.video-wrap{max-width:480px;margin:0 auto;padding:52px 20px}
+.video-box{
+  position:relative;width:100%;padding-top:56.25%;
+  border-radius:14px;overflow:hidden;
+  border:1px solid var(--border);
+  box-shadow:0 8px 40px rgba(0,0,0,.5);
+  margin-top:20px;
+}
+.video-box iframe{
+  position:absolute;top:0;left:0;width:100%;height:100%;
+  border:none;
+}
+
 /* ── Result Screenshot ── */
 .result-section{background:var(--bg2)}
 .result-wrap{max-width:480px;margin:0 auto;padding:56px 20px}
@@ -321,6 +336,25 @@ section{padding:56px 20px;max-width:480px;margin:0 auto}
   </a>
   <a href="#proof" class="btn-secondary fade-up delay-4">직접 확인하기 ↓</a>
 </section>
+
+<div class="divider"></div>
+
+<!-- ===== VIDEO DEMO ===== -->
+<div class="video-section">
+  <div class="video-wrap">
+    <div class="section-label">실제 작동 영상</div>
+    <div class="section-title">직접 눈으로<br>확인하세요</div>
+    <p class="section-sub">동·호수가 뽑히는 순간을 직접 보시면<br>말이 필요 없습니다</p>
+    <div class="video-box">
+      <iframe src="https://www.youtube.com/embed/kvqA3sKdIkw" title="NfindAD 실제 작동 영상 — 동·호수 수집 자동화" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen loading="lazy"></iframe>
+    </div>
+    <div style="margin-top:20px">
+      <a href="https://open.kakao.com/o/svB0Npmi" target="_blank" rel="noopener" class="btn-primary">
+        영상 보고 결정했어요 → 상담 신청
+      </a>
+    </div>
+  </div>
+</div>
 
 <div class="divider"></div>
 
