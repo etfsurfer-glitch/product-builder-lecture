@@ -5,7 +5,19 @@
       "Bash(git commit -m \"$\\(cat <<''EOF''\nfeat: Nself 프로그램 배포 사이트로 전면 개편\n\n기존 소스 파일 삭제 후 Nself 블로그 자동화 프로그램 배포 사이트 구축\n- 개발자소개, 다운로드, 사용법\\(8개 섹션\\), 고객센터 4개 메뉴\n- 다크 테마 UI, 사이드바 네비게이션, 모바일 반응형\n- 카카오톡 오픈채팅 고객센터 연동\n\nCo-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>\nEOF\n\\)\")",
       "Bash(git rm:*)",
       "Bash(git checkout:*)",
-      "Bash(git rebase:*)"
+      "Bash(git rebase:*)",
+      "Bash(git commit -m \"$\\(cat <<''EOF''\nupdate: 사이트 콘텐츠 업데이트 및 이용약관 16조 버전 적용\n\n- 네이버 → N사 전체 치환, 개발자명 Nself로 변경\n- 좋아요 권장 50개 이하, 하루 블로그 방문 50개 제한 안내 추가\n- 다운로드 링크 Google Drive 연결\n- 이용약관 16조 버전 교체 \\(자동화 책임, 계정 보안 등 강화\\)\n- 이용약관 메뉴를 하단 푸터로 이동\n\nCo-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>\nEOF\n\\)\")",
+      "Bash(git commit:*)",
+      "Bash(git push:*)",
+      "Bash(python3:*)",
+      "Bash(gh release:*)",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:api.github.com)",
+      "Bash(git remote:*)",
+      "Bash(firebase --version)",
+      "Bash(firebase projects:list)",
+      "Bash(ls:*)",
+      "Bash(cp:*)"
     ]
   }
 }
