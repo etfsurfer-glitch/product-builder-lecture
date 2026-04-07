@@ -679,45 +679,61 @@ section{padding:56px 20px;max-width:480px;margin:0 auto}
 </div><!-- /#main-content -->
 
 <script>
-const CORRECT_CODE = '8888';
+// 난독화 + SHA-256 해시 검증
+(function(){
+  // 해시값을 분할 저장 (연속된 문자열로 두지 않음)
+  var _h=[
+    [50,57,50,54],[97,50,55,51,49],[102,52,98,51],[49,50,99,48],
+    [56,57,56,50],[99,97,99,102],[56,48,54,49],[101,98,49,52],
+    [98,102,54,53],[99,49,97,56,55],[99,99,53,100],[55,48,101,56],
+    [54,52,101,48],[55,57,99,54],[50,50,48,55],[51,49,32]
+  ];
+  var _r=_h.map(function(g){return g.map(function(c){return String.fromCharCode(c);}).join('');}).join('').trim();
 
-function checkCode() {
-  const input = document.getElementById('code-input');
-  const errorEl = document.getElementById('gate-error');
-  const val = input.value.trim();
-
-  if (val === CORRECT_CODE) {
-    document.getElementById('code-gate').style.display = 'none';
-    document.getElementById('main-content').style.display = 'block';
-    initScrollAnim();
-  } else {
-    errorEl.textContent = '코드가 올바르지 않습니다. 다시 입력해주세요.';
-    input.classList.add('error');
-    input.value = '';
-    setTimeout(() => input.classList.remove('error'), 400);
-    input.focus();
-  }
-}
-
-document.getElementById('code-input').addEventListener('keydown', function(e) {
-  if (e.key === 'Enter') checkCode();
-});
-
-function initScrollAnim() {
-  const observer = new IntersectionObserver((entries) => {
-    entries.forEach(e => {
-      if (e.isIntersecting) {
-        e.target.style.animation = 'fadeUp .6s ease both';
-        observer.unobserve(e.target);
-      }
+  function _sha(str){
+    var enc=new TextEncoder();
+    return crypto.subtle.digest('SHA-256',enc.encode(str)).then(function(b){
+      return Array.from(new Uint8Array(b)).map(function(x){return x.toString(16).padStart(2,'0');}).join('');
     });
-  }, {threshold: 0.15});
+  }
 
-  document.querySelectorAll('.feature-card, .pain-item, .trust-item, .event-perk, .ba-card').forEach(el => {
-    el.style.opacity = '0';
-    observer.observe(el);
+  function _u(){
+    document.getElementById('code-gate').style.display='none';
+    document.getElementById('main-content').style.display='block';
+    _s();
+  }
+
+  function _e(){
+    var i=document.getElementById('code-input');
+    document.getElementById('gate-error').textContent='코드가 올바르지 않습니다. 다시 입력해주세요.';
+    i.classList.add('error');
+    i.value='';
+    setTimeout(function(){i.classList.remove('error');},400);
+    i.focus();
+  }
+
+  window.checkCode=function(){
+    var i=document.getElementById('code-input');
+    var v=i.value.trim();
+    if(!v){return;}
+    _sha(v).then(function(h){h===_r?_u():_e();});
+  };
+
+  document.getElementById('code-input').addEventListener('keydown',function(e){
+    if(e.key==='Enter')window.checkCode();
   });
-}
+
+  function _s(){
+    var o=new IntersectionObserver(function(entries){
+      entries.forEach(function(e){
+        if(e.isIntersecting){e.target.style.animation='fadeUp .6s ease both';o.unobserve(e.target);}
+      });
+    },{threshold:0.15});
+    document.querySelectorAll('.feature-card,.pain-item,.trust-item,.event-perk,.ba-card').forEach(function(el){
+      el.style.opacity='0';o.observe(el);
+    });
+  }
+})();
 </script>
 </body>
 </html>
