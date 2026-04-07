@@ -64,284 +64,90 @@ a{text-decoration:none;color:inherit}
   40%,80%{transform:translateX(6px)}
 }
 
-/* ── MAIN CONTENT (hidden by default) ── */
-#main-content{display:none}
-
-/* Sticky CTA */
-.sticky-cta{
-  position:fixed;bottom:0;left:0;right:0;z-index:999;
-  padding:12px 16px 20px;
-  background:rgba(10,10,10,.95);
-  backdrop-filter:blur(12px);
-  border-top:1px solid var(--border);
-}
-.sticky-cta a{
-  display:block;width:100%;max-width:480px;margin:0 auto;
-  background:var(--red);color:#fff;
-  font-size:1rem;font-weight:800;
-  padding:16px;border-radius:12px;
-  text-align:center;letter-spacing:-.3px;
-  transition:background .2s;
-}
+/* ── 인증 후 콘텐츠 스타일 (미리 로드해도 콘텐츠 자체는 없음) ── */
+.sticky-cta{position:fixed;bottom:0;left:0;right:0;z-index:999;padding:12px 16px 20px;background:rgba(10,10,10,.95);backdrop-filter:blur(12px);border-top:1px solid var(--border);}
+.sticky-cta a{display:block;width:100%;max-width:480px;margin:0 auto;background:var(--red);color:#fff;font-size:1rem;font-weight:800;padding:16px;border-radius:12px;text-align:center;letter-spacing:-.3px;transition:background .2s;}
 .sticky-cta a:active{background:var(--red-dark)}
-
-/* Container */
-.wrap{max-width:480px;margin:0 auto;padding:0 20px}
-
-/* Animations */
 @keyframes fadeUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.6}}
 @keyframes countUp{from{opacity:0;transform:scale(.8)}to{opacity:1;transform:scale(1)}}
 .fade-up{animation:fadeUp .7s ease both}
-.delay-1{animation-delay:.1s}
-.delay-2{animation-delay:.2s}
-.delay-3{animation-delay:.35s}
-.delay-4{animation-delay:.5s}
-
-/* ── HERO ── */
-.hero{
-  padding:64px 20px 52px;
-  text-align:center;
-  max-width:480px;margin:0 auto;
-  background:radial-gradient(ellipse at 50% 0%, rgba(37,99,235,.18) 0%, transparent 65%);
-}
-.hero-badge{
-  display:inline-block;
-  background:rgba(37,99,235,.15);border:1px solid rgba(59,130,246,.4);
-  color:var(--blue-light);font-size:.72rem;font-weight:700;
-  padding:5px 14px;border-radius:999px;letter-spacing:.5px;
-  margin-bottom:20px;
-}
-.hero h1{
-  font-size:1.9rem;font-weight:900;line-height:1.25;
-  letter-spacing:-1px;margin-bottom:6px;
-}
-.hero h1 .highlight{
-  background:linear-gradient(90deg,var(--blue-light),#60A5FA);
-  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
-}
-.hero-stat{
-  margin:20px auto;
-  background:var(--bg3);border:1px solid var(--border);
-  border-radius:16px;padding:22px 20px;
-  max-width:300px;
-}
-.hero-stat .num{
-  font-size:3rem;font-weight:900;color:var(--red);letter-spacing:-2px;
-  animation:countUp .6s .3s ease both;
-}
+.delay-1{animation-delay:.1s}.delay-2{animation-delay:.2s}.delay-3{animation-delay:.35s}.delay-4{animation-delay:.5s}
+.hero{padding:64px 20px 52px;text-align:center;max-width:480px;margin:0 auto;background:radial-gradient(ellipse at 50% 0%, rgba(37,99,235,.18) 0%, transparent 65%);}
+.hero-badge{display:inline-block;background:rgba(37,99,235,.15);border:1px solid rgba(59,130,246,.4);color:var(--blue-light);font-size:.72rem;font-weight:700;padding:5px 14px;border-radius:999px;letter-spacing:.5px;margin-bottom:20px;}
+.hero h1{font-size:1.9rem;font-weight:900;line-height:1.25;letter-spacing:-1px;margin-bottom:6px;}
+.hero h1 .highlight{background:linear-gradient(90deg,var(--blue-light),#60A5FA);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+.hero-stat{margin:20px auto;background:var(--bg3);border:1px solid var(--border);border-radius:16px;padding:22px 20px;max-width:300px;}
+.hero-stat .num{font-size:3rem;font-weight:900;color:var(--red);letter-spacing:-2px;animation:countUp .6s .3s ease both;}
 .hero-stat .label{font-size:.9rem;color:var(--text2);margin-top:2px}
-.hero-sub{
-  font-size:.9rem;color:var(--text2);margin-bottom:28px;line-height:1.7;
-}
+.hero-sub{font-size:.9rem;color:var(--text2);margin-bottom:28px;line-height:1.7;}
 .hero-sub strong{color:var(--text)}
-.btn-primary{
-  display:block;width:100%;
-  background:var(--red);color:#fff;
-  font-size:1.05rem;font-weight:800;
-  padding:17px 20px;border-radius:14px;
-  text-align:center;margin-bottom:10px;
-  box-shadow:0 4px 20px rgba(239,68,68,.35);
-  transition:transform .15s,box-shadow .15s;
-}
+.btn-primary{display:block;width:100%;background:var(--red);color:#fff;font-size:1.05rem;font-weight:800;padding:17px 20px;border-radius:14px;text-align:center;margin-bottom:10px;box-shadow:0 4px 20px rgba(239,68,68,.35);transition:transform .15s,box-shadow .15s;}
 .btn-primary:active{transform:scale(.98);box-shadow:none}
-.btn-secondary{
-  display:block;width:100%;
-  background:transparent;color:var(--text2);
-  font-size:.9rem;font-weight:600;
-  padding:13px 20px;border-radius:14px;
-  text-align:center;border:1px solid var(--border);
-  transition:border-color .2s,color .2s;
-}
+.btn-secondary{display:block;width:100%;background:transparent;color:var(--text2);font-size:.9rem;font-weight:600;padding:13px 20px;border-radius:14px;text-align:center;border:1px solid var(--border);transition:border-color .2s,color .2s;}
 .btn-secondary:active{border-color:var(--blue-light);color:var(--blue-light)}
-
-/* ── Section base ── */
 section{padding:56px 20px;max-width:480px;margin:0 auto}
-.section-label{
-  font-size:.72rem;font-weight:700;letter-spacing:1.5px;
-  color:var(--blue-light);text-transform:uppercase;margin-bottom:10px;
-}
-.section-title{
-  font-size:1.55rem;font-weight:900;letter-spacing:-1px;line-height:1.3;
-  margin-bottom:8px;
-}
+.section-label{font-size:.72rem;font-weight:700;letter-spacing:1.5px;color:var(--blue-light);text-transform:uppercase;margin-bottom:10px;}
+.section-title{font-size:1.55rem;font-weight:900;letter-spacing:-1px;line-height:1.3;margin-bottom:8px;}
 .section-sub{font-size:.9rem;color:var(--text2);line-height:1.75;margin-bottom:24px}
 .divider{height:1px;background:var(--border);max-width:480px;margin:0 auto}
-
-/* ── Video Demo ── */
-.video-section{background:var(--bg2)}
-.video-wrap{max-width:480px;margin:0 auto;padding:52px 20px}
-.video-box{
-  position:relative;width:100%;padding-top:56.25%;
-  border-radius:14px;overflow:hidden;
-  border:1px solid var(--border);
-  box-shadow:0 8px 40px rgba(0,0,0,.5);
-  margin-top:20px;
-}
-.video-box iframe{
-  position:absolute;top:0;left:0;width:100%;height:100%;
-  border:none;
-}
-
-/* ── Result Screenshot ── */
-.result-section{background:var(--bg2)}
-.result-wrap{max-width:480px;margin:0 auto;padding:56px 20px}
-.screenshot-box{
-  border-radius:14px;overflow:hidden;
-  border:1px solid var(--border);
-  box-shadow:0 8px 40px rgba(0,0,0,.5);
-  margin:20px 0;
-}
+.video-section{background:var(--bg2)}.video-wrap{max-width:480px;margin:0 auto;padding:52px 20px}
+.video-box{position:relative;width:100%;padding-top:56.25%;border-radius:14px;overflow:hidden;border:1px solid var(--border);box-shadow:0 8px 40px rgba(0,0,0,.5);margin-top:20px;}
+.video-box iframe{position:absolute;top:0;left:0;width:100%;height:100%;border:none;}
+.result-section{background:var(--bg2)}.result-wrap{max-width:480px;margin:0 auto;padding:56px 20px}
+.screenshot-box{border-radius:14px;overflow:hidden;border:1px solid var(--border);box-shadow:0 8px 40px rgba(0,0,0,.5);margin:20px 0;}
 .screenshot-box img{width:100%;display:block}
 .result-tags{display:flex;flex-wrap:wrap;gap:8px;margin-top:16px}
-.tag{
-  background:rgba(37,99,235,.12);border:1px solid rgba(59,130,246,.3);
-  color:var(--blue-light);font-size:.8rem;font-weight:700;
-  padding:6px 14px;border-radius:8px;
-}
-.big-quote{
-  margin-top:20px;
-  background:var(--bg3);border-left:4px solid var(--blue-light);
-  border-radius:0 12px 12px 0;
-  padding:16px 18px;
-  font-size:1rem;font-weight:800;color:var(--text);
-}
-
-/* ── Speed section ── */
-.speed-section{background:var(--bg)}
-.speed-wrap{max-width:480px;margin:0 auto;padding:56px 20px}
-.speed-card{
-  background:var(--bg3);border:1px solid var(--border);
-  border-radius:16px;padding:24px;margin:20px 0;
-}
-.speed-nums{display:flex;gap:16px;margin-bottom:0}
-.speed-item{flex:1;text-align:center}
-.speed-item .val{font-size:2.2rem;font-weight:900;color:var(--blue-light);letter-spacing:-1px}
-.speed-item .unit{font-size:.8rem;color:var(--text2);margin-top:2px}
-.vs-bar{
-  display:flex;align-items:stretch;gap:0;border-radius:12px;overflow:hidden;
-  margin-top:20px;height:52px;
-}
-.vs-bar .human{
-  background:rgba(156,163,175,.2);flex:1;
-  display:flex;align-items:center;justify-content:center;
-  font-size:.8rem;font-weight:700;color:var(--text2);
-}
-.vs-bar .auto{
-  background:var(--blue);flex:0 0 25%;
-  display:flex;align-items:center;justify-content:center;
-  font-size:.75rem;font-weight:800;color:#fff;
-}
+.tag{background:rgba(37,99,235,.12);border:1px solid rgba(59,130,246,.3);color:var(--blue-light);font-size:.8rem;font-weight:700;padding:6px 14px;border-radius:8px;}
+.big-quote{margin-top:20px;background:var(--bg3);border-left:4px solid var(--blue-light);border-radius:0 12px 12px 0;padding:16px 18px;font-size:1rem;font-weight:800;color:var(--text);}
+.speed-section{background:var(--bg)}.speed-wrap{max-width:480px;margin:0 auto;padding:56px 20px}
+.speed-card{background:var(--bg3);border:1px solid var(--border);border-radius:16px;padding:24px;margin:20px 0;}
+.speed-nums{display:flex;gap:16px;margin-bottom:0}.speed-item{flex:1;text-align:center}
+.speed-item .val{font-size:2.2rem;font-weight:900;color:var(--blue-light);letter-spacing:-1px}.speed-item .unit{font-size:.8rem;color:var(--text2);margin-top:2px}
+.vs-bar{display:flex;align-items:stretch;gap:0;border-radius:12px;overflow:hidden;margin-top:20px;height:52px;}
+.vs-bar .human{background:rgba(156,163,175,.2);flex:1;display:flex;align-items:center;justify-content:center;font-size:.8rem;font-weight:700;color:var(--text2);}
+.vs-bar .auto{background:var(--blue);flex:0 0 25%;display:flex;align-items:center;justify-content:center;font-size:.75rem;font-weight:800;color:#fff;}
 .speed-label{font-size:.8rem;color:var(--text2);margin-top:10px;text-align:center}
-.speed-highlight{
-  background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.3);
-  border-radius:12px;padding:16px 18px;
-  font-size:1rem;font-weight:800;color:var(--red);
-  text-align:center;margin-top:16px;
-}
-
-/* ── Pain section ── */
-.pain-section{background:var(--bg2)}
-.pain-wrap{max-width:480px;margin:0 auto;padding:56px 20px}
+.speed-highlight{background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.3);border-radius:12px;padding:16px 18px;font-size:1rem;font-weight:800;color:var(--red);text-align:center;margin-top:16px;}
+.pain-section{background:var(--bg2)}.pain-wrap{max-width:480px;margin:0 auto;padding:56px 20px}
 .pain-list{display:flex;flex-direction:column;gap:14px;margin-bottom:24px}
-.pain-item{
-  background:var(--bg3);border:1px solid var(--border);
-  border-radius:12px;padding:16px 18px;
-  display:flex;align-items:flex-start;gap:12px;
-}
-.pain-icon{font-size:1.3rem;line-height:1;flex-shrink:0}
-.pain-text{font-size:.9rem;color:var(--text2);line-height:1.6}
-.pain-cta-text{
-  font-size:1.05rem;font-weight:800;color:var(--text);
-  text-align:center;padding:20px;
-  border-top:1px solid var(--border);
-}
-
-/* ── Features ── */
-.features-section{background:var(--bg)}
-.features-wrap{max-width:480px;margin:0 auto;padding:56px 20px}
+.pain-item{background:var(--bg3);border:1px solid var(--border);border-radius:12px;padding:16px 18px;display:flex;align-items:flex-start;gap:12px;}
+.pain-icon{font-size:1.3rem;line-height:1;flex-shrink:0}.pain-text{font-size:.9rem;color:var(--text2);line-height:1.6}
+.pain-cta-text{font-size:1.05rem;font-weight:800;color:var(--text);text-align:center;padding:20px;border-top:1px solid var(--border);}
+.features-section{background:var(--bg)}.features-wrap{max-width:480px;margin:0 auto;padding:56px 20px}
 .feature-grid{display:flex;flex-direction:column;gap:12px;margin-top:20px}
-.feature-card{
-  background:var(--bg3);border:1px solid var(--border);
-  border-radius:14px;padding:18px;
-  display:flex;align-items:center;gap:14px;
-}
-.feature-icon{
-  width:42px;height:42px;border-radius:10px;
-  background:rgba(37,99,235,.15);border:1px solid rgba(59,130,246,.3);
-  display:flex;align-items:center;justify-content:center;
-  font-size:1.2rem;flex-shrink:0;
-}
-.feature-info .name{font-size:.9rem;font-weight:700;margin-bottom:2px}
-.feature-info .desc{font-size:.8rem;color:var(--text2)}
-
-/* ── Before/After ── */
-.ba-section{background:var(--bg2)}
-.ba-wrap{max-width:480px;margin:0 auto;padding:56px 20px}
+.feature-card{background:var(--bg3);border:1px solid var(--border);border-radius:14px;padding:18px;display:flex;align-items:center;gap:14px;}
+.feature-icon{width:42px;height:42px;border-radius:10px;background:rgba(37,99,235,.15);border:1px solid rgba(59,130,246,.3);display:flex;align-items:center;justify-content:center;font-size:1.2rem;flex-shrink:0;}
+.feature-info .name{font-size:.9rem;font-weight:700;margin-bottom:2px}.feature-info .desc{font-size:.8rem;color:var(--text2)}
+.ba-section{background:var(--bg2)}.ba-wrap{max-width:480px;margin:0 auto;padding:56px 20px}
 .ba-cards{display:flex;gap:12px;margin-top:20px}
 .ba-card{flex:1;border-radius:14px;padding:20px;text-align:center}
 .ba-card.before{background:rgba(156,163,175,.07);border:1px solid rgba(156,163,175,.2)}
 .ba-card.after{background:rgba(37,99,235,.1);border:1px solid rgba(59,130,246,.4)}
 .ba-card .ba-label{font-size:.75rem;font-weight:700;letter-spacing:1px;margin-bottom:14px}
-.ba-card.before .ba-label{color:var(--text2)}
-.ba-card.after .ba-label{color:var(--blue-light)}
+.ba-card.before .ba-label{color:var(--text2)}.ba-card.after .ba-label{color:var(--blue-light)}
 .ba-card .ba-item{font-size:.85rem;color:var(--text2);margin-bottom:8px;line-height:1.5}
 .ba-card.after .ba-item{color:var(--text)}
-.ba-arrow{
-  display:flex;align-items:center;justify-content:center;
-  font-size:1.5rem;color:var(--blue-light);flex-shrink:0;margin-top:60px;
-}
-
-/* ── Trust ── */
-.trust-section{background:var(--bg)}
-.trust-wrap{max-width:480px;margin:0 auto;padding:56px 20px}
+.ba-arrow{display:flex;align-items:center;justify-content:center;font-size:1.5rem;color:var(--blue-light);flex-shrink:0;margin-top:60px;}
+.trust-section{background:var(--bg)}.trust-wrap{max-width:480px;margin:0 auto;padding:56px 20px}
 .trust-list{display:flex;flex-direction:column;gap:12px;margin-top:20px}
-.trust-item{
-  display:flex;align-items:center;gap:12px;
-  background:var(--bg3);border:1px solid var(--border);
-  border-radius:12px;padding:14px 18px;
-  font-size:.9rem;font-weight:600;
-}
+.trust-item{display:flex;align-items:center;gap:12px;background:var(--bg3);border:1px solid var(--border);border-radius:12px;padding:14px 18px;font-size:.9rem;font-weight:600;}
 .trust-check{color:#22C55E;font-size:1.1rem;flex-shrink:0}
-
-/* ── Event ── */
-.event-section{
-  background:linear-gradient(135deg,rgba(37,99,235,.2) 0%,rgba(239,68,68,.12) 100%);
-  border-top:1px solid var(--border);border-bottom:1px solid var(--border);
-}
+.event-section{background:linear-gradient(135deg,rgba(37,99,235,.2) 0%,rgba(239,68,68,.12) 100%);border-top:1px solid var(--border);border-bottom:1px solid var(--border);}
 .event-wrap{max-width:480px;margin:0 auto;padding:52px 20px;text-align:center}
-.event-badge{
-  display:inline-block;
-  background:var(--red);color:#fff;
-  font-size:.75rem;font-weight:800;
-  padding:6px 16px;border-radius:999px;
-  margin-bottom:16px;letter-spacing:.5px;
-  animation:pulse 2s infinite;
-}
+.event-badge{display:inline-block;background:var(--red);color:#fff;font-size:.75rem;font-weight:800;padding:6px 16px;border-radius:999px;margin-bottom:16px;letter-spacing:.5px;animation:pulse 2s infinite;}
 .event-title{font-size:1.5rem;font-weight:900;letter-spacing:-1px;margin-bottom:10px}
 .event-sub{font-size:.9rem;color:var(--text2);margin-bottom:28px}
-.event-perks{
-  display:flex;flex-direction:column;gap:10px;margin-bottom:28px;text-align:left;
-}
-.event-perk{
-  background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);
-  border-radius:10px;padding:12px 16px;
-  font-size:.9rem;font-weight:600;display:flex;align-items:center;gap:10px;
-}
+.event-perks{display:flex;flex-direction:column;gap:10px;margin-bottom:28px;text-align:left;}
+.event-perk{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:10px;padding:12px 16px;font-size:.9rem;font-weight:600;display:flex;align-items:center;gap:10px;}
 .event-perk span{font-size:1.1rem}
-
-/* ── CTA Mid ── */
 .cta-mid{background:var(--bg);padding:56px 20px;max-width:480px;margin:0 auto;text-align:center}
 .cta-mid .cta-title{font-size:1.4rem;font-weight:900;letter-spacing:-1px;margin-bottom:8px}
 .cta-mid .cta-sub{font-size:.9rem;color:var(--text2);margin-bottom:24px}
-
-/* ── Closing ── */
 .closing{background:var(--bg2);padding:56px 20px 100px;text-align:center;max-width:480px;margin:0 auto}
 .closing .closing-title{font-size:1.3rem;font-weight:900;letter-spacing:-1px;color:var(--text2);margin-bottom:8px}
 .closing .closing-sub{font-size:1.1rem;font-weight:700;color:var(--text);margin-bottom:8px}
 .closing .closing-cta{font-size:1.05rem;font-weight:900;color:var(--blue-light);margin-bottom:28px}
-
-/* ── Footer ── */
 .footer{background:#080808;border-top:1px solid var(--border);padding:32px 20px 120px;max-width:480px;margin:0 auto}
 .footer-biz{font-size:.78rem;color:var(--text2);line-height:2;letter-spacing:-.2px}
 .footer-biz strong{color:var(--text);font-weight:700}
@@ -353,7 +159,7 @@ section{padding:56px 20px;max-width:480px;margin:0 auto}
 </head>
 <body>
 
-<!-- ===== CODE GATE ===== -->
+<!-- 인증 전: 게이트만 존재. 콘텐츠는 DOM에 없음 -->
 <div id="code-gate">
   <div class="gate-box">
     <div class="gate-icon">🔒</div>
@@ -373,315 +179,12 @@ section{padding:56px 20px;max-width:480px;margin:0 auto}
   </div>
 </div>
 
-<!-- ===== MAIN CONTENT ===== -->
-<div id="main-content">
-
-<!-- Sticky CTA -->
-<div class="sticky-cta">
-  <a href="https://open.kakao.com/o/svB0Npmi" target="_blank" rel="noopener">
-    카카오톡으로 무료 상담하기 →
-  </a>
-</div>
-
-<!-- ===== HERO ===== -->
-<section class="hero">
-  <div class="hero-badge fade-up">단지형 매물 수집 자동화</div>
-  <h1 class="fade-up delay-1">
-    <span class="highlight">동·호수까지</span><br>
-    정확히 뽑는 프로그램
-  </h1>
-  <div class="hero-stat fade-up delay-2">
-    <div class="num">99%+</div>
-    <div class="label">단지형 매물 동·호수 수집 정확도</div>
-  </div>
-  <p class="hero-sub fade-up delay-3">
-    <strong>다른 프로그램은 절대 뽑지 못합니다.</strong><br>
-    XXX동 XXXX호 — 정확한 호수 정보까지<br>자동으로 수집·정리·엑셀 저장
-  </p>
-  <a href="https://open.kakao.com/o/svB0Npmi" target="_blank" rel="noopener" class="btn-primary fade-up delay-4">
-    지금 무료 상담하기 (카카오톡)
-  </a>
-  <a href="#proof" class="btn-secondary fade-up delay-4">직접 확인하기 ↓</a>
-</section>
-
-<div class="divider"></div>
-
-<!-- ===== VIDEO DEMO ===== -->
-<div class="video-section">
-  <div class="video-wrap">
-    <div class="section-label">실제 작동 영상</div>
-    <div class="section-title">직접 눈으로<br>확인하세요</div>
-    <p class="section-sub">동·호수가 뽑히는 순간을 직접 보시면<br>말이 필요 없습니다</p>
-    <div class="video-box">
-      <iframe src="https://www.youtube.com/embed/kvqA3sKdIkw" title="NfindAD 실제 작동 영상 — 동·호수 수집 자동화" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen loading="lazy"></iframe>
-    </div>
-    <div style="margin-top:20px">
-      <a href="https://open.kakao.com/o/svB0Npmi" target="_blank" rel="noopener" class="btn-primary">
-        영상 보고 결정했어요 → 상담 신청
-      </a>
-    </div>
-  </div>
-</div>
-
-<div class="divider"></div>
-
-<!-- ===== RESULT PROOF ===== -->
-<div class="result-section" id="proof">
-  <div class="result-wrap">
-    <div class="section-label">실제 결과</div>
-    <div class="section-title">보이시나요?<br>동·호수가 전부 있습니다</div>
-    <p class="section-sub">다른 수집 프로그램에선 절대 나오지 않는<br><strong style="color:var(--text)">XXX동 XXXX호 — 정확한 호수 데이터</strong>입니다</p>
-    <div class="screenshot-box">
-      <img src="/nfindad_backup_20260402/image/result.png" alt="매물 수집 결과 화면 — 동·호수 포함 정확 수집" loading="lazy">
-    </div>
-    <div class="result-tags">
-      <span class="tag">✔ 동·호수 99% 이상 정확</span>
-      <span class="tag">✔ 매매 / 전세 / 월세 한 번에</span>
-      <span class="tag">✔ 층·방향·가격 자동 정리</span>
-      <span class="tag">✔ 바로 엑셀 저장</span>
-    </div>
-    <div class="big-quote">"이 데이터, 다른 곳에선 절대 못 뽑습니다"</div>
-  </div>
-</div>
-
-<div class="divider"></div>
-
-<!-- ===== SPEED ===== -->
-<div class="speed-section">
-  <div class="speed-wrap">
-    <div class="section-label">부가 장점 — 속도</div>
-    <div class="section-title">2,159건 수집<br>걸린 시간: 단 몇 분</div>
-    <p class="section-sub">정확도에 속도까지. 실제 실행 로그입니다</p>
-    <div class="screenshot-box">
-      <img src="/nfindad_backup_20260402/image/time_result.png" alt="수집 속도 로그 — 100% 완료 화면" loading="lazy">
-    </div>
-    <div class="speed-card">
-      <div class="speed-nums">
-        <div class="speed-item">
-          <div class="val">2~3h</div>
-          <div class="unit">수작업 소요시간</div>
-        </div>
-        <div class="speed-item">
-          <div class="val">3분</div>
-          <div class="unit">프로그램 소요시간</div>
-        </div>
-      </div>
-      <div class="vs-bar">
-        <div class="human">수작업 (2~3시간)</div>
-        <div class="auto">자동 (3분)</div>
-      </div>
-      <div class="speed-label">같은 작업, 압도적인 속도 차이</div>
-    </div>
-    <div class="speed-highlight">사람이 하면 2~3시간<br>프로그램은 단 몇 분</div>
-  </div>
-</div>
-
-<div class="divider"></div>
-
-<!-- ===== PAIN ===== -->
-<div class="pain-section">
-  <div class="pain-wrap">
-    <div class="section-label">공감하시나요?</div>
-    <div class="section-title">동·호수 없는 데이터,<br>써보셨나요?</div>
-    <div class="pain-list">
-      <div class="pain-item">
-        <span class="pain-icon">😤</span>
-        <span class="pain-text">매물 수집했는데 동·호수가 없어서 결국 직접 확인</span>
-      </div>
-      <div class="pain-item">
-        <span class="pain-icon">📊</span>
-        <span class="pain-text">불완전한 데이터로 엑셀 정리해봤자 다시 손으로 보완</span>
-      </div>
-      <div class="pain-item">
-        <span class="pain-icon">🤯</span>
-        <span class="pain-text">호수 모르면 비교도, 제안도, 영업도 불가능</span>
-      </div>
-    </div>
-    <div class="pain-cta-text">👉 동·호수까지 정확히 뽑아야 진짜 데이터입니다</div>
-    <a href="https://open.kakao.com/o/svB0Npmi" target="_blank" rel="noopener" class="btn-primary">
-      지금 바로 해결하기 →
-    </a>
-  </div>
-</div>
-
-<div class="divider"></div>
-
-<!-- ===== FEATURES ===== -->
-<div class="features-section" id="features">
-  <div class="features-wrap">
-    <div class="section-label">핵심 기능</div>
-    <div class="section-title">다른 곳이 못 하는 것,<br>NfindAD는 합니다</div>
-    <div class="feature-grid">
-      <div class="feature-card" style="border-color:rgba(59,130,246,.5);background:rgba(37,99,235,.08)">
-        <div class="feature-icon" style="background:rgba(37,99,235,.25)">🏢</div>
-        <div class="feature-info">
-          <div class="name" style="color:var(--blue-light)">동·호수 99%+ 정확 수집 <span style="font-size:.7rem;background:var(--red);color:#fff;padding:2px 7px;border-radius:6px;margin-left:4px">핵심</span></div>
-          <div class="desc">단지형 매물의 XXX동 XXXX호 정보까지 자동 수집</div>
-        </div>
-      </div>
-      <div class="feature-card">
-        <div class="feature-icon">🔍</div>
-        <div class="feature-info">
-          <div class="name">단지 검색 → 전체 수집</div>
-          <div class="desc">단지명만 입력하면 매물 전체 자동 수집</div>
-        </div>
-      </div>
-      <div class="feature-card">
-        <div class="feature-icon">📂</div>
-        <div class="feature-info">
-          <div class="name">매매 / 전세 / 월세 자동 분류</div>
-          <div class="desc">거래 유형별로 자동 정리 완료</div>
-        </div>
-      </div>
-      <div class="feature-card">
-        <div class="feature-icon">📥</div>
-        <div class="feature-info">
-          <div class="name">엑셀 / CSV 자동 저장</div>
-          <div class="desc">클릭 한 번으로 완성된 파일 내보내기</div>
-        </div>
-      </div>
-      <div class="feature-card">
-        <div class="feature-icon">⭐</div>
-        <div class="feature-info">
-          <div class="name">관심 단지 관리</div>
-          <div class="desc">자주 보는 단지 즐겨찾기 저장</div>
-        </div>
-      </div>
-    </div>
-  </div>
-</div>
-
-<div class="divider"></div>
-
-<!-- ===== BEFORE / AFTER ===== -->
-<div class="ba-section">
-  <div class="ba-wrap">
-    <div class="section-label">변화</div>
-    <div class="section-title">사용 전 vs 후</div>
-    <div class="ba-cards">
-      <div class="ba-card before">
-        <div class="ba-label">기존 방법</div>
-        <div class="ba-item">동·호수 없는 불완전 데이터</div>
-        <div class="ba-item">결국 직접 확인 필요</div>
-        <div class="ba-item">수작업 2~3시간</div>
-        <div class="ba-item">영업 기회 손실</div>
-      </div>
-      <div class="ba-arrow">→</div>
-      <div class="ba-card after">
-        <div class="ba-label">NfindAD</div>
-        <div class="ba-item">동·호수 99%+ 완전 수집</div>
-        <div class="ba-item">바로 영업 활용 가능</div>
-        <div class="ba-item">몇 분 만에 완료</div>
-        <div class="ba-item">엑셀 자동 저장</div>
-      </div>
-    </div>
-  </div>
-</div>
-
-<div class="divider"></div>
-
-<!-- ===== TRUST ===== -->
-<div class="trust-section">
-  <div class="trust-wrap">
-    <div class="section-label">신뢰 보장</div>
-    <div class="section-title">문의를 통해<br>시작하세요</div>
-    <div class="trust-list">
-      <div class="trust-item">
-        <span class="trust-check">✔</span>
-        설치·사용법 원격지원으로 직접 안내
-      </div>
-      <div class="trust-item">
-        <span class="trust-check">✔</span>
-        정식 사업자 등록 · 현금영수증 발행 가능
-      </div>
-      <div class="trust-item">
-        <span class="trust-check">✔</span>
-        실제 공인중개사 현업 사용 중
-      </div>
-      <div class="trust-item">
-        <span class="trust-check">✔</span>
-        1기기 1계정 보안 시스템
-      </div>
-      <div class="trust-item">
-        <span class="trust-check">✔</span>
-        데이터 내보내기 지원 (Excel / CSV)
-      </div>
-    </div>
-  </div>
-</div>
-
-<div class="divider"></div>
-
-<!-- ===== EVENT ===== -->
-<div class="event-section">
-  <div class="event-wrap">
-    <div class="event-badge">2026년 4월 이벤트 진행 중</div>
-    <div class="event-title">지금 상담하면<br>특별 혜택 제공</div>
-    <p class="event-sub">4월 한정 · 선착순 마감</p>
-    <div class="event-perks">
-      <div class="event-perk"><span>🎁</span> 가입 즉시 특별 할인 적용</div>
-      <div class="event-perk"><span>⚡</span> 우선 설치 지원</div>
-      <div class="event-perk"><span>📞</span> 1:1 전담 온보딩</div>
-    </div>
-    <a href="https://open.kakao.com/o/svB0Npmi" target="_blank" rel="noopener" class="btn-primary">
-      지금 이벤트 신청하기 →
-    </a>
-  </div>
-</div>
-
-<div class="divider"></div>
-
-<!-- ===== CTA MID ===== -->
-<div style="max-width:480px;margin:0 auto">
-  <div class="cta-mid">
-    <div class="cta-title">동·호수가 있어야<br>진짜 영업이 됩니다</div>
-    <div class="cta-sub">문의를 통해서만 이용 가능합니다<br>설치·사용법은 원격지원으로 안내드립니다</div>
-    <a href="https://open.kakao.com/o/svB0Npmi" target="_blank" rel="noopener" class="btn-primary">
-      카카오톡 상담하기 →
-    </a>
-    <div style="height:10px"></div>
-    <a href="tel:07079544114" class="btn-secondary">📞 전화 상담 : 070-7954-4114</a>
-  </div>
-</div>
-
-<!-- ===== CLOSING ===== -->
-<div style="max-width:480px;margin:0 auto">
-  <div class="closing">
-    <div class="closing-title">동·호수까지 뽑는 프로그램</div>
-    <div class="closing-sub">문의를 통해서만 이용 가능합니다</div>
-    <div class="closing-cta">지금 문의하세요</div>
-    <a href="https://open.kakao.com/o/svB0Npmi" target="_blank" rel="noopener" class="btn-primary">
-      카카오톡으로 상담하기 →
-    </a>
-  </div>
-</div>
-
-<!-- ===== FOOTER ===== -->
-<div style="max-width:480px;margin:0 auto">
-  <div class="footer">
-    <div class="footer-biz">
-      <strong>런투온라인</strong><br>
-      대표 : 황인찬&nbsp;&nbsp;|&nbsp;&nbsp;사업자등록번호 : 628-11-03169<br>
-      현금영수증 발행 가능 · 정식 사업자 등록 업체
-    </div>
-    <div class="footer-divider"></div>
-    <div class="footer-contact">
-      <a href="tel:07079544114">
-        <span style="font-size:1rem">📞</span> 고객센터 : 070-7954-4114
-      </a>
-      <a href="https://open.kakao.com/o/svB0Npmi" target="_blank" rel="noopener">
-        <span style="font-size:1rem">💬</span> 카카오톡 상담
-      </a>
-    </div>
-  </div>
-</div>
-
-</div><!-- /#main-content -->
+<!-- 인증 후 콘텐츠가 여기에 동적 삽입됨 -->
+<div id="root"></div>
 
 <script>
-// 난독화 + SHA-256 해시 검증
 (function(){
-  // 해시값을 분할 저장 (연속된 문자열로 두지 않음)
+  // 해시값 분할 저장 (소스에 연속 문자열 없음)
   var _h=[
     [50,57,50,54],[97,50,55,51,49],[102,52,98,51],[49,50,99,48],
     [56,57,56,50],[99,97,99,102],[56,48,54,49],[101,98,49,52],
@@ -690,20 +193,50 @@ section{padding:56px 20px;max-width:480px;margin:0 auto}
   ];
   var _r=_h.map(function(g){return g.map(function(c){return String.fromCharCode(c);}).join('');}).join('').trim();
 
-  function _sha(str){
-    var enc=new TextEncoder();
-    return crypto.subtle.digest('SHA-256',enc.encode(str)).then(function(b){
+  function _sha(s){
+    return crypto.subtle.digest('SHA-256',new TextEncoder().encode(s)).then(function(b){
       return Array.from(new Uint8Array(b)).map(function(x){return x.toString(16).padStart(2,'0');}).join('');
     });
   }
 
-  function _u(){
-    document.getElementById('code-gate').style.display='none';
-    document.getElementById('main-content').style.display='block';
-    _s();
+  // 인증 성공 시 콘텐츠를 동적으로 DOM에 삽입
+  function _inject(){
+    var _k='aHR0cHM6Ly9vcGVuLmtha2Fvd\u006dalk\u006dalk.com/o/svB0Npmi';
+    var _kk=atob('aHR0cHM6Ly9vcGVuLmtha2Fvd\u006dalk\u006dalk'.replace(/\u006dalk/g,''))+'com/o/svB0Npmi';
+    // 링크를 런타임에만 조합
+    var _ka=['aHR0cHM6Ly9vcGVuLm','tha2Fvd\u006d','LmNvbS9v','L3N2QjBOcG1p'].map(function(s){return atob(s.replace(/\u006d/g,''));}).join('');
+
+    document.getElementById('code-gate').remove();
+    document.getElementById('root').innerHTML=_build(_ka);
+    _scroll();
   }
 
-  function _e(){
+  function _build(kk){
+    return '<div class="sticky-cta"><a href="'+kk+'" target="_blank" rel="noopener">카카오톡으로 무료 상담하기 →</a></div>'
+    +'<section class="hero"><div class="hero-badge fade-up">단지형 매물 수집 자동화</div><h1 class="fade-up delay-1"><span class="highlight">동·호수까지</span><br>정확히 뽑는 프로그램</h1><div class="hero-stat fade-up delay-2"><div class="num">99%+</div><div class="label">단지형 매물 동·호수 수집 정확도</div></div><p class="hero-sub fade-up delay-3"><strong>다른 프로그램은 절대 뽑지 못합니다.</strong><br>XXX동 XXXX호 — 정확한 호수 정보까지<br>자동으로 수집·정리·엑셀 저장</p><a href="'+kk+'" target="_blank" rel="noopener" class="btn-primary fade-up delay-4">지금 무료 상담하기 (카카오톡)</a><a href="#proof" class="btn-secondary fade-up delay-4">직접 확인하기 ↓</a></section>'
+    +'<div class="divider"></div>'
+    +'<div class="video-section"><div class="video-wrap"><div class="section-label">실제 작동 영상</div><div class="section-title">직접 눈으로<br>확인하세요</div><p class="section-sub">동·호수가 뽑히는 순간을 직접 보시면<br>말이 필요 없습니다</p><div class="video-box"><iframe src="https://www.youtube.com/embed/kvqA3sKdIkw" title="NfindAD 실제 작동 영상" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen loading="lazy"></iframe></div><div style="margin-top:20px"><a href="'+kk+'" target="_blank" rel="noopener" class="btn-primary">영상 보고 결정했어요 → 상담 신청</a></div></div></div>'
+    +'<div class="divider"></div>'
+    +'<div class="result-section" id="proof"><div class="result-wrap"><div class="section-label">실제 결과</div><div class="section-title">보이시나요?<br>동·호수가 전부 있습니다</div><p class="section-sub">다른 수집 프로그램에선 절대 나오지 않는<br><strong style="color:var(--text)">XXX동 XXXX호 — 정확한 호수 데이터</strong>입니다</p><div class="screenshot-box"><img src="/nfindad_backup_20260402/image/result.png" alt="매물 수집 결과 화면" loading="lazy"></div><div class="result-tags"><span class="tag">✔ 동·호수 99% 이상 정확</span><span class="tag">✔ 매매 / 전세 / 월세 한 번에</span><span class="tag">✔ 층·방향·가격 자동 정리</span><span class="tag">✔ 바로 엑셀 저장</span></div><div class="big-quote">"이 데이터, 다른 곳에선 절대 못 뽑습니다"</div></div></div>'
+    +'<div class="divider"></div>'
+    +'<div class="speed-section"><div class="speed-wrap"><div class="section-label">부가 장점 — 속도</div><div class="section-title">2,159건 수집<br>걸린 시간: 단 몇 분</div><p class="section-sub">정확도에 속도까지. 실제 실행 로그입니다</p><div class="screenshot-box"><img src="/nfindad_backup_20260402/image/time_result.png" alt="수집 속도 로그" loading="lazy"></div><div class="speed-card"><div class="speed-nums"><div class="speed-item"><div class="val">2~3h</div><div class="unit">수작업 소요시간</div></div><div class="speed-item"><div class="val">3분</div><div class="unit">프로그램 소요시간</div></div></div><div class="vs-bar"><div class="human">수작업 (2~3시간)</div><div class="auto">자동 (3분)</div></div><div class="speed-label">같은 작업, 압도적인 속도 차이</div></div><div class="speed-highlight">사람이 하면 2~3시간<br>프로그램은 단 몇 분</div></div></div>'
+    +'<div class="divider"></div>'
+    +'<div class="pain-section"><div class="pain-wrap"><div class="section-label">공감하시나요?</div><div class="section-title">동·호수 없는 데이터,<br>써보셨나요?</div><div class="pain-list"><div class="pain-item"><span class="pain-icon">😤</span><span class="pain-text">매물 수집했는데 동·호수가 없어서 결국 직접 확인</span></div><div class="pain-item"><span class="pain-icon">📊</span><span class="pain-text">불완전한 데이터로 엑셀 정리해봤자 다시 손으로 보완</span></div><div class="pain-item"><span class="pain-icon">🤯</span><span class="pain-text">호수 모르면 비교도, 제안도, 영업도 불가능</span></div></div><div class="pain-cta-text">👉 동·호수까지 정확히 뽑아야 진짜 데이터입니다</div><a href="'+kk+'" target="_blank" rel="noopener" class="btn-primary">지금 바로 해결하기 →</a></div></div>'
+    +'<div class="divider"></div>'
+    +'<div class="features-section" id="features"><div class="features-wrap"><div class="section-label">핵심 기능</div><div class="section-title">다른 곳이 못 하는 것,<br>NfindAD는 합니다</div><div class="feature-grid"><div class="feature-card" style="border-color:rgba(59,130,246,.5);background:rgba(37,99,235,.08)"><div class="feature-icon" style="background:rgba(37,99,235,.25)">🏢</div><div class="feature-info"><div class="name" style="color:var(--blue-light)">동·호수 99%+ 정확 수집 <span style="font-size:.7rem;background:var(--red);color:#fff;padding:2px 7px;border-radius:6px;margin-left:4px">핵심</span></div><div class="desc">단지형 매물의 XXX동 XXXX호 정보까지 자동 수집</div></div></div><div class="feature-card"><div class="feature-icon">🔍</div><div class="feature-info"><div class="name">단지 검색 → 전체 수집</div><div class="desc">단지명만 입력하면 매물 전체 자동 수집</div></div></div><div class="feature-card"><div class="feature-icon">📂</div><div class="feature-info"><div class="name">매매 / 전세 / 월세 자동 분류</div><div class="desc">거래 유형별로 자동 정리 완료</div></div></div><div class="feature-card"><div class="feature-icon">📥</div><div class="feature-info"><div class="name">엑셀 / CSV 자동 저장</div><div class="desc">클릭 한 번으로 완성된 파일 내보내기</div></div></div><div class="feature-card"><div class="feature-icon">⭐</div><div class="feature-info"><div class="name">관심 단지 관리</div><div class="desc">자주 보는 단지 즐겨찾기 저장</div></div></div></div></div></div>'
+    +'<div class="divider"></div>'
+    +'<div class="ba-section"><div class="ba-wrap"><div class="section-label">변화</div><div class="section-title">사용 전 vs 후</div><div class="ba-cards"><div class="ba-card before"><div class="ba-label">기존 방법</div><div class="ba-item">동·호수 없는 불완전 데이터</div><div class="ba-item">결국 직접 확인 필요</div><div class="ba-item">수작업 2~3시간</div><div class="ba-item">영업 기회 손실</div></div><div class="ba-arrow">→</div><div class="ba-card after"><div class="ba-label">NfindAD</div><div class="ba-item">동·호수 99%+ 완전 수집</div><div class="ba-item">바로 영업 활용 가능</div><div class="ba-item">몇 분 만에 완료</div><div class="ba-item">엑셀 자동 저장</div></div></div></div></div>'
+    +'<div class="divider"></div>'
+    +'<div class="trust-section"><div class="trust-wrap"><div class="section-label">신뢰 보장</div><div class="section-title">문의를 통해<br>시작하세요</div><div class="trust-list"><div class="trust-item"><span class="trust-check">✔</span>설치·사용법 원격지원으로 직접 안내</div><div class="trust-item"><span class="trust-check">✔</span>정식 사업자 등록 · 현금영수증 발행 가능</div><div class="trust-item"><span class="trust-check">✔</span>실제 공인중개사 현업 사용 중</div><div class="trust-item"><span class="trust-check">✔</span>1기기 1계정 보안 시스템</div><div class="trust-item"><span class="trust-check">✔</span>데이터 내보내기 지원 (Excel / CSV)</div></div></div></div>'
+    +'<div class="divider"></div>'
+    +'<div class="event-section"><div class="event-wrap"><div class="event-badge">2026년 4월 이벤트 진행 중</div><div class="event-title">지금 상담하면<br>특별 혜택 제공</div><p class="event-sub">4월 한정 · 선착순 마감</p><div class="event-perks"><div class="event-perk"><span>🎁</span> 가입 즉시 특별 할인 적용</div><div class="event-perk"><span>⚡</span> 우선 설치 지원</div><div class="event-perk"><span>📞</span> 1:1 전담 온보딩</div></div><a href="'+kk+'" target="_blank" rel="noopener" class="btn-primary">지금 이벤트 신청하기 →</a></div></div>'
+    +'<div class="divider"></div>'
+    +'<div style="max-width:480px;margin:0 auto"><div class="cta-mid"><div class="cta-title">동·호수가 있어야<br>진짜 영업이 됩니다</div><div class="cta-sub">문의를 통해서만 이용 가능합니다<br>설치·사용법은 원격지원으로 안내드립니다</div><a href="'+kk+'" target="_blank" rel="noopener" class="btn-primary">카카오톡 상담하기 →</a><div style="height:10px"></div><a href="tel:07079544114" class="btn-secondary">📞 전화 상담 : 070-7954-4114</a></div></div>'
+    +'<div style="max-width:480px;margin:0 auto"><div class="closing"><div class="closing-title">동·호수까지 뽑는 프로그램</div><div class="closing-sub">문의를 통해서만 이용 가능합니다</div><div class="closing-cta">지금 문의하세요</div><a href="'+kk+'" target="_blank" rel="noopener" class="btn-primary">카카오톡으로 상담하기 →</a></div></div>'
+    +'<div style="max-width:480px;margin:0 auto"><div class="footer"><div class="footer-biz"><strong>런투온라인</strong><br>대표 : 황인찬&nbsp;&nbsp;|&nbsp;&nbsp;사업자등록번호 : 628-11-03169<br>현금영수증 발행 가능 · 정식 사업자 등록 업체</div><div class="footer-divider"></div><div class="footer-contact"><a href="tel:07079544114"><span style="font-size:1rem">📞</span> 고객센터 : 070-7954-4114</a><a href="'+kk+'" target="_blank" rel="noopener"><span style="font-size:1rem">💬</span> 카카오톡 상담</a></div></div></div>';
+  }
+
+  function _err(){
     var i=document.getElementById('code-input');
     document.getElementById('gate-error').textContent='코드가 올바르지 않습니다. 다시 입력해주세요.';
     i.classList.add('error');
@@ -715,15 +248,15 @@ section{padding:56px 20px;max-width:480px;margin:0 auto}
   window.checkCode=function(){
     var i=document.getElementById('code-input');
     var v=i.value.trim();
-    if(!v){return;}
-    _sha(v).then(function(h){h===_r?_u():_e();});
+    if(!v)return;
+    _sha(v).then(function(h){h===_r?_inject():_err();});
   };
 
   document.getElementById('code-input').addEventListener('keydown',function(e){
     if(e.key==='Enter')window.checkCode();
   });
 
-  function _s(){
+  function _scroll(){
     var o=new IntersectionObserver(function(entries){
       entries.forEach(function(e){
         if(e.isIntersecting){e.target.style.animation='fadeUp .6s ease both';o.unobserve(e.target);}
