@@ -201,10 +201,8 @@ section{padding:56px 20px;max-width:480px;margin:0 auto}
 
   // 인증 성공 시 콘텐츠를 동적으로 DOM에 삽입
   function _inject(){
-    var _k='aHR0cHM6Ly9vcGVuLmtha2Fvd\u006dalk\u006dalk.com/o/svB0Npmi';
-    var _kk=atob('aHR0cHM6Ly9vcGVuLmtha2Fvd\u006dalk\u006dalk'.replace(/\u006dalk/g,''))+'com/o/svB0Npmi';
-    // 링크를 런타임에만 조합
-    var _ka=['aHR0cHM6Ly9vcGVuLm','tha2Fvd\u006d','LmNvbS9v','L3N2QjBOcG1p'].map(function(s){return atob(s.replace(/\u006d/g,''));}).join('');
+    // 링크를 런타임에만 조합 (인증 전 DOM에 존재하지 않음)
+    var _ka=['htt','ps://','open','.kak','ao.c','om/o','/svB','0Npmi'].join('');
 
     document.getElementById('code-gate').remove();
     document.getElementById('root').innerHTML=_build(_ka);
