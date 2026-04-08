@@ -210,11 +210,15 @@ main{flex:1;padding:14px;max-width:900px;width:100%;margin:0 auto}
     <!-- 사용 로그 -->
     <div id="panel-logs" class="panel">
       <div class="search-bar">
-        <input type="text" id="log-search" placeholder="검색..." oninput="filterLogs()" inputmode="search">
+        <input type="text" id="log-search" placeholder="이메일, 단지명 검색..." oninput="filterLogs()" inputmode="search">
         <span class="count-badge" id="log-count"></span>
       </div>
-      <div style="margin-bottom:10px">
+      <div style="display:flex;gap:8px;margin-bottom:12px;align-items:center;flex-wrap:wrap">
+        <select id="log-email-filter" onchange="filterLogs()" style="padding:7px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:.82rem;outline:none;max-width:220px">
+          <option value="">전체 회원</option>
+        </select>
         <button class="btn btn-outline btn-xs" onclick="loadLogs()">새로고침</button>
+        <button class="btn btn-outline btn-xs" onclick="clearLogFilter()">필터 초기화</button>
       </div>
       <div id="logs-list"><div class="empty">탭을 클릭하면 로드됩니다</div></div>
     </div>
@@ -488,38 +492,69 @@ async function loadLogs() {
     .from('extraction_logs')
     .select('*')
     .order('extracted_at', { ascending: false })
-    .limit(300);
+    .limit(500);
   if (error) {
     document.getElementById('logs-list').innerHTML = '<div class="empty">오류: '+error.message+'</div>';
     return;
   }
   allLogs = data || [];
+  // 이메일 드롭다운 갱신
+  const emails = [...new Set(allLogs.map(l=>l.email||'').filter(Boolean))].sort();
+  const sel = document.getElementById('log-email-filter');
+  const cur = sel.value;
+  sel.innerHTML = '<option value="">전체 회원 ('+allLogs.length+'건)</option>'
+    + emails.map(e => `<option value="${e}"${e===cur?' selected':''}>${e}</option>`).join('');
   filterLogs();
 }
 
 function filterLogs() {
-  const q = document.getElementById('log-search').value.toLowerCase();
-  const list = allLogs.filter(l =>
-    (l.email||'').toLowerCase().includes(q) ||
-    (l.complex_name||'').toLowerCase().includes(q)
-  );
+  const q  = document.getElementById('log-search').value.toLowerCase();
+  const em = document.getElementById('log-email-filter').value;
+  const list = allLogs.filter(l => {
+    if (em && l.email !== em) return false;
+    if (q && !(l.email||'').toLowerCase().includes(q) && !(l.complex_name||'').toLowerCase().includes(q)) return false;
+    return true;
+  });
   document.getElementById('log-count').textContent = list.length + '건';
   renderLogs(list);
+}
+
+function clearLogFilter() {
+  document.getElementById('log-search').value = '';
+  document.getElementById('log-email-filter').value = '';
+  filterLogs();
 }
 
 function renderLogs(list) {
   const el = document.getElementById('logs-list');
   if (!list.length) { el.innerHTML = '<div class="empty">로그가 없습니다</div>'; return; }
-  el.innerHTML = list.map(l => {
+  // 선택된 이메일 필터가 있으면 요약 통계 표시
+  const em = document.getElementById('log-email-filter').value;
+  let summary = '';
+  if (em) {
+    const total = list.reduce((s,l)=>s+(l.item_count??0),0);
+    summary = `<div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px 14px;margin-bottom:10px;font-size:.82rem">
+      <span style="color:var(--accent2);font-weight:600">${em}</span>
+      &nbsp;·&nbsp; 총 <b>${list.length}</b>회 추출
+      &nbsp;·&nbsp; 누적 매물 <b>${total.toLocaleString()}</b>건
+    </div>`;
+  }
+  el.innerHTML = summary + list.map(l => {
     const t = l.extracted_at
       ? new Date(l.extracted_at).toLocaleString('ko-KR', {timeZone:'Asia/Seoul'})
       : '-';
-    return `<div class="log-item">
+    return `<div class="log-item" onclick="setLogEmail('${l.email}')" style="cursor:pointer">
       <div class="log-time">${t}</div>
       <div class="log-main">${l.email||'-'} · ${l.complex_name||'-'}</div>
       <div class="log-meta">매물 ${l.item_count??0}건 · 누적 ${l.usage_count??0}회</div>
     </div>`;
   }).join('');
+}
+
+function setLogEmail(email) {
+  document.getElementById('log-email-filter').value = email;
+  document.getElementById('log-search').value = '';
+  filterLogs();
 }
 
 // ── 릴리즈 ──
