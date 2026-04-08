@@ -481,9 +481,14 @@ function clearAddForm() {
 }
 
 // ── 사용 로그 ──
+// 컬럼: id, user_id, email, complex_name, extracted_at, usage_count, item_count
 async function loadLogs() {
   document.getElementById('logs-list').innerHTML = '<div class="loading">불러오는 중...</div>';
-  const { data, error } = await sbAdmin.from('extraction_logs').select('*').order('created_at', { ascending: false }).limit(300);
+  const { data, error } = await sbAdmin
+    .from('extraction_logs')
+    .select('*')
+    .order('extracted_at', { ascending: false })
+    .limit(300);
   if (error) {
     document.getElementById('logs-list').innerHTML = '<div class="empty">오류: '+error.message+'</div>';
     return;
@@ -494,7 +499,10 @@ async function loadLogs() {
 
 function filterLogs() {
   const q = document.getElementById('log-search').value.toLowerCase();
-  const list = allLogs.filter(l => Object.values(l).some(v => String(v||'').toLowerCase().includes(q)));
+  const list = allLogs.filter(l =>
+    (l.email||'').toLowerCase().includes(q) ||
+    (l.complex_name||'').toLowerCase().includes(q)
+  );
   document.getElementById('log-count').textContent = list.length + '건';
   renderLogs(list);
 }
@@ -502,23 +510,14 @@ function filterLogs() {
 function renderLogs(list) {
   const el = document.getElementById('logs-list');
   if (!list.length) { el.innerHTML = '<div class="empty">로그가 없습니다</div>'; return; }
-  // 컬럼 자동 감지
-  const s = list[0];
-  const tk = Object.keys(s).find(k=>k.includes('created')||k.includes('time')||k.includes('_at'))||'';
-  const ek = Object.keys(s).find(k=>k.includes('email')||k.includes('user'))||'';
-  const ck = Object.keys(s).find(k=>k.includes('complex')||k.includes('단지')||k.includes('name'))||'';
-  const nk = Object.keys(s).find(k=>k.includes('count')||k.includes('total')||k.includes('num'))||'';
-  const rest = Object.keys(s).filter(k=>![tk,ek,ck,nk,'id'].includes(k));
   el.innerHTML = list.map(l => {
-    const t  = tk ? (l[tk]||'').toString().slice(0,19).replace('T',' ') : '';
-    const em = ek ? (l[ek]||'-') : '';
-    const cx = ck ? (l[ck]||'') : '';
-    const ct = nk ? (l[nk]??'') : '';
-    const rm = rest.map(k=>k+'='+String(l[k]??'')).join(' · ');
+    const t = l.extracted_at
+      ? new Date(l.extracted_at).toLocaleString('ko-KR', {timeZone:'Asia/Seoul'})
+      : '-';
     return `<div class="log-item">
       <div class="log-time">${t}</div>
-      <div class="log-main">${em}${cx?' · '+cx:''}${ct?' · '+ct+'건':''}</div>
-      ${rm?`<div class="log-meta">${rm}</div>`:''}
+      <div class="log-main">${l.email||'-'} · ${l.complex_name||'-'}</div>
+      <div class="log-meta">매물 ${l.item_count??0}건 · 누적 ${l.usage_count??0}회</div>
     </div>`;
   }).join('');
 }
@@ -532,7 +531,9 @@ async function loadReleases() {
     const data = await res.json();
     if (!data.length) { el.innerHTML = '<div class="empty">릴리즈가 없습니다</div>'; return; }
     el.innerHTML = data.slice(0,10).map(r => {
-      const date   = (r.published_at||'').slice(0,10);
+      const dt = r.published_at
+        ? new Date(r.published_at).toLocaleString('ko-KR', {timeZone:'Asia/Seoul'})
+        : '';
       const assets = (r.assets||[]).filter(a=>a.name.endsWith('.exe'));
       const btns   = assets.length
         ? assets.map(a=>`<a href="${a.browser_download_url}" class="btn btn-accent" download style="text-decoration:none">${a.name}</a>`).join('')
@@ -540,7 +541,7 @@ async function loadReleases() {
       const size = assets[0] ? ' · ' + (assets[0].size/1024/1024).toFixed(1)+'MB' : '';
       return `<div class="release-card">
         <div class="release-tag">${r.tag_name} <span style="font-weight:400;font-size:.8rem;color:var(--muted)">${r.name||''}</span></div>
-        <div class="release-date">${date}${size}</div>
+        <div class="release-date">${dt}${size}</div>
         <div class="release-dl">${btns}</div>
       </div>`;
     }).join('');
