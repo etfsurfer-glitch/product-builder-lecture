@@ -1,0 +1,571 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Nfind 관리자</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+:root{
+  --bg:#0f0e1a;--surface:#1a1830;--surface2:#242140;--border:#2e2b50;
+  --accent:#6c5ce7;--accent2:#a29bfe;--text:#eceff1;--muted:#8080a0;
+  --green:#00cec9;--red:#ef5350;--orange:#fd9644;--yellow:#ffd32a;
+}
+html,body{font-family:'Malgun Gothic','Apple SD Gothic Neo','Segoe UI',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;font-size:15px}
+
+/* ── 로그인 ── */
+#login-screen{display:flex;align-items:center;justify-content:center;min-height:100vh;padding:20px}
+.login-box{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:36px 28px;width:100%;max-width:360px;text-align:center}
+.login-box h1{font-size:1.5rem;font-weight:700;background:linear-gradient(135deg,var(--accent),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;margin-bottom:6px}
+.login-box p{color:var(--muted);font-size:.85rem;margin-bottom:24px}
+.login-box input{width:100%;padding:14px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;color:var(--text);font-size:1rem;margin-bottom:12px;outline:none;-webkit-appearance:none}
+.login-box input:focus{border-color:var(--accent)}
+.btn-primary{width:100%;padding:14px;background:var(--accent);border:none;border-radius:10px;color:#fff;font-size:1rem;font-weight:600;cursor:pointer}
+#login-error{color:var(--red);font-size:.82rem;margin-top:10px;min-height:18px}
+
+/* ── 앱 ── */
+#app{display:none;flex-direction:column;min-height:100vh}
+
+/* ── 헤더 ── */
+header{background:var(--surface);border-bottom:1px solid var(--border);padding:0 16px;display:flex;align-items:center;justify-content:space-between;height:52px;position:sticky;top:0;z-index:20}
+header h1{font-size:1rem;font-weight:700;background:linear-gradient(135deg,var(--accent),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.header-right{display:flex;align-items:center;gap:10px}
+.user-badge{font-size:.75rem;color:var(--muted);max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.btn-sm{padding:7px 13px;border:1px solid var(--border);background:transparent;border-radius:7px;color:var(--muted);font-size:.78rem;cursor:pointer}
+
+/* ── 탭 ── */
+nav{background:var(--surface);border-bottom:1px solid var(--border);display:flex;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+nav::-webkit-scrollbar{display:none}
+.tab{flex:0 0 auto;padding:13px 16px;border:none;background:transparent;color:var(--muted);font-size:.83rem;cursor:pointer;border-bottom:2px solid transparent;white-space:nowrap;font-family:inherit}
+.tab.active{color:var(--accent2);border-bottom-color:var(--accent2)}
+
+/* ── 콘텐츠 ── */
+main{flex:1;padding:14px;max-width:900px;width:100%;margin:0 auto}
+.panel{display:none}
+.panel.active{display:block}
+
+/* ── 카드 ── */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:14px}
+.card-title{font-size:.9rem;font-weight:600;margin-bottom:14px;color:var(--accent2)}
+
+/* ── 검색바 ── */
+.search-bar{display:flex;gap:8px;margin-bottom:12px;align-items:center}
+.search-bar input{flex:1;padding:11px 14px;background:var(--surface);border:1px solid var(--border);border-radius:9px;color:var(--text);font-size:.9rem;outline:none;-webkit-appearance:none}
+.search-bar input:focus{border-color:var(--accent)}
+.count-badge{font-size:.78rem;color:var(--muted);white-space:nowrap}
+
+/* ── 회원 카드 (모바일) ── */
+.member-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px;margin-bottom:10px}
+.mc-top{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:10px}
+.mc-email{font-size:.88rem;font-weight:600;word-break:break-all}
+.mc-office{font-size:.78rem;color:var(--muted);margin-top:2px}
+.mc-badges{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}
+.mc-meta{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:10px}
+.mc-meta-item{font-size:.75rem}
+.mc-meta-item span:first-child{color:var(--muted);display:block;margin-bottom:1px}
+.mc-actions{display:flex;gap:7px;flex-wrap:wrap}
+
+/* ── 배지 ── */
+.badge{display:inline-flex;align-items:center;padding:3px 10px;border-radius:20px;font-size:.72rem;font-weight:600}
+.badge-pro{background:rgba(108,92,231,.2);color:var(--accent2)}
+.badge-free{background:rgba(128,128,160,.15);color:var(--muted)}
+.badge-ok{background:rgba(0,206,201,.15);color:var(--green)}
+.badge-none{background:rgba(255,211,42,.12);color:var(--yellow)}
+.badge-expired{background:rgba(239,83,80,.15);color:var(--red)}
+
+/* ── 버튼 ── */
+.btn{display:inline-flex;align-items:center;justify-content:center;padding:9px 16px;border-radius:8px;font-size:.82rem;font-weight:600;cursor:pointer;border:none;font-family:inherit;min-height:38px;white-space:nowrap}
+.btn-accent{background:var(--accent);color:#fff}
+.btn-green{background:var(--green);color:#0f0e1a}
+.btn-red{background:var(--red);color:#fff}
+.btn-outline{background:transparent;border:1px solid var(--border);color:var(--muted)}
+.btn-orange{background:var(--orange);color:#0f0e1a}
+.btn-yellow{background:var(--yellow);color:#0f0e1a}
+.btn-xs{padding:7px 12px;font-size:.75rem;min-height:32px;border-radius:7px}
+
+/* ── 폼 ── */
+.form-group{display:flex;flex-direction:column;gap:6px;margin-bottom:12px}
+.form-group label{font-size:.78rem;color:var(--muted)}
+.form-group input,.form-group select{padding:12px 13px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:.95rem;outline:none;font-family:inherit;-webkit-appearance:none;width:100%}
+.form-group input:focus,.form-group select:focus{border-color:var(--accent)}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+@media(max-width:480px){.form-grid{grid-template-columns:1fr}}
+.form-actions{display:flex;gap:9px;flex-wrap:wrap;margin-top:4px}
+
+/* ── 로그 테이블 ── */
+.log-item{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px 14px;margin-bottom:8px}
+.log-time{font-size:.72rem;color:var(--muted);margin-bottom:4px}
+.log-main{font-size:.85rem;font-weight:500;margin-bottom:4px}
+.log-meta{font-size:.75rem;color:var(--muted)}
+
+/* ── 릴리즈 ── */
+.release-card{background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:10px}
+.release-tag{font-weight:700;color:var(--accent2);font-size:.95rem;margin-bottom:4px}
+.release-date{font-size:.75rem;color:var(--muted);margin-bottom:12px}
+.release-dl{display:flex;flex-wrap:wrap;gap:8px}
+.release-dl a{text-decoration:none}
+
+/* ── 모달 ── */
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:100;display:none;align-items:flex-end;justify-content:center}
+@media(min-width:500px){.modal-bg{align-items:center}}
+.modal-bg.open{display:flex}
+.modal{background:var(--surface);border:1px solid var(--border);border-radius:16px 16px 0 0;padding:24px 20px;width:100%;max-width:460px}
+@media(min-width:500px){.modal{border-radius:16px}}
+.modal h3{font-size:1rem;font-weight:600;margin-bottom:16px}
+.modal-actions{display:flex;gap:9px;margin-top:16px}
+
+/* ── 토스트 ── */
+#toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);padding:12px 20px;background:#2a2750;border:1px solid var(--accent);border-radius:10px;font-size:.85rem;color:var(--text);opacity:0;transition:.3s;z-index:999;pointer-events:none;white-space:nowrap;max-width:90vw;overflow:hidden;text-overflow:ellipsis}
+#toast.show{opacity:1}
+
+.loading{color:var(--muted);font-size:.85rem;padding:24px;text-align:center}
+.empty{color:var(--muted);font-size:.85rem;padding:30px;text-align:center}
+</style>
+</head>
+<body>
+
+<!-- 로그인 -->
+<div id="login-screen">
+  <div class="login-box">
+    <h1>Nfind Admin</h1>
+    <p>관리자 계정으로 로그인</p>
+    <input type="email" id="login-email" placeholder="이메일" autocomplete="email" inputmode="email">
+    <input type="password" id="login-pw" placeholder="비밀번호">
+    <button class="btn-primary" onclick="doLogin()">로그인</button>
+    <div id="login-error"></div>
+  </div>
+</div>
+
+<!-- 앱 -->
+<div id="app">
+  <header>
+    <h1>⚡ Nfind Admin</h1>
+    <div class="header-right">
+      <span class="user-badge" id="header-user"></span>
+      <button class="btn-sm" onclick="doLogout()">로그아웃</button>
+    </div>
+  </header>
+  <nav>
+    <button class="tab active" onclick="switchTab('members',this)">👥 회원목록</button>
+    <button class="tab" onclick="switchTab('add',this)">➕ 신규등록</button>
+    <button class="tab" onclick="switchTab('logs',this)">📋 사용로그</button>
+    <button class="tab" onclick="switchTab('release',this)">📦 릴리즈</button>
+  </nav>
+  <main>
+
+    <!-- 회원 목록 -->
+    <div id="panel-members" class="panel active">
+      <div class="search-bar">
+        <input type="text" id="member-search" placeholder="이메일, 사무소 검색..." oninput="filterMembers()" inputmode="search">
+        <span class="count-badge" id="member-count"></span>
+      </div>
+      <div style="display:flex;gap:8px;margin-bottom:12px">
+        <button class="btn btn-outline btn-xs" onclick="loadMembers()">새로고침</button>
+      </div>
+      <div id="members-list"><div class="loading">불러오는 중...</div></div>
+    </div>
+
+    <!-- 신규 등록 -->
+    <div id="panel-add" class="panel">
+      <div class="card">
+        <div class="card-title">신규 회원 등록</div>
+        <div class="form-grid">
+          <div class="form-group">
+            <label>이메일 *</label>
+            <input type="email" id="add-email" placeholder="user@example.com" inputmode="email">
+          </div>
+          <div class="form-group">
+            <label>비밀번호 *</label>
+            <input type="password" id="add-pw" placeholder="6자 이상">
+          </div>
+          <div class="form-group">
+            <label>전화번호</label>
+            <input type="tel" id="add-phone" placeholder="01012345678" inputmode="numeric">
+          </div>
+          <div class="form-group">
+            <label>사무소명</label>
+            <input type="text" id="add-office" placeholder="OO부동산">
+          </div>
+          <div class="form-group">
+            <label>구독 등급</label>
+            <select id="add-sub">
+              <option value="free">free</option>
+              <option value="pro" selected>pro</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>구독 만료일</label>
+            <input type="date" id="add-subend">
+          </div>
+        </div>
+        <div class="form-actions">
+          <button class="btn btn-accent" onclick="addMember()">등록</button>
+          <button class="btn btn-outline" onclick="clearAddForm()">초기화</button>
+        </div>
+        <div id="add-result" style="margin-top:12px;font-size:.83rem;min-height:18px"></div>
+      </div>
+    </div>
+
+    <!-- 사용 로그 -->
+    <div id="panel-logs" class="panel">
+      <div class="search-bar">
+        <input type="text" id="log-search" placeholder="검색..." oninput="filterLogs()" inputmode="search">
+        <span class="count-badge" id="log-count"></span>
+      </div>
+      <div style="margin-bottom:10px">
+        <button class="btn btn-outline btn-xs" onclick="loadLogs()">새로고침</button>
+      </div>
+      <div id="logs-list"><div class="empty">탭을 클릭하면 로드됩니다</div></div>
+    </div>
+
+    <!-- 릴리즈 -->
+    <div id="panel-release" class="panel">
+      <div class="card">
+        <div class="card-title">📦 Nfind 릴리즈 다운로드</div>
+        <div id="release-list"><div class="loading">불러오는 중...</div></div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- 비밀번호 초기화 모달 -->
+<div class="modal-bg" id="modal-pw">
+  <div class="modal">
+    <h3>🔑 비밀번호 초기화</h3>
+    <div class="form-group">
+      <label>대상</label>
+      <input type="text" id="modal-pw-email" readonly style="opacity:.55">
+    </div>
+    <div class="form-group">
+      <label>새 비밀번호 *</label>
+      <input type="password" id="modal-pw-new" placeholder="새 비밀번호 (6자 이상)">
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-accent" style="flex:1" onclick="confirmResetPw()">변경</button>
+      <button class="btn btn-outline" style="flex:1" onclick="closeModal('modal-pw')">취소</button>
+    </div>
+  </div>
+</div>
+
+<!-- 구독 모달 -->
+<div class="modal-bg" id="modal-sub">
+  <div class="modal">
+    <h3>💳 구독 설정</h3>
+    <div class="form-group">
+      <label>대상</label>
+      <input type="text" id="modal-sub-email" readonly style="opacity:.55">
+    </div>
+    <div class="form-group">
+      <label>구독 등급</label>
+      <select id="modal-sub-grade">
+        <option value="free">free</option>
+        <option value="pro">pro</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>만료일</label>
+      <input type="date" id="modal-sub-end">
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-accent" style="flex:1" onclick="confirmSub()">저장</button>
+      <button class="btn btn-outline" style="flex:1" onclick="closeModal('modal-sub')">취소</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+const SUPABASE_URL = 'https://aseissgamezeenqescan.supabase.co';
+const ANON_KEY     = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFzZWlzc2dhbWV6ZWVucWVzY2FuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQyNzMyNzQsImV4cCI6MjA4OTg0OTI3NH0.LKdOvq-OhVl_UooM5DDVTly8aHbflIfaqCbT7hIWChI';
+const SERVICE_KEY  = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFzZWlzc2dhbWV6ZWVucWVzY2FuIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3NDI3MzI3NCwiZXhwIjoyMDg5ODQ5Mjc0fQ.89EDYdpFEIlm1UPdwg09T003tXK67GhDTSFr5St9RGc';
+const ADMIN_EMAIL  = 'in8259@naver.com';
+const GITHUB_REPO  = 'etfsurfer-glitch/maemul';
+
+const sbAuth  = supabase.createClient(SUPABASE_URL, ANON_KEY);
+const sbAdmin = supabase.createClient(SUPABASE_URL, SERVICE_KEY);
+
+let allMembers = [], allLogs = [], modalTarget = {};
+
+// ── 로그인 ──
+async function doLogin() {
+  const email = document.getElementById('login-email').value.trim();
+  const pw    = document.getElementById('login-pw').value;
+  const errEl = document.getElementById('login-error');
+  errEl.textContent = '';
+  if (email !== ADMIN_EMAIL) { errEl.textContent = '관리자 계정이 아닙니다.'; return; }
+  const { data, error } = await sbAuth.auth.signInWithPassword({ email, password: pw });
+  if (error || !data.user) { errEl.textContent = '로그인 실패: ' + (error?.message || ''); return; }
+  showApp(data.user.email);
+}
+document.getElementById('login-pw').addEventListener('keydown', e => { if(e.key==='Enter') doLogin(); });
+
+async function doLogout() {
+  await sbAuth.auth.signOut();
+  document.getElementById('app').style.display = 'none';
+  document.getElementById('login-screen').style.display = 'flex';
+}
+
+function showApp(email) {
+  document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('app').style.display = 'flex';
+  document.getElementById('header-user').textContent = email;
+  loadMembers();
+}
+
+(async () => {
+  const { data } = await sbAuth.auth.getSession();
+  if (data.session?.user?.email === ADMIN_EMAIL) showApp(data.session.user.email);
+})();
+
+// ── 탭 ──
+function switchTab(name, el) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('panel-' + name).classList.add('active');
+  if (name === 'logs' && allLogs.length === 0) loadLogs();
+  if (name === 'release') loadReleases();
+}
+
+// ── 회원 목록 ──
+async function loadMembers() {
+  document.getElementById('members-list').innerHTML = '<div class="loading">불러오는 중...</div>';
+  const { data, error } = await sbAdmin.from('users').select('*').order('created_at', { ascending: false });
+  if (error) { toast('오류: ' + error.message, true); return; }
+  allMembers = data || [];
+  filterMembers();
+}
+
+function filterMembers() {
+  const q = document.getElementById('member-search').value.toLowerCase();
+  const list = allMembers.filter(m =>
+    (m.email||'').toLowerCase().includes(q) ||
+    (m.office_name||'').toLowerCase().includes(q) ||
+    (m.phone||'').includes(q)
+  );
+  document.getElementById('member-count').textContent = list.length + '명';
+  renderMemberCards(list);
+}
+
+function renderMemberCards(list) {
+  const el = document.getElementById('members-list');
+  if (!list.length) { el.innerHTML = '<div class="empty">회원이 없습니다</div>'; return; }
+  const today = new Date().toISOString().slice(0,10);
+  el.innerHTML = list.map(m => {
+    const subBadge = m.subscription === 'pro'
+      ? `<span class="badge badge-pro">PRO</span>`
+      : `<span class="badge badge-free">FREE</span>`;
+    const end = m.subscription_end ? m.subscription_end.slice(0,10) : '';
+    let endBadge = '<span class="badge badge-none">만료일 없음</span>';
+    if (end) {
+      const expired = end < today;
+      const days = Math.round((new Date(end)-new Date(today))/86400000);
+      endBadge = expired
+        ? `<span class="badge badge-expired">만료 ${end}</span>`
+        : days <= 7
+          ? `<span class="badge" style="background:rgba(253,150,68,.18);color:var(--orange)">D-${days} ${end}</span>`
+          : `<span class="badge" style="background:rgba(0,206,201,.12);color:var(--green)">${end}</span>`;
+    }
+    const fpBadge = m.mac_address
+      ? `<span class="badge badge-ok">기기등록</span>`
+      : `<span class="badge badge-none">기기없음</span>`;
+    return `<div class="member-card">
+      <div class="mc-top">
+        <div>
+          <div class="mc-email">${m.email}</div>
+          <div class="mc-office">${m.office_name||'-'} ${m.phone ? '· '+m.phone : ''}</div>
+        </div>
+      </div>
+      <div class="mc-badges">${subBadge}${endBadge}${fpBadge}</div>
+      <div class="mc-meta">
+        <div class="mc-meta-item"><span>추출 횟수</span>${m.usage_count??0}회</div>
+        <div class="mc-meta-item"><span>가입일</span>${(m.created_at||'').slice(0,10)||'-'}</div>
+      </div>
+      <div class="mc-actions">
+        <button class="btn btn-outline btn-xs" onclick="openSubModal('${m.id}','${m.email}','${m.subscription||'free'}','${end}')">💳 구독</button>
+        <button class="btn btn-yellow btn-xs" onclick="openPwModal('${m.id}','${m.email}')">🔑 비번</button>
+        <button class="btn btn-orange btn-xs" onclick="resetFingerprint('${m.id}','${m.email}')">📵 지문초기화</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ── 기기 지문 초기화 ──
+async function resetFingerprint(id, email) {
+  if (!confirm(`[${email}]\n기기 지문을 초기화하시겠습니까?\n다음 로그인 PC가 새로 등록됩니다.`)) return;
+  const { error } = await sbAdmin.from('users').update({ mac_address: null }).eq('id', id);
+  if (error) { toast('오류: ' + error.message, true); return; }
+  toast('기기 지문 초기화 완료');
+  allMembers = allMembers.map(m => m.id===id ? {...m, mac_address:null} : m);
+  filterMembers();
+}
+
+// ── 비밀번호 모달 ──
+function openPwModal(id, email) {
+  modalTarget.pwId = id;
+  document.getElementById('modal-pw-email').value = email;
+  document.getElementById('modal-pw-new').value = '';
+  document.getElementById('modal-pw').classList.add('open');
+  setTimeout(() => document.getElementById('modal-pw-new').focus(), 150);
+}
+async function confirmResetPw() {
+  const pw = document.getElementById('modal-pw-new').value;
+  if (pw.length < 6) { toast('6자 이상 입력하세요', true); return; }
+  const { error } = await sbAdmin.auth.admin.updateUserById(modalTarget.pwId, { password: pw });
+  if (error) { toast('오류: ' + error.message, true); return; }
+  const hash = await sha256(pw);
+  await sbAdmin.from('users').update({ password_hash: hash }).eq('id', modalTarget.pwId);
+  toast('비밀번호 변경 완료');
+  closeModal('modal-pw');
+}
+
+// ── 구독 모달 ──
+function openSubModal(id, email, sub, end) {
+  modalTarget.subId = id;
+  document.getElementById('modal-sub-email').value = email;
+  document.getElementById('modal-sub-grade').value = sub || 'free';
+  document.getElementById('modal-sub-end').value = end || '';
+  document.getElementById('modal-sub').classList.add('open');
+}
+async function confirmSub() {
+  const grade = document.getElementById('modal-sub-grade').value;
+  const end   = document.getElementById('modal-sub-end').value;
+  const { error } = await sbAdmin.from('users').update({
+    subscription: grade, subscription_end: end || null
+  }).eq('id', modalTarget.subId);
+  if (error) { toast('오류: ' + error.message, true); return; }
+  toast('구독 정보 저장 완료');
+  closeModal('modal-sub');
+  loadMembers();
+}
+
+// ── 신규 등록 ──
+async function addMember() {
+  const email  = document.getElementById('add-email').value.trim();
+  const pw     = document.getElementById('add-pw').value;
+  const phone  = document.getElementById('add-phone').value.replace(/\D/g,'');
+  const office = document.getElementById('add-office').value.trim();
+  const sub    = document.getElementById('add-sub').value;
+  const subend = document.getElementById('add-subend').value;
+  const res    = document.getElementById('add-result');
+
+  if (!email || !pw) { res.style.color='var(--red)'; res.textContent='이메일과 비밀번호는 필수입니다.'; return; }
+  if (pw.length < 6) { res.style.color='var(--red)'; res.textContent='비밀번호는 6자 이상이어야 합니다.'; return; }
+
+  res.style.color = 'var(--muted)'; res.textContent = '등록 중...';
+  const hash = await sha256(pw);
+  const { data: authData, error: authErr } = await sbAdmin.auth.admin.createUser({
+    email, password: pw, email_confirm: true,
+    user_metadata: { phone, office_name: office, password_hash: hash }
+  });
+  if (authErr) { res.style.color='var(--red)'; res.textContent='Auth 오류: '+authErr.message; return; }
+  const { error: dbErr } = await sbAdmin.from('users').insert({
+    id: authData.user.id, email, password_hash: hash,
+    phone, office_name: office, subscription: sub,
+    subscription_end: subend || null, usage_count: 0, mac_address: null
+  });
+  if (dbErr) { res.style.color='var(--red)'; res.textContent='DB 오류: '+dbErr.message; return; }
+  res.style.color = 'var(--green)';
+  res.textContent = `✔ [${email}] 등록 완료 (${sub})`;
+  toast(`${email} 등록 완료`);
+  clearAddForm();
+}
+
+function clearAddForm() {
+  ['add-email','add-pw','add-phone','add-office','add-subend'].forEach(id => document.getElementById(id).value='');
+  document.getElementById('add-sub').value = 'pro';
+  document.getElementById('add-result').textContent = '';
+}
+
+// ── 사용 로그 ──
+async function loadLogs() {
+  document.getElementById('logs-list').innerHTML = '<div class="loading">불러오는 중...</div>';
+  const { data, error } = await sbAdmin.from('extraction_logs').select('*').order('created_at', { ascending: false }).limit(300);
+  if (error) {
+    document.getElementById('logs-list').innerHTML = '<div class="empty">오류: '+error.message+'</div>';
+    return;
+  }
+  allLogs = data || [];
+  filterLogs();
+}
+
+function filterLogs() {
+  const q = document.getElementById('log-search').value.toLowerCase();
+  const list = allLogs.filter(l => Object.values(l).some(v => String(v||'').toLowerCase().includes(q)));
+  document.getElementById('log-count').textContent = list.length + '건';
+  renderLogs(list);
+}
+
+function renderLogs(list) {
+  const el = document.getElementById('logs-list');
+  if (!list.length) { el.innerHTML = '<div class="empty">로그가 없습니다</div>'; return; }
+  // 컬럼 자동 감지
+  const s = list[0];
+  const tk = Object.keys(s).find(k=>k.includes('created')||k.includes('time')||k.includes('_at'))||'';
+  const ek = Object.keys(s).find(k=>k.includes('email')||k.includes('user'))||'';
+  const ck = Object.keys(s).find(k=>k.includes('complex')||k.includes('단지')||k.includes('name'))||'';
+  const nk = Object.keys(s).find(k=>k.includes('count')||k.includes('total')||k.includes('num'))||'';
+  const rest = Object.keys(s).filter(k=>![tk,ek,ck,nk,'id'].includes(k));
+  el.innerHTML = list.map(l => {
+    const t  = tk ? (l[tk]||'').toString().slice(0,19).replace('T',' ') : '';
+    const em = ek ? (l[ek]||'-') : '';
+    const cx = ck ? (l[ck]||'') : '';
+    const ct = nk ? (l[nk]??'') : '';
+    const rm = rest.map(k=>k+'='+String(l[k]??'')).join(' · ');
+    return `<div class="log-item">
+      <div class="log-time">${t}</div>
+      <div class="log-main">${em}${cx?' · '+cx:''}${ct?' · '+ct+'건':''}</div>
+      ${rm?`<div class="log-meta">${rm}</div>`:''}
+    </div>`;
+  }).join('');
+}
+
+// ── 릴리즈 ──
+async function loadReleases() {
+  const el = document.getElementById('release-list');
+  el.innerHTML = '<div class="loading">불러오는 중...</div>';
+  try {
+    const res  = await fetch(`https://api.github.com/repos/${GITHUB_REPO}/releases`);
+    const data = await res.json();
+    if (!data.length) { el.innerHTML = '<div class="empty">릴리즈가 없습니다</div>'; return; }
+    el.innerHTML = data.slice(0,10).map(r => {
+      const date   = (r.published_at||'').slice(0,10);
+      const assets = (r.assets||[]).filter(a=>a.name.endsWith('.exe'));
+      const btns   = assets.length
+        ? assets.map(a=>`<a href="${a.browser_download_url}" class="btn btn-accent" download style="text-decoration:none">${a.name}</a>`).join('')
+        : `<span style="color:var(--muted);font-size:.8rem">파일 없음</span>`;
+      const size = assets[0] ? ' · ' + (assets[0].size/1024/1024).toFixed(1)+'MB' : '';
+      return `<div class="release-card">
+        <div class="release-tag">${r.tag_name} <span style="font-weight:400;font-size:.8rem;color:var(--muted)">${r.name||''}</span></div>
+        <div class="release-date">${date}${size}</div>
+        <div class="release-dl">${btns}</div>
+      </div>`;
+    }).join('');
+  } catch(e) {
+    el.innerHTML = '<div class="empty">불러오기 실패: '+e.message+'</div>';
+  }
+}
+
+// ── 유틸 ──
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+document.querySelectorAll('.modal-bg').forEach(el=>el.addEventListener('click',e=>{if(e.target===el)el.classList.remove('open');}));
+
+function toast(msg, err=false) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.style.borderColor = err ? 'var(--red)' : 'var(--green)';
+  el.classList.add('show');
+  clearTimeout(el._t);
+  el._t = setTimeout(()=>el.classList.remove('show'), 3000);
+}
+
+async function sha256(str) {
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
+  return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
+}
+</script>
+</body>
+</html>
