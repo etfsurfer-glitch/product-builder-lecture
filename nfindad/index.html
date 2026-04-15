@@ -378,39 +378,6 @@ section{padding:56px 20px;max-width:480px;margin:0 auto}
     }
   },true);
 
-  /* ── DevTools 크기 감지 (도킹 모드) ── */
-  var _dtBlocked=false;
-  var _dtTimer=setInterval(function(){
-    if(_dtBlocked)return;
-    var wGap=window.outerWidth-window.innerWidth;
-    var hGap=window.outerHeight-window.innerHeight;
-    /* 모바일 브라우저 UI 허용(약 100px) 후 개발자도구 크기(>200px) 감지 */
-    if(wGap>220||hGap>220){
-      _dtBlocked=true;
-      clearInterval(_dtTimer);
-      document.body.innerHTML='<div style="display:flex;align-items:center;justify-content:center;height:100vh;background:#0a0a0a;color:#9CA3AF;font-family:sans-serif;font-size:.9rem;font-weight:700;text-align:center;padding:20px">접근이 제한되었습니다.<br>개발자 도구를 닫고 다시 시도해 주세요.</div>';
-      setTimeout(function(){window.location.replace('/');},2500);
-    }
-  },800);
-
-  /* ── 콘솔 경고 ── */
-  (function(){
-    var _w=console.warn;
-    console.warn=function(){};
-    try{
-      Object.defineProperty(console,'_x',{
-        get:function(){
-          _dtBlocked=true;
-          clearInterval(_dtTimer);
-          document.body.innerHTML='';
-          window.location.replace('/');
-          return 0;
-        }
-      });
-      console.log('%c ',console._x);
-    }catch(e){}
-    console.warn=_w;
-  })();
 
   /* ── SHA-256 해시 (8888) — 분할 저장 ── */
   var _h=[
