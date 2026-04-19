@@ -266,36 +266,39 @@ export function groupRows(rows: Row[]): Row[] {
   }
   const out: Row[] = [];
   for (const group of map.values()) {
-    if (group.length === 1) { out.push(group[0]); continue; }
-
-    const trades = Array.from(new Set(
-      group.map(it => String(it['매물거래구분명'] ?? '')).filter(Boolean)
-    ));
-    const seen = new Set<string>();
-    const uniqueBrokers: Row[] = [];
-    for (const it of group) {
-      const nm = String(it['중개업소명'] ?? '');
-      if (nm && !seen.has(nm)) { seen.add(nm); uniqueBrokers.push(it); }
-    }
-    const rep = uniqueBrokers[0] ?? group[0] ?? {};
-    const repName = String(rep['중개업소명'] ?? '');
-    const repTel  = String(rep['중개업소전화번호'] ?? '');
-    const dates = group
-      .map(it => String(it['등록년월일'] ?? ''))
-      .filter(Boolean).sort().reverse();
+    const isGrouped = group.length > 1;
 
     const merged: Row = { ...group[0] };
-    merged['_grouped'] = true;
-    merged['_count']   = group.length;
-    merged['_items']   = group;
-    merged['매물거래구분명']   = trades.join('/');
-    merged['중개업소명']       = uniqueBrokers.length > 1
-      ? `${repName} 외 ${uniqueBrokers.length - 1}` : repName;
-    merged['중개업소전화번호'] = repTel;
-    merged['등록년월일']       = dates[0] ?? '';
-    merged['매물일련번호']     = `(${group.length}건 묶음)`;
-    merged['특징광고내용']     = '';
+    if (isGrouped) {
+      const trades = Array.from(new Set(
+        group.map(it => String(it['매물거래구분명'] ?? '')).filter(Boolean)
+      ));
+      const seen = new Set<string>();
+      const uniqueBrokers: Row[] = [];
+      for (const it of group) {
+        const nm = String(it['중개업소명'] ?? '');
+        if (nm && !seen.has(nm)) { seen.add(nm); uniqueBrokers.push(it); }
+      }
+      const rep = uniqueBrokers[0] ?? group[0] ?? {};
+      const repName = String(rep['중개업소명'] ?? '');
+      const repTel  = String(rep['중개업소전화번호'] ?? '');
+      const dates = group
+        .map(it => String(it['등록년월일'] ?? ''))
+        .filter(Boolean).sort().reverse();
 
+      merged['_grouped'] = true;
+      merged['_count']   = group.length;
+      merged['_items']   = group;
+      merged['매물거래구분명']   = trades.join('/');
+      merged['중개업소명']       = uniqueBrokers.length > 1
+        ? `${repName} 외 ${uniqueBrokers.length - 1}` : repName;
+      merged['중개업소전화번호'] = repTel;
+      merged['등록년월일']       = dates[0] ?? '';
+      merged['매물일련번호']     = `(${group.length}건 묶음)`;
+      merged['특징광고내용']     = '';
+    }
+
+    // 최고/최저 — 단일/다중 모두 동일하게 채움 (단일이면 최고=최저, 최저는 공란)
     const computeMinMax = (
       items: Row[],
       pick: (it: Row) => number,
@@ -318,7 +321,7 @@ export function groupRows(rows: Row[]): Row[] {
     computeMinMax(월세, it => rawNum(dep(it)), '_보증최고', '_보증최저');
     computeMinMax(월세, it => rawNum(it['월세가']), '_월세최고', '_월세최저');
 
-    // 분양권 프리미엄 — 그룹 내 min/max
+    // 분양권 프리미엄 min/max (단일은 동일값)
     const premVals = group
       .filter(it => it['_isPresale'] && it['_premiumMin'] != null)
       .map(it => Number(it['_premiumMin']))
