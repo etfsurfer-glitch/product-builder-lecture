@@ -327,6 +327,7 @@ async function getOrCreateUuid() {
 }
 
 async function getVisitorId() {
+  await loadDeps();
   const fp = await FingerprintJS.load();
   const r  = await fp.get();
   return r.visitorId;
