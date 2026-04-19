@@ -71,45 +71,45 @@ export default function App() {
   return (
     <div className="min-h-screen flex flex-col">
       <header className="sticky top-0 z-10 bg-white/90 backdrop-blur border-b border-[color:var(--color-border)]">
-        <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <span className="text-xl font-extrabold tracking-tight bg-gradient-to-br from-[#6c5ce7] to-[#a29bfe] bg-clip-text text-transparent">nfind</span>
-            <span className="text-sm text-[color:var(--color-muted)]">매물관리시스템</span>
+        <div className="max-w-6xl mx-auto px-3 sm:px-6 h-14 sm:h-16 flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2 min-w-0">
+            <span className="text-lg sm:text-xl font-extrabold tracking-tight bg-gradient-to-br from-[#6c5ce7] to-[#a29bfe] bg-clip-text text-transparent">nfind</span>
+            <span className="hidden md:inline text-sm text-[color:var(--color-muted)]">매물관리시스템</span>
           </div>
-          <div className="flex items-center gap-2">
-            <span className="hidden sm:inline text-sm text-[color:var(--color-muted)]">
+          <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+            <span className="hidden lg:inline text-sm text-[color:var(--color-muted)] truncate max-w-[180px]">
               {session?.user.email}
             </span>
             {isAdmin && (
               <button
                 onClick={() => setShowAdmin(true)}
-                className="h-10 px-3 rounded-lg bg-[color:var(--color-brand-soft)] hover:brightness-95 border border-[color:var(--color-brand)] text-[color:var(--color-brand)] text-sm font-semibold"
-                title="관리자 · 사용자 기기 한도"
+                className="h-9 sm:h-10 px-2.5 sm:px-3 rounded-lg bg-[color:var(--color-brand-soft)] hover:brightness-95 border border-[color:var(--color-brand)] text-[color:var(--color-brand)] text-xs sm:text-sm font-semibold"
+                title="관리자"
               >
                 관리자
               </button>
             )}
             <button
               onClick={() => setShowDevices(true)}
-              className="h-10 px-3 rounded-lg bg-[color:var(--color-bg-soft)] hover:bg-[#edeff7] border border-[color:var(--color-border)] text-sm font-semibold"
+              className="h-9 sm:h-10 px-2.5 sm:px-3 rounded-lg bg-[color:var(--color-bg-soft)] hover:bg-[#edeff7] border border-[color:var(--color-border)] text-xs sm:text-sm font-semibold"
               title="내 기기 관리"
             >
               기기
             </button>
             <button
               onClick={async () => {
-                await serverLogout(session);  // HttpOnly 쿠키 제거 + 감사 로그 (실패 무시)
-                await signOut();              // Supabase 로컬 세션 제거
+                await serverLogout(session);
+                await signOut();
                 goToLanding();
               }}
-              className="h-10 px-4 rounded-lg bg-[color:var(--color-bg-soft)] hover:bg-[#edeff7] border border-[color:var(--color-border)] text-sm font-semibold"
+              className="h-9 sm:h-10 px-2.5 sm:px-4 rounded-lg bg-[color:var(--color-bg-soft)] hover:bg-[#edeff7] border border-[color:var(--color-border)] text-xs sm:text-sm font-semibold"
             >
               로그아웃
             </button>
           </div>
         </div>
         {/* Tabs */}
-        <div className="max-w-6xl mx-auto px-6">
+        <div className="max-w-6xl mx-auto px-3 sm:px-6">
           <div className="flex gap-1 -mb-px">
             <TabButton active={tab === 'complex'} onClick={() => setTab('complex')}>단지 검색</TabButton>
             <TabButton active={tab === 'article'} onClick={() => setTab('article')}>매물번호 조회</TabButton>
@@ -117,7 +117,7 @@ export default function App() {
         </div>
       </header>
 
-      <main className="flex-1 max-w-6xl w-full mx-auto px-6 py-8">
+      <main className="flex-1 max-w-6xl w-full mx-auto px-3 sm:px-6 py-4 sm:py-8">
         {showAdmin && isAdmin ? (
           <AdminPage session={session} onBack={() => setShowAdmin(false)} />
         ) : (

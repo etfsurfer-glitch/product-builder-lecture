@@ -40,3 +40,19 @@ body {
   0%   { left: -35%; }
   100% { left: 100%; }
 }
+
+/* ── 모바일 반응형 ───────────────────────────────────────────────── */
+@media (max-width: 640px) {
+  /* 결과 테이블 — 셀 패딩/폰트 축소, 컬럼 min-width 제거해서 내용 기반 폭 */
+  table th, table td {
+    padding: 4px 6px !important;
+    font-size: 11px !important;
+  }
+  /* 긴 주소·설명 컬럼 줄바꿈 허용 폭 축소 */
+  table td[style*="max-width"] { max-width: 180px !important; }
+
+  /* 모달 — 모바일에선 좌우 여백 최소, 상단 정렬 */
+  .fixed.inset-0.z-50 > div.bg-white {
+    max-height: 95vh !important;
+  }
+}
