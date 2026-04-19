@@ -274,7 +274,11 @@ function loadDeps() {
         import('https://openfpcdn.io/fingerprintjs/v4'),
       ]);
       createClient  = sb.createClient;
-      FingerprintJS = fp.default;
+      // default 가 undefined 인 경우에 대비: 모듈 네임스페이스 전체를 fallback
+      FingerprintJS = fp.default || fp;
+      if (typeof FingerprintJS?.load !== 'function') {
+        throw new Error('FingerprintJS.load 를 찾을 수 없음 (CDN 응답 구조 이상)');
+      }
     } catch (e) {
       console.error('[nfind] CDN 로드 실패:', e);
       _depsReady = null;   // 실패 시 다음 호출에서 재시도 가능
