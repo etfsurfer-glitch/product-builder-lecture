@@ -277,6 +277,7 @@ function loadDeps() {
       FingerprintJS = fp.default;
     } catch (e) {
       console.error('[nfind] CDN 로드 실패:', e);
+      _depsReady = null;   // 실패 시 다음 호출에서 재시도 가능
       throw e;
     }
   })();
@@ -420,7 +421,20 @@ document.addEventListener('keydown', e => {
 
 $('#login-form').addEventListener('submit', async e => {
   e.preventDefault();
-  if (!supabase) { setStatus('서버 연결 대기 중 — 잠시 후 다시 시도해주세요', 'error'); return; }
+
+  // supabase 미초기화 시 즉시 초기화 시도 (실제 에러 노출)
+  if (!supabase) {
+    setStatus('서버 연결 중...', 'loading');
+    try {
+      await initSupabase();
+    } catch (err) {
+      console.error('[nfind] initSupabase 실패:', err);
+    }
+    if (!supabase) {
+      setStatus('서버 연결 실패 — 네트워크 상태를 확인하고 다시 시도해주세요', 'error');
+      return;
+    }
+  }
 
   const email = $('#email').value.trim();
   const btn = $('#btn-submit-login');
