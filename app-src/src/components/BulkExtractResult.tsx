@@ -9,6 +9,7 @@ import { isFsaSupported, getOrPickNfindRoot, writeFileToPath } from '../lib/fsac
 import {
   COLUMNS, COLUMNS_GROUPED, TRADE_BG_EXPORT, cellValue, groupRows,
   frozenOffset, isLastFrozen, toMobileCols, useIsMobile,
+  getSortable, ChipBtn,
   type Row, type Col,
 } from './ExtractResult';
 
@@ -102,20 +103,92 @@ export default function BulkExtractResult({ session, jobs, onBack }: Props) {
     return isMobile ? toMobileCols(base) : base;
   }, [groupMode, isMobile]);
 
-  // 모든 완료된 job 의 row 를 병합 + 단지별 구분
-  const mergedRows: Row[] = useMemo(() => {
+  // 필터/정렬 상태
+  const [tradeFilter, setTradeFilter] = useState<Set<string>>(new Set());
+  const [dongFilter,  setDongFilter]  = useState<Set<string>>(new Set());
+  const [sort, setSort] = useState<{ key: string; dir: 'asc' | 'desc' } | null>(null);
+
+  // 병합된 원본 행 (그룹 전, 필터 전)
+  const baseRows: Row[] = useMemo(() => {
     const all: Row[] = [];
     for (const s of states) {
       if (s.status !== 'done') continue;
-      // 각 row 에 단지명이 이미 들어있지만, 혹시 비어있으면 job 이름으로 채움
       for (const r of s.rows) {
         const copy: Row = { ...r };
         if (!copy['단지명']) copy['단지명'] = s.name;
         all.push(copy);
       }
     }
-    return groupMode ? groupRows(all) : all;
-  }, [states, groupMode]);
+    return all;
+  }, [states]);
+
+  const tradeOptions = useMemo(() => {
+    const s = new Set<string>();
+    for (const r of baseRows) {
+      const t = String(r['매물거래구분명'] ?? '').split('/')[0];
+      if (t) s.add(t);
+    }
+    const order = ['매매', '전세', '월세'];
+    return Array.from(s).sort((a, b) =>
+      (order.indexOf(a) >= 0 ? order.indexOf(a) : 9) - (order.indexOf(b) >= 0 ? order.indexOf(b) : 9)
+    );
+  }, [baseRows]);
+
+  const dongOptions = useMemo(() => {
+    const s = new Set<string>();
+    for (const r of baseRows) {
+      const d = String(r['건물동명'] ?? '').trim();
+      if (d) s.add(d);
+    }
+    return Array.from(s).sort((a, b) => {
+      const na = parseInt(a, 10), nb = parseInt(b, 10);
+      if (!isNaN(na) && !isNaN(nb)) return na - nb;
+      return a.localeCompare(b);
+    });
+  }, [baseRows]);
+
+  const filteredRows = useMemo(() => {
+    if (!tradeFilter.size && !dongFilter.size) return baseRows;
+    return baseRows.filter(r => {
+      if (tradeFilter.size) {
+        const t = String(r['매물거래구분명'] ?? '').split('/')[0];
+        if (!tradeFilter.has(t)) return false;
+      }
+      if (dongFilter.size) {
+        const d = String(r['건물동명'] ?? '').trim();
+        if (!dongFilter.has(d)) return false;
+      }
+      return true;
+    });
+  }, [baseRows, tradeFilter, dongFilter]);
+
+  const mergedRows: Row[] = useMemo(() => {
+    const base = groupMode ? groupRows(filteredRows) : filteredRows;
+    if (!sort) return base;
+    const out = [...base];
+    out.sort((a, b) => {
+      const av = getSortable(a, sort.key);
+      const bv = getSortable(b, sort.key);
+      let c: number;
+      if (typeof av === 'number' && typeof bv === 'number') c = av - bv;
+      else c = String(av).localeCompare(String(bv), 'ko');
+      return sort.dir === 'asc' ? c : -c;
+    });
+    return out;
+  }, [filteredRows, groupMode, sort]);
+
+  function toggleInSet(s: Set<string>, v: string): Set<string> {
+    const n = new Set(s);
+    if (n.has(v)) n.delete(v); else n.add(v);
+    return n;
+  }
+  function onHeaderClick(key: string) {
+    setSort(prev => {
+      if (!prev || prev.key !== key) return { key, dir: 'asc' };
+      if (prev.dir === 'asc') return { key, dir: 'desc' };
+      return null;
+    });
+  }
 
   const totalRaw = states.reduce((acc, s) => acc + (s.status === 'done' ? s.rows.length : 0), 0);
   const doneCnt = states.filter(s => s.status === 'done').length;
@@ -237,11 +310,38 @@ export default function BulkExtractResult({ session, jobs, onBack }: Props) {
         </div>
       </div>
 
-      {mergedRows.length > 0 && (
+      {baseRows.length > 0 && (
         <div>
+          {/* 필터: 거래 + 동 */}
+          <div className="mb-3 space-y-2">
+            {tradeOptions.length > 1 && (
+              <div className="flex items-center gap-1.5 flex-wrap">
+                <span className="text-xs text-[color:var(--color-muted)] mr-1">거래</span>
+                <ChipBtn active={tradeFilter.size === 0} onClick={() => setTradeFilter(new Set())}>전체</ChipBtn>
+                {tradeOptions.map(t => (
+                  <ChipBtn key={t} active={tradeFilter.has(t)}
+                           onClick={() => setTradeFilter(s => toggleInSet(s, t))}>{t}</ChipBtn>
+                ))}
+              </div>
+            )}
+            {dongOptions.length > 1 && (
+              <div className="flex items-center gap-1.5 flex-wrap">
+                <span className="text-xs text-[color:var(--color-muted)] mr-1">동</span>
+                <ChipBtn active={dongFilter.size === 0} onClick={() => setDongFilter(new Set())}>전체</ChipBtn>
+                {dongOptions.map(d => (
+                  <ChipBtn key={d} active={dongFilter.has(d)}
+                           onClick={() => setDongFilter(s => toggleInSet(s, d))}>{d}</ChipBtn>
+                ))}
+              </div>
+            )}
+          </div>
+
           <div className="mb-3 flex items-center justify-between gap-3 flex-wrap">
             <div className="text-sm text-[color:var(--color-muted)]">
               총 <span className="font-bold text-[color:var(--color-ink)]">{totalRaw}</span>건
+              {(tradeFilter.size || dongFilter.size) ? (
+                <> · 필터 <span className="font-bold text-[color:var(--color-ink)]">{filteredRows.length}</span>건</>
+              ) : null}
               {groupMode && (
                 <> → <span className="font-bold text-[color:var(--color-ink)]">{mergedRows.length}</span>묶음</>
               )}
@@ -290,16 +390,20 @@ export default function BulkExtractResult({ session, jobs, onBack }: Props) {
                   {displayCols.map((c, i) => {
                     const off = frozenOffset(displayCols, i);
                     const lastFr = isLastFrozen(displayCols, i);
+                    const active = sort?.key === c.key;
+                    const arrow = active ? (sort.dir === 'asc' ? ' ▲' : ' ▼') : '';
                     return (
                       <th key={c.key}
+                          onClick={() => onHeaderClick(c.key)}
                           className={
-                            'px-2.5 py-2 text-left font-semibold whitespace-nowrap bg-[color:var(--color-bg-soft)] ' +
+                            'px-2.5 py-2 text-left font-semibold whitespace-nowrap bg-[color:var(--color-bg-soft)] cursor-pointer select-none hover:bg-[color:var(--color-brand-soft)]/50 ' +
                             (c.frozen ? 'sticky z-[3] ' : '') +
-                            (lastFr ? 'border-r border-[color:var(--color-border-strong)]' : '')
+                            (lastFr ? 'border-r border-[color:var(--color-border-strong)] ' : '') +
+                            (active ? 'text-[color:var(--color-brand)]' : '')
                           }
                           style={{ minWidth: c.w, maxWidth: c.wrap ? c.w : undefined,
                                    left: off ?? undefined }}>
-                        {c.label}
+                        {c.label}{arrow}
                       </th>
                     );
                   })}

@@ -75,6 +75,58 @@ export function toMobileCols(cols: Col[]): Col[] {
   }));
 }
 
+// 정렬용 값 추출 — 숫자/문자열 혼합 컬럼 지원
+export function getSortable(row: Row, key: string): number | string {
+  const num = (v: unknown): number => {
+    const n = parseInt(String(v ?? '').replace(/,/g, ''), 10);
+    return Number.isFinite(n) ? n : 0;
+  };
+  const firstDigit = (v: unknown): number => {
+    const m = String(v ?? '').match(/(\d+)/);
+    return m ? parseInt(m[1], 10) : 0;
+  };
+  const parseKrPrice = (s: unknown): number => {
+    // "10억 5,000만" → 105000 (만원 단위)
+    const str = String(s ?? '');
+    if (!str) return 0;
+    let total = 0;
+    const m1 = str.match(/(\d+)\s*억/);
+    if (m1) total += parseInt(m1[1], 10) * 10000;
+    const m2 = str.match(/([\d,]+)\s*만/);
+    if (m2) total += parseInt(m2[1].replace(/,/g, ''), 10);
+    if (!m1 && !m2) {
+      const n = parseInt(str.replace(/[^\d]/g, ''), 10);
+      if (Number.isFinite(n)) total = n;
+    }
+    return total;
+  };
+  switch (key) {
+    case '_매매가': return num(row['매매가'] ?? row['매매일반거래가']);
+    case '_전세가': return num(row['전세가'] ?? row['전세일반거래가']);
+    case '_보증금': return num(row['월세보증금'] ?? row['월세보증금액']);
+    case '_월세가': return num(row['월세가']);
+    // 묶음 모드 최고/최저 — 이미 포맷된 문자열
+    case '_매매최고': case '_매매최저':
+    case '_전세최고': case '_전세최저':
+    case '_보증최고': case '_보증최저':
+    case '_월세최고': case '_월세최저':
+      return parseKrPrice(row[key]);
+    case '건물동명':
+    case '건물호명':
+    case '해당층수':
+      return firstDigit(row[key]);
+    case '공급면적':
+    case '전용면적':
+    case '방수':
+    case '욕실수':
+      return parseFloat(String(row[key] ?? '')) || 0;
+    case '등록년월일':
+      return parseInt(String(row[key] ?? '').replace(/[^\d]/g, ''), 10) || 0;
+    default:
+      return String(row[key] ?? '');
+  }
+}
+
 export function useIsMobile(breakpoint = 640): boolean {
   const [m, setM] = useState(() =>
     typeof window !== 'undefined' && window.matchMedia(`(max-width: ${breakpoint}px)`).matches
@@ -337,15 +389,88 @@ export default function ExtractResult({ session, complex, keyword = '', onBack }
     }
   }
 
-  const displayRows = useMemo(
-    () => (groupMode ? groupRows(rows) : rows),
-    [rows, groupMode],
+  // ── 필터 / 정렬 ─────────────────────────────────────────────
+  const [tradeFilter, setTradeFilter] = useState<Set<string>>(new Set());
+  const [dongFilter,  setDongFilter]  = useState<Set<string>>(new Set());
+  const [sort, setSort] = useState<{ key: string; dir: 'asc' | 'desc' } | null>(null);
+
+  const tradeOptions = useMemo(() => {
+    const s = new Set<string>();
+    for (const r of rows) {
+      const t = String(r['매물거래구분명'] ?? '').split('/')[0];
+      if (t) s.add(t);
+    }
+    const order = ['매매', '전세', '월세'];
+    return Array.from(s).sort((a, b) =>
+      (order.indexOf(a) >= 0 ? order.indexOf(a) : 9) - (order.indexOf(b) >= 0 ? order.indexOf(b) : 9)
+    );
+  }, [rows]);
+
+  const dongOptions = useMemo(() => {
+    const s = new Set<string>();
+    for (const r of rows) {
+      const d = String(r['건물동명'] ?? '').trim();
+      if (d) s.add(d);
+    }
+    return Array.from(s).sort((a, b) => {
+      const na = parseInt(a, 10), nb = parseInt(b, 10);
+      if (!isNaN(na) && !isNaN(nb)) return na - nb;
+      return a.localeCompare(b);
+    });
+  }, [rows]);
+
+  const filteredRows = useMemo(() => {
+    if (!tradeFilter.size && !dongFilter.size) return rows;
+    return rows.filter(r => {
+      if (tradeFilter.size) {
+        const t = String(r['매물거래구분명'] ?? '').split('/')[0];
+        if (!tradeFilter.has(t)) return false;
+      }
+      if (dongFilter.size) {
+        const d = String(r['건물동명'] ?? '').trim();
+        if (!dongFilter.has(d)) return false;
+      }
+      return true;
+    });
+  }, [rows, tradeFilter, dongFilter]);
+
+  const groupedRows = useMemo(
+    () => (groupMode ? groupRows(filteredRows) : filteredRows),
+    [filteredRows, groupMode],
   );
+
+  const displayRows = useMemo(() => {
+    if (!sort) return groupedRows;
+    const out = [...groupedRows];
+    out.sort((a, b) => {
+      const av = getSortable(a, sort.key);
+      const bv = getSortable(b, sort.key);
+      let c: number;
+      if (typeof av === 'number' && typeof bv === 'number') c = av - bv;
+      else c = String(av).localeCompare(String(bv), 'ko');
+      return sort.dir === 'asc' ? c : -c;
+    });
+    return out;
+  }, [groupedRows, sort]);
+
   const isMobile = useIsMobile();
   const displayCols = useMemo(() => {
     const base = groupMode ? COLUMNS_GROUPED : COLUMNS;
     return isMobile ? toMobileCols(base) : base;
   }, [groupMode, isMobile]);
+
+  function toggleInSet(s: Set<string>, v: string): Set<string> {
+    const n = new Set(s);
+    if (n.has(v)) n.delete(v); else n.add(v);
+    return n;
+  }
+  function onHeaderClick(key: string) {
+    setSort(prev => {
+      if (!prev || prev.key !== key) return { key, dir: 'asc' };
+      if (prev.dir === 'asc') return { key, dir: 'desc' };
+      return null;   // 세 번째 클릭 → 정렬 해제
+    });
+  }
 
   useEffect(() => {
     let cancelled = false;
@@ -438,9 +563,36 @@ export default function ExtractResult({ session, complex, keyword = '', onBack }
 
       {rows.length > 0 && (
         <div>
+          {/* 필터: 거래 + 동 */}
+          <div className="mb-3 space-y-2">
+            {tradeOptions.length > 1 && (
+              <div className="flex items-center gap-1.5 flex-wrap">
+                <span className="text-xs text-[color:var(--color-muted)] mr-1">거래</span>
+                <ChipBtn active={tradeFilter.size === 0} onClick={() => setTradeFilter(new Set())}>전체</ChipBtn>
+                {tradeOptions.map(t => (
+                  <ChipBtn key={t} active={tradeFilter.has(t)}
+                           onClick={() => setTradeFilter(s => toggleInSet(s, t))}>{t}</ChipBtn>
+                ))}
+              </div>
+            )}
+            {dongOptions.length > 1 && (
+              <div className="flex items-center gap-1.5 flex-wrap">
+                <span className="text-xs text-[color:var(--color-muted)] mr-1">동</span>
+                <ChipBtn active={dongFilter.size === 0} onClick={() => setDongFilter(new Set())}>전체</ChipBtn>
+                {dongOptions.map(d => (
+                  <ChipBtn key={d} active={dongFilter.has(d)}
+                           onClick={() => setDongFilter(s => toggleInSet(s, d))}>{d}</ChipBtn>
+                ))}
+              </div>
+            )}
+          </div>
+
           <div className="mb-3 flex items-center justify-between gap-3 flex-wrap">
             <div className="text-sm text-[color:var(--color-muted)]">
               총 <span className="font-bold text-[color:var(--color-ink)]">{rows.length}</span>건
+              {(tradeFilter.size || dongFilter.size) ? (
+                <> · 필터 <span className="font-bold text-[color:var(--color-ink)]">{filteredRows.length}</span>건</>
+              ) : null}
               {groupMode && (
                 <> → <span className="font-bold text-[color:var(--color-ink)]">{displayRows.length}</span>묶음</>
               )}
@@ -502,20 +654,25 @@ export default function ExtractResult({ session, complex, keyword = '', onBack }
                   {displayCols.map((c, i) => {
                     const off = frozenOffset(displayCols, i);
                     const lastFr = isLastFrozen(displayCols, i);
+                    const active = sort?.key === c.key;
+                    const arrow = active ? (sort.dir === 'asc' ? ' ▲' : ' ▼') : '';
                     return (
                       <th
                         key={c.key}
+                        onClick={() => onHeaderClick(c.key)}
                         className={
-                          'px-2.5 py-2 text-left font-semibold whitespace-nowrap bg-[color:var(--color-bg-soft)] ' +
+                          'px-2.5 py-2 text-left font-semibold whitespace-nowrap bg-[color:var(--color-bg-soft)] cursor-pointer select-none hover:bg-[color:var(--color-brand-soft)]/50 ' +
                           (c.frozen ? 'sticky z-[3] ' : '') +
-                          (lastFr ? 'border-r border-[color:var(--color-border-strong)] shadow-[2px_0_0_0_rgba(0,0,0,0.03)]' : '')
+                          (lastFr ? 'border-r border-[color:var(--color-border-strong)] shadow-[2px_0_0_0_rgba(0,0,0,0.03)] ' : '') +
+                          (active ? 'text-[color:var(--color-brand)]' : '')
                         }
                         style={{
                           minWidth: c.w, maxWidth: c.wrap ? c.w : undefined,
                           left: off ?? undefined,
                         }}
+                        title={active ? `${sort!.dir === 'asc' ? '오름' : '내림'}차순 (다시 누르면 해제)` : '정렬'}
                       >
-                        {c.label}
+                        {c.label}{arrow}
                       </th>
                     );
                   })}
@@ -569,5 +726,24 @@ export default function ExtractResult({ session, complex, keyword = '', onBack }
         </div>
       )}
     </div>
+  );
+}
+
+export function ChipBtn({ active, onClick, children }: {
+  active: boolean; onClick: () => void; children: React.ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={
+        'h-7 px-2.5 rounded-full text-xs font-semibold border transition ' +
+        (active
+          ? 'bg-[color:var(--color-brand)] text-white border-[color:var(--color-brand)]'
+          : 'bg-white text-[color:var(--color-ink)] border-[color:var(--color-border)] hover:bg-[color:var(--color-bg-soft)]')
+      }
+    >
+      {children}
+    </button>
   );
 }
