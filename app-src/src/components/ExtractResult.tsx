@@ -66,6 +66,28 @@ export function isLastFrozen(cols: Col[], i: number): boolean {
   return !cols[i + 1]?.frozen;
 }
 
+// 모바일용 컬럼 축소 — frozen 2개로 줄이고 폭 약 65% 축소
+export function toMobileCols(cols: Col[]): Col[] {
+  return cols.map((c, i) => ({
+    ...c,
+    frozen: i < 2,   // 거래, 단지명 만 고정
+    w: Math.max(36, Math.round((c.w ?? 60) * 0.65)),
+  }));
+}
+
+export function useIsMobile(breakpoint = 640): boolean {
+  const [m, setM] = useState(() =>
+    typeof window !== 'undefined' && window.matchMedia(`(max-width: ${breakpoint}px)`).matches
+  );
+  useEffect(() => {
+    const mq = window.matchMedia(`(max-width: ${breakpoint}px)`);
+    const h = (e: MediaQueryListEvent) => setM(e.matches);
+    mq.addEventListener('change', h);
+    return () => mq.removeEventListener('change', h);
+  }, [breakpoint]);
+  return m;
+}
+
 // 묶음 모드: 단일 가격 컬럼 4개를 최고/최저 8개로 교체. scrapers.py GROUP_ONLY_COLS 와 동일.
 const GROUP_PRICE_COLS: Col[] = [
   { label: '매매최고',    key: '_매매최고',        w: 100 },
@@ -319,7 +341,11 @@ export default function ExtractResult({ session, complex, keyword = '', onBack }
     () => (groupMode ? groupRows(rows) : rows),
     [rows, groupMode],
   );
-  const displayCols = groupMode ? COLUMNS_GROUPED : COLUMNS;
+  const isMobile = useIsMobile();
+  const displayCols = useMemo(() => {
+    const base = groupMode ? COLUMNS_GROUPED : COLUMNS;
+    return isMobile ? toMobileCols(base) : base;
+  }, [groupMode, isMobile]);
 
   useEffect(() => {
     let cancelled = false;

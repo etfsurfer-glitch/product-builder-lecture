@@ -8,7 +8,7 @@ import {
 import { isFsaSupported, getOrPickNfindRoot, writeFileToPath } from '../lib/fsaccess';
 import {
   COLUMNS, COLUMNS_GROUPED, TRADE_BG_EXPORT, cellValue, groupRows,
-  frozenOffset, isLastFrozen,
+  frozenOffset, isLastFrozen, toMobileCols, useIsMobile,
   type Row, type Col,
 } from './ExtractResult';
 
@@ -96,10 +96,11 @@ export default function BulkExtractResult({ session, jobs, onBack }: Props) {
     }
   }
 
+  const isMobile = useIsMobile();
   const displayCols: Col[] = useMemo(() => {
-    // 단지명 컬럼은 이미 COLUMNS 에 있으므로 그대로 재사용.
-    return groupMode ? COLUMNS_GROUPED : COLUMNS;
-  }, [groupMode]);
+    const base = groupMode ? COLUMNS_GROUPED : COLUMNS;
+    return isMobile ? toMobileCols(base) : base;
+  }, [groupMode, isMobile]);
 
   // 모든 완료된 job 의 row 를 병합 + 단지별 구분
   const mergedRows: Row[] = useMemo(() => {
