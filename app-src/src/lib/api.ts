@@ -328,6 +328,36 @@ export function adminCreateUser(
 
 export type AdminLogKind = 'auth' | 'article' | 'extraction' | 'security';
 
+export interface DashboardData {
+  ok: boolean;
+  now: number;
+  server: { uptime_sec: number; pid: number; host: string; port: number };
+  vpn: {
+    available: boolean; connected: boolean; mode: string;
+    current_conf: string | null;
+    server: string | null;
+    confs: string[];
+    last_rotate: number;
+    rotate_interval_sec: number;
+    next_rotate_at: number | null;
+    recent_failures: number; fail_threshold: number;
+    external_ip: string; raw?: string;
+  };
+  creds: { bearer: boolean; cookie: boolean; captured_at: number | null };
+  jobs: { total: number; pending: number; running: number; done: number; error: number; active: number };
+  redis: { connected: boolean };
+}
+
+export function adminDashboard(session: Session | null) {
+  return request<DashboardData>('/api/admin/dashboard', session);
+}
+
+export function adminProxyRotate(session: Session | null) {
+  return request<{ ok: boolean; status: unknown }>(
+    '/api/admin/proxy/rotate', session, { method: 'POST' },
+  );
+}
+
 export function adminFetchLogs(
   session: Session | null,
   kind: AdminLogKind,

@@ -4,8 +4,9 @@ import {
   adminListUsers, adminGetUserDevices,
   adminSetDeviceLimit, adminDeleteDevice, adminCreateUser,
   adminFetchLogs, adminResetAllDevices, adminSetPassword, adminSetSubscription,
+  adminDashboard, adminProxyRotate,
   type AdminUserRow, type DeviceRow, type DeviceLimits,
-  type AdminLogKind, ApiError,
+  type AdminLogKind, type DashboardData, ApiError,
 } from '../lib/api';
 
 type AdminUserFull = AdminUserRow & {
@@ -19,7 +20,7 @@ interface Props {
   onBack:  () => void;
 }
 
-type Tab = 'users' | 'logs' | 'create';
+type Tab = 'dash' | 'users' | 'logs' | 'create';
 
 function uaShort(ua: string): string {
   if (!ua) return '';
@@ -44,7 +45,7 @@ function fmtDate(s: string | null | undefined): string {
 }
 
 export default function AdminPage({ session, onBack }: Props) {
-  const [tab, setTab] = useState<Tab>('users');
+  const [tab, setTab] = useState<Tab>('dash');
   return (
     <div>
       <div className="mb-4 flex items-center justify-between">
@@ -57,8 +58,8 @@ export default function AdminPage({ session, onBack }: Props) {
         </div>
       </div>
 
-      <div className="mb-4 border-b border-[color:var(--color-border)] flex gap-1">
-        {([['users','계정관리'],['logs','로그'],['create','신규 등록']] as [Tab,string][]).map(([k,label]) => (
+      <div className="mb-4 border-b border-[color:var(--color-border)] flex gap-1 overflow-x-auto">
+        {([['dash','대시보드'],['users','계정관리'],['logs','로그'],['create','신규 등록']] as [Tab,string][]).map(([k,label]) => (
           <button key={k} onClick={() => setTab(k)}
                   className={
                     'px-4 py-2.5 text-sm font-semibold border-b-2 -mb-px transition ' +
@@ -71,6 +72,7 @@ export default function AdminPage({ session, onBack }: Props) {
         ))}
       </div>
 
+      {tab === 'dash'   && <DashTab   session={session} />}
       {tab === 'users'  && <UsersTab  session={session} />}
       {tab === 'logs'   && <LogsTab   session={session} />}
       {tab === 'create' && <CreateTab session={session} />}
@@ -81,6 +83,175 @@ export default function AdminPage({ session, onBack }: Props) {
 // ───────────────────────────────────────────────────────────
 // Tab 1: 계정관리
 // ───────────────────────────────────────────────────────────
+function DashTab({ session }: { session: Session | null }) {
+  const [data, setData] = useState<DashboardData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [err, setErr] = useState('');
+  const [rotating, setRotating] = useState(false);
+  const [auto, setAuto] = useState(true);
+
+  async function load(silent = false) {
+    if (!silent) setLoading(true);
+    setErr('');
+    try {
+      const d = await adminDashboard(session);
+      setData(d);
+    } catch (e) {
+      setErr(e instanceof ApiError ? `${e.status} · ${e.message}` : String(e));
+    } finally {
+      if (!silent) setLoading(false);
+    }
+  }
+
+  useEffect(() => { load(); /* eslint-disable-next-line */ }, []);
+  useEffect(() => {
+    if (!auto) return;
+    const id = window.setInterval(() => load(true), 10000);
+    return () => window.clearInterval(id);
+    // eslint-disable-next-line
+  }, [auto]);
+
+  async function rotate() {
+    if (!confirm('VPN 서버를 즉시 회전할까요?')) return;
+    setRotating(true);
+    try {
+      await adminProxyRotate(session);
+      await load(true);
+    } catch (e) {
+      alert(e instanceof ApiError ? `${e.status} · ${e.message}` : String(e));
+    } finally {
+      setRotating(false);
+    }
+  }
+
+  if (loading && !data) return <div className="p-6 text-sm text-[color:var(--color-muted)]">불러오는 중...</div>;
+  if (err && !data)     return <div className="p-3 rounded bg-red-50 border border-red-200 text-red-800 text-sm">{err}</div>;
+  if (!data)            return null;
+
+  const vpn = data.vpn;
+  const now = data.now;
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between gap-2 flex-wrap">
+        <div className="text-xs text-[color:var(--color-muted)]">
+          서버 시간 {fmtTime(now)} · uptime {fmtUptime(data.server.uptime_sec)} · pid {data.server.pid}
+        </div>
+        <div className="flex items-center gap-2">
+          <label className="text-xs flex items-center gap-1 cursor-pointer">
+            <input type="checkbox" checked={auto} onChange={e => setAuto(e.target.checked)} /> 자동 새로고침
+          </label>
+          <button onClick={() => load()} disabled={loading}
+                  className="h-8 px-2.5 rounded border border-[color:var(--color-border)] text-xs font-semibold hover:bg-[color:var(--color-bg-soft)]">
+            새로고침
+          </button>
+        </div>
+      </div>
+
+      {/* VPN */}
+      <Card title="🌐 VPN">
+        <KV k="모드" v={vpn.mode} />
+        <KV k="연결 상태" v={vpn.connected
+          ? <span className="text-green-700 font-semibold">연결됨</span>
+          : <span className="text-red-700 font-semibold">끊김</span>} />
+        <KV k="현재 서버" v={vpn.current_conf || vpn.server || '-'} />
+        <KV k="외부 IP" v={vpn.external_ip
+          ? <code className="text-xs">{vpn.external_ip}</code>
+          : '-'} />
+        <KV k="서버 풀" v={`${vpn.confs?.length ?? 0}개 (${(vpn.confs || []).join(', ')})`} />
+        <KV k="마지막 회전" v={vpn.last_rotate ? fmtTimeAgo(now - vpn.last_rotate) : '-'} />
+        <KV k="다음 정기 회전" v={vpn.next_rotate_at
+          ? `${fmtTime(vpn.next_rotate_at)} (${fmtTimeAgo(vpn.next_rotate_at - now, true)})`
+          : '비활성'} />
+        <KV k="회전 간격" v={vpn.rotate_interval_sec > 0 ? `${Math.round(vpn.rotate_interval_sec/60)}분` : '비활성'} />
+        <KV k="최근 실패" v={`${vpn.recent_failures}/${vpn.fail_threshold} (초과 시 자동 회전)`} />
+        <div className="pt-2">
+          <button onClick={rotate} disabled={rotating}
+                  className="h-8 px-3 rounded-lg bg-[color:var(--color-brand)] text-white text-xs font-semibold disabled:bg-[#b5aeea]">
+            {rotating ? '회전 중...' : '🔄 지금 회전'}
+          </button>
+        </div>
+      </Card>
+
+      {/* 인증 */}
+      <Card title="🔑 인증 크레덴셜">
+        <KV k="Bearer" v={data.creds.bearer
+          ? <span className="text-green-700">✓</span>
+          : <span className="text-red-700">✗</span>} />
+        <KV k="Cookie"  v={data.creds.cookie
+          ? <span className="text-green-700">✓</span>
+          : <span className="text-red-700">✗</span>} />
+        <KV k="캡처 시각" v={data.creds.captured_at
+          ? fmtTime(data.creds.captured_at) + ` (${fmtTimeAgo(now - data.creds.captured_at)} 전)`
+          : '-'} />
+      </Card>
+
+      {/* 작업 */}
+      <Card title="⚙️ 백그라운드 작업">
+        <KV k="전체" v={String(data.jobs.total)} />
+        <KV k="진행 중" v={<><b>{data.jobs.active}</b> <span className="text-xs text-[color:var(--color-muted)]">(대기 {data.jobs.pending} · 실행 {data.jobs.running})</span></>} />
+        <KV k="완료" v={String(data.jobs.done)} />
+        <KV k="실패" v={String(data.jobs.error)} />
+      </Card>
+
+      {/* 시스템 */}
+      <Card title="🖥️ 시스템">
+        <KV k="호스트:포트" v={`${data.server.host}:${data.server.port}`} />
+        <KV k="프로세스 ID" v={String(data.server.pid)} />
+        <KV k="업타임" v={fmtUptime(data.server.uptime_sec)} />
+        <KV k="Redis" v={data.redis.connected
+          ? <span className="text-green-700">연결됨</span>
+          : <span className="text-amber-700">끊김 (in-memory fallback 동작)</span>} />
+      </Card>
+    </div>
+  );
+}
+
+function Card({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <div className="rounded-xl border border-[color:var(--color-border)] bg-white p-4">
+      <div className="text-sm font-semibold mb-3">{title}</div>
+      <div className="space-y-1.5">{children}</div>
+    </div>
+  );
+}
+
+function KV({ k, v }: { k: string; v: React.ReactNode }) {
+  return (
+    <div className="flex items-start justify-between gap-3 text-sm">
+      <div className="text-[color:var(--color-muted)] min-w-[110px] shrink-0">{k}</div>
+      <div className="text-right min-w-0 break-words">{v}</div>
+    </div>
+  );
+}
+
+function fmtTime(epochSec: number): string {
+  const d = new Date(epochSec * 1000);
+  if (Number.isNaN(d.getTime())) return '-';
+  return d.toLocaleString('ko-KR', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit' });
+}
+
+function fmtUptime(sec: number): string {
+  const s = Math.max(0, Math.floor(sec));
+  const d = Math.floor(s / 86400);
+  const h = Math.floor((s % 86400) / 3600);
+  const m = Math.floor((s % 3600) / 60);
+  if (d > 0) return `${d}일 ${h}시간`;
+  if (h > 0) return `${h}시간 ${m}분`;
+  return `${m}분`;
+}
+
+function fmtTimeAgo(deltaSec: number, future = false): string {
+  const abs = Math.abs(Math.round(deltaSec));
+  const h = Math.floor(abs / 3600);
+  const m = Math.floor((abs % 3600) / 60);
+  const s = abs % 60;
+  const core = h > 0 ? `${h}h ${m}m` : m > 0 ? `${m}m ${s}s` : `${s}s`;
+  if (future) return deltaSec > 0 ? `${core} 남음` : '지남';
+  return core;
+}
+
+
 function UsersTab({ session }: { session: Session | null }) {
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState('');
