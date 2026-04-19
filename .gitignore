@@ -1,1 +1,16 @@
-firebase-debug.logfirebase-debug.log
+firebase-debug.log
+
+# macOS
+.DS_Store
+
+# Vite / TypeScript 빌드 캐시 (산출물 app/ 만 배포에 필요)
+app-src/node_modules/
+app-src/dist/
+app-src/*.tsbuildinfo
+
+# 에디터/IDE
+.vscode/
+.idea/
+
+# 로컬 테스트/작업 폴더 (배포 대상 아님)
+무제 폴더/

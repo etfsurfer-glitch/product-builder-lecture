@@ -3,57 +3,511 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>점검 중 | RUNTO</title>
+<meta name="description" content="nfind - 아파트 매물관리시스템">
+<meta name="theme-color" content="#6c5ce7">
+<title>nfind — 아파트 매물 통합 검색</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ctext y='26' font-size='28'%3E🏢%3C/text%3E%3C/svg%3E">
 <style>
-*{margin:0;padding:0;box-sizing:border-box}
-body{
-  font-family:'Apple SD Gothic Neo','Malgun Gothic','Segoe UI',sans-serif;
-  background:#0f0e1a;
-  color:#fff;
-  min-height:100vh;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  text-align:center;
-}
-.container{padding:40px 24px;max-width:480px;width:100%}
-.icon{font-size:64px;margin-bottom:24px;animation:spin 4s linear infinite}
-@keyframes spin{0%{transform:rotate(0deg)}100%{transform:rotate(360deg)}}
-h1{
-  font-size:2rem;
-  font-weight:700;
-  margin-bottom:12px;
-  background:linear-gradient(135deg,#6c5ce7,#a29bfe);
-  -webkit-background-clip:text;
-  -webkit-text-fill-color:transparent;
-  background-clip:text;
-}
-p{
-  font-size:1rem;
-  color:#a09ec0;
-  line-height:1.8;
-  margin-bottom:8px;
-}
-.badge{
-  display:inline-block;
-  margin-top:28px;
-  padding:10px 24px;
-  background:rgba(108,92,231,.15);
-  border:1px solid rgba(108,92,231,.4);
-  border-radius:100px;
-  font-size:.85rem;
-  color:#a29bfe;
-  font-weight:500;
-}
+  :root {
+    --bg: #ffffff;
+    --bg-soft: #f6f7fc;
+    --bg-card: #ffffff;
+    --text: #14172b;
+    --text-muted: #5a5f78;
+    --border: #e4e6ef;
+    --border-strong: #d2d5e1;
+    --brand: #6c5ce7;
+    --brand-dark: #5645c4;
+    --brand-soft: #eeecff;
+    --success: #15803d;
+    --error: #b91c1c;
+    --shadow-sm: 0 1px 2px rgba(15,14,26,.05), 0 2px 6px rgba(15,14,26,.06);
+    --shadow-md: 0 6px 18px rgba(15,14,26,.08);
+    --shadow-lg: 0 24px 48px rgba(15,14,26,.16);
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
+  body {
+    font-family: 'Apple SD Gothic Neo','Malgun Gothic',system-ui,-apple-system,sans-serif;
+    color: var(--text);
+    background: var(--bg);
+    line-height: 1.6;
+    font-size: 16px;
+    -webkit-font-smoothing: antialiased;
+  }
+  a { color: var(--brand); text-decoration: none; }
+  .container { max-width: 1120px; margin: 0 auto; padding: 0 24px; }
+
+  /* ── Header ───────────────────────────────────── */
+  header {
+    position: sticky; top: 0; z-index: 20;
+    background: rgba(255,255,255,.92);
+    backdrop-filter: saturate(1.6) blur(10px);
+    -webkit-backdrop-filter: saturate(1.6) blur(10px);
+    border-bottom: 1px solid var(--border);
+  }
+  .nav { display: flex; align-items: center; justify-content: space-between; height: 64px; }
+  .logo {
+    font-size: 22px; font-weight: 800; letter-spacing: -0.02em;
+    background: linear-gradient(135deg,#6c5ce7,#a29bfe);
+    -webkit-background-clip: text; background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+  .nav-right { display: flex; gap: 4px; align-items: center; }
+
+  /* ── Buttons ──────────────────────────────────── */
+  .btn {
+    font: inherit; border: 0; cursor: pointer;
+    padding: 10px 18px; min-height: 44px;
+    border-radius: 10px;
+    font-weight: 600;
+    transition: transform .08s, background .15s, box-shadow .15s;
+    display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+    text-decoration: none;
+    white-space: nowrap;
+  }
+  .btn:active { transform: translateY(1px); }
+  .btn-primary { background: var(--brand); color: white; box-shadow: var(--shadow-sm); }
+  .btn-primary:hover { background: var(--brand-dark); }
+  .btn-primary:disabled { background: #b5aeea; cursor: not-allowed; }
+  .btn-secondary { background: var(--bg-soft); color: var(--text); border: 1px solid var(--border); }
+  .btn-secondary:hover { background: #edeff7; border-color: var(--border-strong); }
+  .btn-ghost { background: transparent; color: var(--text); padding: 10px 14px; }
+  .btn-ghost:hover { background: var(--bg-soft); }
+  .btn-lg { padding: 16px 28px; min-height: 54px; font-size: 17px; border-radius: 12px; }
+  @media (max-width: 540px) {
+    .nav-right .hide-mobile { display: none; }
+  }
+
+  /* ── Hero ─────────────────────────────────────── */
+  .hero { padding: 96px 0 80px; text-align: center; }
+  .hero .eyebrow {
+    display: inline-block;
+    padding: 6px 14px;
+    background: var(--brand-soft); color: var(--brand);
+    border-radius: 100px; font-size: 13px; font-weight: 700;
+    letter-spacing: .02em; margin-bottom: 20px;
+  }
+  .hero h1 {
+    font-size: clamp(30px, 5.4vw, 52px);
+    line-height: 1.15;
+    font-weight: 800;
+    letter-spacing: -0.025em;
+    margin-bottom: 20px;
+  }
+  .hero h1 .accent {
+    background: linear-gradient(135deg,#6c5ce7,#a29bfe);
+    -webkit-background-clip: text; background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+  .hero p.lead {
+    font-size: clamp(16px, 1.8vw, 19px);
+    color: var(--text-muted);
+    max-width: 680px;
+    margin: 0 auto 36px;
+  }
+  .hero .cta { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+  .hero .note { margin-top: 20px; font-size: 14px; color: var(--text-muted); }
+
+  /* ── Sections ─────────────────────────────────── */
+  .section { padding: 80px 0; }
+  .section.bg-soft { background: var(--bg-soft); }
+  .section-title { text-align: center; max-width: 640px; margin: 0 auto 56px; }
+  .section-title h2 {
+    font-size: clamp(26px, 3.6vw, 36px); font-weight: 800;
+    letter-spacing: -0.02em; margin-bottom: 12px;
+  }
+  .section-title p { color: var(--text-muted); font-size: 17px; }
+
+  /* ── Feature Grid ─────────────────────────────── */
+  .grid { display: grid; gap: 20px; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); }
+  .card {
+    background: var(--bg-card); border: 1px solid var(--border);
+    border-radius: 16px; padding: 28px 26px;
+    box-shadow: var(--shadow-sm);
+    transition: transform .15s, box-shadow .15s;
+  }
+  .card:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); }
+  .card .icon {
+    width: 48px; height: 48px; border-radius: 12px;
+    background: var(--brand-soft); color: var(--brand);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 24px; margin-bottom: 18px;
+  }
+  .card h3 { font-size: 18px; font-weight: 700; margin-bottom: 8px; letter-spacing: -0.01em; }
+  .card p { color: var(--text-muted); font-size: 15px; line-height: 1.65; }
+
+  /* ── Download ─────────────────────────────────── */
+  .download-grid { display: grid; gap: 20px; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); }
+  .dl-card {
+    background: var(--bg-card); border: 1px solid var(--border);
+    border-radius: 18px; padding: 32px;
+    display: flex; flex-direction: column; gap: 20px;
+    box-shadow: var(--shadow-sm);
+  }
+  .dl-card.featured { border-color: var(--brand); box-shadow: 0 0 0 3px var(--brand-soft); }
+  .platform-tag {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: var(--brand-soft); color: var(--brand);
+    padding: 5px 12px; border-radius: 6px; font-size: 13px; font-weight: 700;
+    align-self: flex-start;
+  }
+  .dl-card h3 { font-size: 20px; margin-bottom: 6px; letter-spacing: -0.01em; }
+  .dl-card p { color: var(--text-muted); font-size: 15px; }
+
+  /* ── Steps ────────────────────────────────────── */
+  .steps { display: grid; gap: 20px; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); counter-reset: step; }
+  .step {
+    background: var(--bg-card); border: 1px solid var(--border);
+    border-radius: 16px; padding: 28px 26px;
+    position: relative;
+  }
+  .step::before {
+    counter-increment: step;
+    content: "0" counter(step);
+    position: absolute; top: 20px; right: 24px;
+    font-size: 36px; font-weight: 900; color: var(--brand-soft);
+    letter-spacing: -0.02em;
+    line-height: 1;
+  }
+  .step h3 { font-size: 18px; margin-bottom: 10px; font-weight: 700; letter-spacing: -0.01em; }
+  .step p { color: var(--text-muted); font-size: 15px; }
+
+  /* ── Footer ───────────────────────────────────── */
+  footer { padding: 48px 0 64px; border-top: 1px solid var(--border); color: var(--text-muted); font-size: 14px; }
+  .footer-row { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 16px; }
+  footer a { color: var(--text-muted); }
+  footer a:hover { color: var(--brand); }
+
+  /* ── Modal ────────────────────────────────────── */
+  .modal-backdrop {
+    display: none; position: fixed; inset: 0;
+    background: rgba(15,14,26,.55);
+    z-index: 100; align-items: center; justify-content: center; padding: 20px;
+  }
+  .modal-backdrop.open { display: flex; }
+  .modal {
+    background: white; border-radius: 18px; max-width: 420px; width: 100%;
+    padding: 32px; box-shadow: var(--shadow-lg);
+    animation: modalIn .18s ease-out;
+  }
+  @keyframes modalIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  .modal h2 { font-size: 22px; margin-bottom: 8px; font-weight: 800; letter-spacing: -0.01em; }
+  .modal p.sub { color: var(--text-muted); margin-bottom: 24px; font-size: 15px; }
+  .field { margin-bottom: 16px; }
+  .field label { display: block; font-size: 14px; font-weight: 600; margin-bottom: 6px; }
+  .field input {
+    width: 100%; padding: 12px 14px; min-height: 48px;
+    border: 1px solid var(--border-strong); border-radius: 10px;
+    font: inherit; font-size: 16px;
+    background: white;
+    transition: border .12s, box-shadow .12s;
+  }
+  .field input:focus {
+    outline: 0; border-color: var(--brand);
+    box-shadow: 0 0 0 3px var(--brand-soft);
+  }
+  .modal-status { font-size: 14px; margin-top: 12px; min-height: 20px; }
+  .modal-status.error { color: var(--error); }
+  .modal-status.loading { color: var(--text-muted); }
+  .modal-status.success { color: var(--success); font-weight: 600; }
+  .modal-foot { margin-top: 20px; display: flex; gap: 10px; }
+  .modal-foot .btn { flex: 1; }
+
+  @media (max-width: 640px) {
+    .hero { padding: 56px 0 72px; }
+    .section { padding: 56px 0; }
+    .section-title { margin-bottom: 40px; }
+    .modal { padding: 24px; }
+  }
 </style>
 </head>
 <body>
-<div class="container">
-  <div class="icon">⚙️</div>
-  <h1>서비스 점검 중</h1>
-  <p>더 나은 서비스를 위해 시스템 점검을 진행하고 있습니다.</p>
-  <p>잠시 후 다시 방문해 주세요.</p>
-  <div class="badge">🔧 현재 점검 진행 중</div>
+
+<main class="container" style="min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:28px;padding:40px 20px">
+  <div class="logo" style="font-size:48px;letter-spacing:-1px">nfind</div>
+  <button class="btn btn-primary btn-lg" data-login>로그인</button>
+</main>
+
+<!-- Login Modal -->
+<div class="modal-backdrop" id="modal-login" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+  <div class="modal">
+    <h2 id="modal-title">로그인</h2>
+    <form id="login-form" novalidate>
+      <div class="field">
+        <label for="email">이메일</label>
+        <input type="email" id="email" name="email" autocomplete="email" inputmode="email" required>
+      </div>
+      <div class="field">
+        <label for="password">비밀번호</label>
+        <input type="password" id="password" name="password" autocomplete="current-password" required>
+      </div>
+      <!-- 비밀번호 변경 섹션: 등록된 기기에서만 활성화 -->
+      <div class="field" id="newpw-wrap" style="display:none">
+        <label for="new-password">새 비밀번호 (6자 이상)</label>
+        <input type="text" id="new-password" name="new-password" autocomplete="new-password">
+      </div>
+      <div class="modal-status" id="login-status" aria-live="polite"></div>
+      <div class="modal-foot">
+        <button type="button" class="btn btn-secondary" id="btn-toggle-pwchange" style="margin-right:auto">비밀번호 분실/변경</button>
+        <button type="button" class="btn btn-secondary" id="btn-close-login">취소</button>
+        <button type="submit" class="btn btn-primary" id="btn-submit-login">로그인</button>
+      </div>
+    </form>
+  </div>
 </div>
+
+<script type="module">
+import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
+import FingerprintJS from 'https://openfpcdn.io/fingerprintjs/v4';
+
+const API = 'https://api.runto.online';
+const $  = s => document.querySelector(s);
+
+let supabase = null;
+
+// ── Device fingerprint + IndexedDB UUID ───────────────────────────────────
+const UUID_DB   = 'nfind-device';
+const UUID_STORE = 'kv';
+const UUID_KEY   = 'deviceUuid';
+
+function openUuidDb() {
+  return new Promise((resolve, reject) => {
+    const req = indexedDB.open(UUID_DB, 1);
+    req.onupgradeneeded = () => req.result.createObjectStore(UUID_STORE);
+    req.onsuccess = () => resolve(req.result);
+    req.onerror   = () => reject(req.error);
+  });
+}
+
+async function getOrCreateUuid() {
+  try {
+    const db = await openUuidDb();
+    const tx = db.transaction(UUID_STORE, 'readwrite');
+    const st = tx.objectStore(UUID_STORE);
+    const cur = await new Promise(r => { const g = st.get(UUID_KEY); g.onsuccess = () => r(g.result); g.onerror = () => r(null); });
+    if (cur) return cur;
+    const u = (crypto.randomUUID && crypto.randomUUID())
+      || (Math.random().toString(36).slice(2) + Date.now().toString(36));
+    await new Promise((res, rej) => { const p = st.put(u, UUID_KEY); p.onsuccess = res; p.onerror = () => rej(p.error); });
+    return u;
+  } catch (e) {
+    // IndexedDB 쓰기 실패(시크릿모드 등) — localStorage 폴백
+    let u = localStorage.getItem(UUID_KEY);
+    if (!u) {
+      u = (crypto.randomUUID && crypto.randomUUID())
+        || (Math.random().toString(36).slice(2) + Date.now().toString(36));
+      try { localStorage.setItem(UUID_KEY, u); } catch {}
+    }
+    return u;
+  }
+}
+
+async function getVisitorId() {
+  const fp = await FingerprintJS.load();
+  const r  = await fp.get();
+  return r.visitorId;
+}
+
+function detectDeviceType() {
+  const ua = navigator.userAgent || '';
+  return /Mobi|Android|iPhone|iPad|iPod/i.test(ua) ? 'mobile' : 'pc';
+}
+
+async function deviceVerify(accessToken) {
+  const [fpRaw, uuid] = await Promise.all([getVisitorId(), getOrCreateUuid()]);
+  const body = {
+    device_type:     detectDeviceType(),
+    fp_raw:          fpRaw,
+    uuid_stored:     uuid,
+    user_agent:      navigator.userAgent || '',
+    turnstile_token: '',   // TURNSTILE_REQUIRED=1 일 때 위젯 토큰 주입 자리
+  };
+  const r = await fetch(`${API}/api/auth/device/verify`, {
+    method: 'POST',
+    credentials: 'include',
+    headers: {
+      'Content-Type':  'application/json',
+      'Authorization': `Bearer ${accessToken}`,
+    },
+    body: JSON.stringify(body),
+  });
+  // 서버는 차단도 HTTP 200 으로 반환 (ok:false)
+  try { return await r.json(); } catch { return { ok: false, message: `HTTP ${r.status}` }; }
+}
+
+async function initSupabase() {
+  try {
+    const r = await fetch(`${API}/api/config/public`, { cache: 'no-store' });
+    if (!r.ok) throw new Error(`config ${r.status}`);
+    const cfg = await r.json();
+    supabase = createClient(cfg.supabase_url, cfg.supabase_anon_key, {
+      auth: { persistSession: true, autoRefreshToken: true, storageKey: 'nfind-auth' }
+    });
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session) redirectToApp();
+  } catch (e) {
+    console.error('[nfind] config load 실패:', e);
+  }
+}
+
+function redirectToApp() { location.href = '/app/'; }
+
+function openModal() {
+  $('#modal-login').classList.add('open');
+  setTimeout(() => $('#email').focus(), 80);
+}
+function closeModal() {
+  $('#modal-login').classList.remove('open');
+  setStatus('', '');
+}
+function setStatus(msg, kind='') {
+  const el = $('#login-status');
+  el.textContent = msg;
+  el.className = 'modal-status ' + kind;
+}
+
+// 비밀번호 변경 모드 토글
+let pwChangeMode = false;
+function setPwChangeMode(on) {
+  pwChangeMode = !!on;
+  $('#newpw-wrap').style.display = pwChangeMode ? '' : 'none';
+  $('#modal-title').textContent = pwChangeMode ? '비밀번호 분실/변경' : '로그인';
+  $('#btn-submit-login').textContent = pwChangeMode ? '비밀번호 변경' : '로그인';
+  $('#btn-toggle-pwchange').textContent = pwChangeMode ? '취소' : '비밀번호 분실/변경';
+  // 비번 모드에선 현재 비밀번호 입력 숨김 (기기 인증으로 대체)
+  const pwWrap = $('#password').closest('.field');
+  if (pwWrap) pwWrap.style.display = pwChangeMode ? 'none' : '';
+  if (pwChangeMode) {
+    setStatus('등록된 기기에서만 변경 가능합니다. 이메일 + 새 비밀번호만 입력해주세요.', '');
+  } else {
+    setStatus('', '');
+  }
+}
+
+document.querySelectorAll('[data-login]').forEach(b => b.addEventListener('click', openModal));
+$('#btn-close-login').addEventListener('click', () => { setPwChangeMode(false); closeModal(); });
+$('#btn-toggle-pwchange').addEventListener('click', () => setPwChangeMode(!pwChangeMode));
+$('#modal-login').addEventListener('click', e => {
+  if (e.target.id === 'modal-login') closeModal();
+});
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape' && $('#modal-login').classList.contains('open')) closeModal();
+});
+
+$('#login-form').addEventListener('submit', async e => {
+  e.preventDefault();
+  if (!supabase) { setStatus('서버 연결 대기 중 — 잠시 후 다시 시도해주세요', 'error'); return; }
+
+  const email = $('#email').value.trim();
+  const btn = $('#btn-submit-login');
+
+  // ── 비밀번호 변경 모드: 등록된 기기 지문 매칭만으로 새 비번 저장 ────────
+  if (pwChangeMode) {
+    const newPw = $('#new-password').value;
+    if (!email || !newPw) { setStatus('이메일과 새 비밀번호를 입력해주세요', 'error'); return; }
+    if (newPw.length < 6) { setStatus('새 비밀번호는 6자 이상이어야 합니다', 'error'); return; }
+    btn.disabled = true;
+    setStatus('기기 인증 중...', 'loading');
+    try {
+      const [fpRaw, uuid] = await Promise.all([getVisitorId(), getOrCreateUuid()]);
+      const r = await fetch(`${API}/api/auth/reset-password-by-device`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, new_password: newPw, fp_raw: fpRaw, uuid_stored: uuid }),
+      });
+      const body = await r.json().catch(() => ({}));
+      if (!r.ok) {
+        setStatus(body.detail || body.message || `실패 (HTTP ${r.status})`, 'error');
+        btn.disabled = false; return;
+      }
+      setStatus('✓ 기기 인증이 완료되어 비밀번호가 변경되었습니다. 새 비밀번호로 로그인해주세요.', 'success');
+      $('#new-password').value = '';
+      $('#password').value = '';
+      setPwChangeMode(false);
+    } catch (err) {
+      setStatus('기기 확인 중 오류: ' + (err?.message || err), 'error');
+    } finally {
+      btn.disabled = false;
+    }
+    return;
+  }
+
+  // ── 일반 로그인 ────────────────────────────────────────────────────────
+  const password = $('#password').value;
+  if (!email || !password) { setStatus('이메일과 비밀번호를 모두 입력해주세요', 'error'); return; }
+
+  // 기기 바인딩 고지 — 이 브라우저/PC에서 처음 로그인하면 다시 풀기 어려움.
+  const firstTimeKey = `nfind-first-login:${email.toLowerCase()}`;
+  const isFirst = !localStorage.getItem(firstTimeKey);
+  if (isFirst) {
+    const ok = confirm(
+      '로그인하시면 현재 환경(PC, 브라우저 등)이 고정됩니다.\n'
+      + '다른 기기에서 로그인하려면 고객센터(카카오톡 또는 070-7954-4114) 문의가 필요합니다.\n\n'
+      + '로그인하시겠습니까?'
+    );
+    if (!ok) { setStatus('', ''); return; }
+  }
+
+  btn.disabled = true;
+  setStatus('로그인 중...', 'loading');
+
+  const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+  if (error) {
+    const msg = /invalid/i.test(error.message) ? '이메일 또는 비밀번호가 올바르지 않습니다' : error.message;
+    setStatus(msg, 'error');
+    btn.disabled = false;
+    return;
+  }
+
+  // HttpOnly refresh cookie 저장 (XSS 방어). 실패해도 진행은 가능.
+  try {
+    await fetch(`${API}/api/auth/login-complete`, {
+      method: 'POST',
+      credentials: 'include',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${data.session.access_token}`,
+      },
+      body: JSON.stringify({
+        access_token: data.session.access_token,
+        refresh_token: data.session.refresh_token,
+      }),
+    });
+  } catch (e) {
+    console.warn('[nfind] login-complete 스킵:', e);
+  }
+
+  // 기기 바인딩 검증 — 한도 초과/불일치 시 로그아웃 후 에러 표시
+  setStatus('기기 확인 중...', 'loading');
+  let verifyRes = null;
+  try {
+    verifyRes = await deviceVerify(data.session.access_token);
+  } catch (e) {
+    console.warn('[nfind] device verify 실패:', e);
+    verifyRes = { ok: false, message: '기기 확인 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.' };
+  }
+  if (!verifyRes.ok) {
+    try { await supabase.auth.signOut(); } catch {}
+    setStatus(verifyRes.message || '기기 검증 실패', 'error');
+    btn.disabled = false;
+    return;
+  }
+
+  // 이 기기/이메일 조합은 더 이상 최초 아님 — 경고 중복 방지
+  try { localStorage.setItem(firstTimeKey, '1'); } catch {}
+
+  setStatus('로그인 성공 · 이동 중...', 'success');
+  setTimeout(redirectToApp, 350);
+});
+
+initSupabase();
+// 페이지 진입 시 바로 로그인 모달 노출
+setTimeout(openModal, 50);
+</script>
+
 </body>
 </html>

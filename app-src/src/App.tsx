@@ -1,0 +1,154 @@
+import { useEffect, useState } from 'react';
+import type { Session } from '@supabase/supabase-js';
+import { getCurrentSession, goToLanding, signOut } from './lib/auth';
+import { serverLogout, getMe } from './lib/api';
+import SearchPanel from './components/SearchPanel';
+import ArticleLookup from './components/ArticleLookup';
+import DeviceManager from './components/DeviceManager';
+import AdminPage from './components/AdminPage';
+
+type Status = 'loading' | 'needs-login' | 'ready';
+type Tab = 'complex' | 'article';
+
+export default function App() {
+  const [status, setStatus] = useState<Status>('loading');
+  const [session, setSession] = useState<Session | null>(null);
+  const [error, setError] = useState<string>('');
+  const [tab, setTab] = useState<Tab>('complex');
+  const [showDevices, setShowDevices] = useState(false);
+  const [showAdmin, setShowAdmin] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const s = await getCurrentSession();
+        if (!s) { setStatus('needs-login'); return; }
+        setSession(s);
+        setStatus('ready');
+        // admin 여부는 서버 판정값을 신뢰 (UI 게이트용)
+        try {
+          const me = await getMe(s);
+          setIsAdmin(!!me.is_admin);
+        } catch { /* 실패해도 일반 사용자 */ }
+      } catch (e) {
+        setError(e instanceof Error ? e.message : String(e));
+        setStatus('needs-login');
+      }
+    })();
+  }, []);
+
+  if (status === 'loading') {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="spinner" />
+      </div>
+    );
+  }
+
+  if (status === 'needs-login') {
+    return (
+      <div className="min-h-screen flex items-center justify-center px-6">
+        <div className="max-w-md w-full text-center">
+          <h1 className="text-2xl font-bold mb-3">로그인이 필요합니다</h1>
+          <p className="text-[color:var(--color-muted)] mb-6">
+            랜딩 페이지에서 로그인 후 다시 접속해주세요.
+          </p>
+          {error && (
+            <p className="text-sm text-red-700 mb-4">오류: {error}</p>
+          )}
+          <button
+            onClick={goToLanding}
+            className="h-12 px-6 rounded-xl bg-[color:var(--color-brand)] hover:bg-[color:var(--color-brand-dark)] text-white font-semibold"
+          >
+            로그인 페이지로
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen flex flex-col">
+      <header className="sticky top-0 z-10 bg-white/90 backdrop-blur border-b border-[color:var(--color-border)]">
+        <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <span className="text-xl font-extrabold tracking-tight bg-gradient-to-br from-[#6c5ce7] to-[#a29bfe] bg-clip-text text-transparent">nfind</span>
+            <span className="text-sm text-[color:var(--color-muted)]">매물관리시스템</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="hidden sm:inline text-sm text-[color:var(--color-muted)]">
+              {session?.user.email}
+            </span>
+            {isAdmin && (
+              <button
+                onClick={() => setShowAdmin(true)}
+                className="h-10 px-3 rounded-lg bg-[color:var(--color-brand-soft)] hover:brightness-95 border border-[color:var(--color-brand)] text-[color:var(--color-brand)] text-sm font-semibold"
+                title="관리자 · 사용자 기기 한도"
+              >
+                관리자
+              </button>
+            )}
+            <button
+              onClick={() => setShowDevices(true)}
+              className="h-10 px-3 rounded-lg bg-[color:var(--color-bg-soft)] hover:bg-[#edeff7] border border-[color:var(--color-border)] text-sm font-semibold"
+              title="내 기기 관리"
+            >
+              기기
+            </button>
+            <button
+              onClick={async () => {
+                await serverLogout(session);  // HttpOnly 쿠키 제거 + 감사 로그 (실패 무시)
+                await signOut();              // Supabase 로컬 세션 제거
+                goToLanding();
+              }}
+              className="h-10 px-4 rounded-lg bg-[color:var(--color-bg-soft)] hover:bg-[#edeff7] border border-[color:var(--color-border)] text-sm font-semibold"
+            >
+              로그아웃
+            </button>
+          </div>
+        </div>
+        {/* Tabs */}
+        <div className="max-w-6xl mx-auto px-6">
+          <div className="flex gap-1 -mb-px">
+            <TabButton active={tab === 'complex'} onClick={() => setTab('complex')}>단지 검색</TabButton>
+            <TabButton active={tab === 'article'} onClick={() => setTab('article')}>매물번호 조회</TabButton>
+          </div>
+        </div>
+      </header>
+
+      <main className="flex-1 max-w-6xl w-full mx-auto px-6 py-8">
+        {showAdmin && isAdmin ? (
+          <AdminPage session={session} onBack={() => setShowAdmin(false)} />
+        ) : (
+          <>
+            {tab === 'complex' && <SearchPanel session={session} />}
+            {tab === 'article' && <ArticleLookup session={session} />}
+          </>
+        )}
+      </main>
+
+      {showDevices && (
+        <DeviceManager session={session} onClose={() => setShowDevices(false)} />
+      )}
+    </div>
+  );
+}
+
+function TabButton({ active, onClick, children }: {
+  active: boolean; onClick: () => void; children: React.ReactNode;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      className={
+        'px-4 py-2.5 text-sm font-semibold border-b-2 transition ' +
+        (active
+          ? 'border-[color:var(--color-brand)] text-[color:var(--color-brand)]'
+          : 'border-transparent text-[color:var(--color-muted)] hover:text-[color:var(--color-ink)]')
+      }
+    >
+      {children}
+    </button>
+  );
+}

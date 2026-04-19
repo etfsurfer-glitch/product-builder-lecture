@@ -1,0 +1,1 @@
+{"name":"nfind — 아파트 매물관리시스템","short_name":"nfind","start_url":"/app/","display":"standalone","background_color":"#ffffff","lang":"en","scope":"/app/","description":"아파트 매물관리시스템","theme_color":"#6c5ce7","icons":[{"src":"/app/pwa-192.png","sizes":"192x192","type":"image/png"},{"src":"/app/pwa-512.png","sizes":"512x512","type":"image/png"}]}

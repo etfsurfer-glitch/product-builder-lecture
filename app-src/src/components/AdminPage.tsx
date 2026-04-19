@@ -1,0 +1,827 @@
+import { useEffect, useState } from 'react';
+import type { Session } from '@supabase/supabase-js';
+import {
+  adminListUsers, adminGetUserDevices,
+  adminSetDeviceLimit, adminDeleteDevice, adminCreateUser,
+  adminFetchLogs, adminResetAllDevices, adminSetPassword, adminSetSubscription,
+  type AdminUserRow, type DeviceRow, type DeviceLimits,
+  type AdminLogKind, ApiError,
+} from '../lib/api';
+
+type AdminUserFull = AdminUserRow & {
+  last_sign_in_at?:    string | null;
+  email_confirmed_at?: string | null;
+  banned_until?:       string | null;
+};
+
+interface Props {
+  session: Session | null;
+  onBack:  () => void;
+}
+
+type Tab = 'users' | 'logs' | 'create';
+
+function uaShort(ua: string): string {
+  if (!ua) return '';
+  if (/iPhone|iPad|iOS/i.test(ua))    return 'iOS';
+  if (/Android/i.test(ua))            return 'Android';
+  if (/Macintosh|Mac OS X/i.test(ua)) return 'Mac';
+  if (/Windows/i.test(ua))            return 'Windows';
+  return ua.slice(0, 30);
+}
+function Th({ children }: { children: React.ReactNode }) {
+  return <th className="px-2.5 py-2 text-left font-semibold whitespace-nowrap border-b border-[color:var(--color-border)]">{children}</th>;
+}
+function Td({ children }: { children: React.ReactNode }) {
+  return <td className="px-2.5 py-1.5 whitespace-nowrap align-top">{children}</td>;
+}
+
+function fmtDate(s: string | null | undefined): string {
+  if (!s) return '';
+  const d = new Date(s);
+  if (Number.isNaN(d.getTime())) return s;
+  return d.toLocaleString('ko-KR', { year: '2-digit', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' });
+}
+
+export default function AdminPage({ session, onBack }: Props) {
+  const [tab, setTab] = useState<Tab>('users');
+  return (
+    <div>
+      <div className="mb-4 flex items-center justify-between">
+        <div>
+          <button onClick={onBack}
+                  className="text-sm text-[color:var(--color-muted)] hover:text-[color:var(--color-brand)] mb-2">
+            ← 돌아가기
+          </button>
+          <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight">관리자</h1>
+        </div>
+      </div>
+
+      <div className="mb-4 border-b border-[color:var(--color-border)] flex gap-1">
+        {([['users','계정관리'],['logs','로그'],['create','신규 등록']] as [Tab,string][]).map(([k,label]) => (
+          <button key={k} onClick={() => setTab(k)}
+                  className={
+                    'px-4 py-2.5 text-sm font-semibold border-b-2 -mb-px transition ' +
+                    (tab === k
+                      ? 'border-[color:var(--color-brand)] text-[color:var(--color-brand)]'
+                      : 'border-transparent text-[color:var(--color-muted)] hover:text-[color:var(--color-ink)]')
+                  }>
+            {label}
+          </button>
+        ))}
+      </div>
+
+      {tab === 'users'  && <UsersTab  session={session} />}
+      {tab === 'logs'   && <LogsTab   session={session} />}
+      {tab === 'create' && <CreateTab session={session} />}
+    </div>
+  );
+}
+
+// ───────────────────────────────────────────────────────────
+// Tab 1: 계정관리
+// ───────────────────────────────────────────────────────────
+function UsersTab({ session }: { session: Session | null }) {
+  const [loading, setLoading] = useState(true);
+  const [err, setErr] = useState('');
+  const [users, setUsers] = useState<AdminUserFull[]>([]);
+  const [filter, setFilter] = useState('');
+  const [page, setPage] = useState(1);
+  const perPage = 100;
+
+  const [selected, setSelected] = useState<AdminUserFull | null>(null);
+  const [devices, setDevices] = useState<DeviceRow[]>([]);
+  const [detailLimits, setDetailLimits] = useState<DeviceLimits | null>(null);
+  const [detailErr, setDetailErr] = useState('');
+  const [detailLoading, setDetailLoading] = useState(false);
+  const [deviceVal, setDeviceVal] = useState(1);
+  const [saving, setSaving] = useState(false);
+  const [subsBusy, setSubsBusy] = useState(false);
+  const [subEndVal, setSubEndVal] = useState('');
+  const [pwVal, setPwVal] = useState('');
+  const [pwBusy, setPwBusy] = useState(false);
+  const [resetBusy, setResetBusy] = useState(false);
+
+  async function load(p = page) {
+    setLoading(true); setErr('');
+    try {
+      const r = await adminListUsers(session, p, perPage);
+      setUsers(r.users);
+    } catch (e) {
+      setErr(e instanceof ApiError ? `${e.status} · ${e.message}` : String(e));
+    } finally { setLoading(false); }
+  }
+  useEffect(() => { load(page); /* eslint-disable-next-line */ }, [page]);
+
+  const visible = filter.trim()
+    ? users.filter(u => (u.email || '').toLowerCase().includes(filter.trim().toLowerCase()))
+    : users;
+
+  async function openUser(u: AdminUserFull) {
+    setSelected(u); setDetailErr(''); setDetailLoading(true); setDevices([]); setDetailLimits(null);
+    try {
+      const r = await adminGetUserDevices(session, u.user_id);
+      setDevices(r.devices); setDetailLimits(r.limits);
+      setDeviceVal(r.limits.device_limit);
+      setSubEndVal(u.subscription_end || '');
+      setPwVal('');
+    } catch (e) {
+      setDetailErr(e instanceof ApiError ? `${e.status} · ${e.message}` : String(e));
+    } finally { setDetailLoading(false); }
+  }
+
+  async function saveLimits() {
+    if (!selected) return;
+    setSaving(true); setDetailErr('');
+    try {
+      await adminSetDeviceLimit(session, selected.user_id, { device_limit: deviceVal });
+      const newLimits: DeviceLimits = {
+        device_limit: deviceVal, pc_limit: deviceVal, mobile_limit: deviceVal,
+        subscription: detailLimits?.subscription,
+      };
+      setDetailLimits(newLimits);
+      setUsers(prev => prev.map(u => u.user_id === selected.user_id
+        ? { ...u, limits: newLimits } : u));
+    } catch (e) {
+      setDetailErr(e instanceof ApiError ? `${e.status} · ${e.message}` : String(e));
+    } finally { setSaving(false); }
+  }
+
+  async function changeSubs(newSubs: 'pro' | 'free') {
+    if (!selected) return;
+    if (!confirm(`플랜을 ${newSubs.toUpperCase()} 로 변경할까요?${newSubs === 'free' ? ' (기기 한도 0으로 전환)' : ''}`)) return;
+    setSubsBusy(true); setDetailErr('');
+    try {
+      await adminSetSubscription(session, selected.user_id, { subscription: newSubs });
+      // 클라 상태 반영
+      setSelected({ ...selected, subscription: newSubs });
+      setUsers(prev => prev.map(u => u.user_id === selected.user_id
+        ? { ...u, subscription: newSubs,
+            limits: newSubs === 'free'
+              ? { device_limit: 0, pc_limit: 0, mobile_limit: 0, subscription: 'free' }
+              : { ...u.limits, subscription: 'pro',
+                  device_limit: u.limits.device_limit || 1,
+                  pc_limit: u.limits.pc_limit || 1,
+                  mobile_limit: u.limits.mobile_limit || 1 } }
+        : u));
+      if (newSubs === 'free') {
+        setDeviceVal(0);
+        setDetailLimits({ device_limit: 0, pc_limit: 0, mobile_limit: 0, subscription: 'free' });
+      } else {
+        setDetailLimits(detailLimits ? { ...detailLimits, subscription: 'pro' } : null);
+      }
+    } catch (e) {
+      setDetailErr(e instanceof ApiError ? `${e.status} · ${e.message}` : String(e));
+    } finally { setSubsBusy(false); }
+  }
+
+  async function saveSubEnd() {
+    if (!selected) return;
+    setSubsBusy(true); setDetailErr('');
+    try {
+      await adminSetSubscription(session, selected.user_id,
+        { subscription_end: subEndVal });
+      setSelected({ ...selected, subscription_end: subEndVal || null });
+      setUsers(prev => prev.map(u => u.user_id === selected.user_id
+        ? { ...u, subscription_end: subEndVal || null } : u));
+    } catch (e) {
+      setDetailErr(e instanceof ApiError ? `${e.status} · ${e.message}` : String(e));
+    } finally { setSubsBusy(false); }
+  }
+
+  async function resetPassword() {
+    if (!selected) return;
+    if (pwVal.length < 6) { setDetailErr('비밀번호 6자 이상'); return; }
+    if (!confirm(`${selected.email} 의 비밀번호를 재설정할까요?`)) return;
+    setPwBusy(true); setDetailErr('');
+    try {
+      await adminSetPassword(session, selected.user_id, pwVal);
+      alert(`✓ 비밀번호 변경됨\n${selected.email} / ${pwVal}\n사용자에게 안내해주세요.`);
+      setPwVal('');
+    } catch (e) {
+      setDetailErr(e instanceof ApiError ? `${e.status} · ${e.message}` : String(e));
+    } finally { setPwBusy(false); }
+  }
+
+  async function resetAllDevices() {
+    if (!selected) return;
+    if (!confirm(`${selected.email} 의 모든 기기를 초기화합니다. 계속?`)) return;
+    setResetBusy(true); setDetailErr('');
+    try {
+      await adminResetAllDevices(session, selected.user_id);
+      setDevices([]);
+      setUsers(prev => prev.map(u => u.user_id === selected.user_id
+        ? { ...u, device_counts: { pc: 0, mobile: 0, total: 0 } } : u));
+    } catch (e) {
+      setDetailErr(e instanceof ApiError ? `${e.status} · ${e.message}` : String(e));
+    } finally { setResetBusy(false); }
+  }
+
+  async function removeDevice(d: DeviceRow) {
+    if (!selected) return;
+    if (!confirm(`${uaShort(d.user_agent)} 기기를 해제할까요?`)) return;
+    try {
+      await adminDeleteDevice(session, selected.user_id, d.device_id);
+      setDevices(prev => prev.filter(x => x.device_id !== d.device_id));
+      setUsers(prev => prev.map(u => u.user_id === selected.user_id
+        ? { ...u, device_counts: {
+            pc:     u.device_counts.pc     - (d.device_type === 'pc'     ? 1 : 0),
+            mobile: u.device_counts.mobile - (d.device_type === 'mobile' ? 1 : 0),
+          }} : u));
+    } catch (e) { alert(e instanceof ApiError ? `${e.status} · ${e.message}` : String(e)); }
+  }
+
+  return (
+    <div className="grid gap-4 lg:grid-cols-[minmax(0,2fr),minmax(0,1fr)]">
+      <div className="min-w-0">
+        <div className="mb-3 flex items-center gap-2 flex-wrap">
+          <input
+            value={filter}
+            onChange={e => setFilter(e.target.value)}
+            placeholder="이메일 필터 (현재 페이지 내)"
+            className="flex-1 min-w-[160px] h-9 px-3 rounded-lg border border-[color:var(--color-border-strong)] text-sm focus:outline-none focus:border-[color:var(--color-brand)]"
+          />
+          <div className="flex items-center gap-1 text-sm">
+            <button onClick={() => setPage(p => Math.max(1, p - 1))}
+                    disabled={page <= 1 || loading}
+                    className="h-9 w-9 rounded border border-[color:var(--color-border)] disabled:opacity-40">‹</button>
+            <span className="px-2 text-[color:var(--color-muted)]">p.{page}</span>
+            <button onClick={() => setPage(p => p + 1)}
+                    disabled={loading || users.length < perPage}
+                    className="h-9 w-9 rounded border border-[color:var(--color-border)] disabled:opacity-40">›</button>
+          </div>
+          <button onClick={() => load(page)} disabled={loading}
+                  className="h-9 px-3 rounded bg-[color:var(--color-bg-soft)] hover:bg-[#edeff7] border border-[color:var(--color-border)] text-sm font-semibold">
+            {loading ? '...' : '새로고침'}
+          </button>
+        </div>
+
+        {err && <div className="p-3 mb-2 rounded bg-red-50 border border-red-200 text-red-800 text-sm">{err}</div>}
+
+        <div className="overflow-auto rounded-lg border border-[color:var(--color-border)] bg-white max-h-[72vh]">
+          <table className="text-[12px] border-collapse w-full">
+            <thead className="bg-[color:var(--color-bg-soft)] sticky top-0 z-[1]">
+              <tr>
+                <Th>이메일</Th>
+                <Th>사무소</Th>
+                <Th>플랜</Th>
+                <Th>기기</Th>
+                <Th>사용</Th>
+                <Th>최근 로그인</Th>
+                <Th>생성</Th>
+                <Th>상태</Th>
+              </tr>
+            </thead>
+            <tbody>
+              {visible.map(u => {
+                const banned = !!u.banned_until;
+                const sel = selected?.user_id === u.user_id;
+                const subs = u.subscription;
+                const total = u.device_counts.total ?? (u.device_counts.pc + u.device_counts.mobile);
+                return (
+                  <tr key={u.user_id}
+                      onClick={() => openUser(u)}
+                      className={`border-b border-[color:var(--color-border)] last:border-b-0 cursor-pointer hover:bg-[color:var(--color-bg-soft)] ${sel ? 'bg-[color:var(--color-brand-soft)]/30' : ''}`}>
+                    <Td>
+                      <div className="font-semibold truncate max-w-[200px]" title={u.email}>{u.email}</div>
+                      <div className="text-[11px] text-[color:var(--color-muted)] truncate max-w-[200px]">{u.phone || ''}</div>
+                    </Td>
+                    <Td>
+                      <div className="truncate max-w-[140px]">{u.office_name || ''}</div>
+                    </Td>
+                    <Td>
+                      {subs === 'pro' ? (
+                        <span className="px-2 py-0.5 rounded bg-[color:var(--color-brand-soft)] text-[color:var(--color-brand)] text-[11px] font-semibold">pro</span>
+                      ) : subs === 'free' ? (
+                        <span className="px-2 py-0.5 rounded bg-[color:var(--color-bg-soft)] text-[color:var(--color-muted)] text-[11px] font-semibold">free</span>
+                      ) : (
+                        <span className="text-[color:var(--color-muted)] text-[11px]">-</span>
+                      )}
+                      {u.subscription_end && (
+                        <div className="text-[10px] text-[color:var(--color-muted)]">~{u.subscription_end}</div>
+                      )}
+                    </Td>
+                    <Td>
+                      <span className={total >= u.limits.device_limit && u.limits.device_limit > 0 ? 'text-amber-700 font-semibold' : ''}>
+                        {total}/{u.limits.device_limit}
+                      </span>
+                      <div className="text-[10px] text-[color:var(--color-muted)]">PC {u.device_counts.pc} · MB {u.device_counts.mobile}</div>
+                    </Td>
+                    <Td>{u.usage_count ?? '-'}</Td>
+                    <Td>{fmtDate(u.last_sign_in_at)}</Td>
+                    <Td>{fmtDate(u.created_at)}</Td>
+                    <Td>{banned
+                      ? <span className="text-red-700 text-[11px]">차단</span>
+                      : (u.email_confirmed_at ? <span className="text-green-700 text-[11px]">정상</span>
+                                              : <span className="text-amber-700 text-[11px]">미인증</span>)}</Td>
+                  </tr>
+                );
+              })}
+              {!loading && visible.length === 0 && (
+                <tr><td colSpan={8} className="p-6 text-center text-sm text-[color:var(--color-muted)]">결과 없음</td></tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div>
+        {selected ? (
+          <div className="rounded-xl border border-[color:var(--color-border)] bg-white p-4 space-y-3">
+            <div>
+              <div className="font-semibold">{selected.email}</div>
+              <div className="text-xs text-[color:var(--color-muted)] flex items-center gap-2 flex-wrap mt-0.5">
+                {selected.subscription === 'pro' && (
+                  <span className="px-2 py-0.5 rounded bg-[color:var(--color-brand-soft)] text-[color:var(--color-brand)] text-[11px] font-semibold">pro</span>
+                )}
+                {selected.subscription === 'free' && (
+                  <span className="px-2 py-0.5 rounded bg-[color:var(--color-bg-soft)] text-[color:var(--color-muted)] text-[11px] font-semibold">free</span>
+                )}
+                {selected.subscription_end && <span>만료 {selected.subscription_end}</span>}
+                {selected.office_name && <span>· {selected.office_name}</span>}
+                {selected.phone && <span>· {selected.phone}</span>}
+                {selected.usage_count != null && <span>· 사용 {selected.usage_count}회</span>}
+              </div>
+              <div className="text-[10px] text-[color:var(--color-muted)] font-mono mt-0.5">{selected.user_id}</div>
+            </div>
+
+            {detailErr && <div className="p-2 rounded bg-red-50 border border-red-200 text-red-800 text-xs">{detailErr}</div>}
+
+            <div className="pt-2 border-t border-[color:var(--color-border)]">
+              <div className="text-sm font-semibold mb-2">플랜</div>
+              <div className="flex items-center gap-2 flex-wrap">
+                <button onClick={() => changeSubs('free')}
+                        disabled={subsBusy || selected.subscription === 'free'}
+                        className={`h-9 px-3 rounded-lg text-sm font-semibold border ${selected.subscription === 'free' ? 'bg-[color:var(--color-bg-soft)] border-[color:var(--color-border-strong)] text-[color:var(--color-ink)]' : 'bg-white border-[color:var(--color-border)] hover:bg-[color:var(--color-bg-soft)]'} disabled:opacity-60`}>
+                  {selected.subscription === 'free' ? '✓ FREE' : 'FREE 로 전환'}
+                </button>
+                <button onClick={() => changeSubs('pro')}
+                        disabled={subsBusy || selected.subscription === 'pro'}
+                        className={`h-9 px-3 rounded-lg text-sm font-semibold border ${selected.subscription === 'pro' ? 'bg-[color:var(--color-brand-soft)] border-[color:var(--color-brand)] text-[color:var(--color-brand)]' : 'bg-white border-[color:var(--color-border)] hover:bg-[color:var(--color-bg-soft)]'} disabled:opacity-60`}>
+                  {selected.subscription === 'pro' ? '✓ PRO' : 'PRO 로 전환'}
+                </button>
+              </div>
+              <div className="mt-2 flex items-center gap-2 flex-wrap">
+                <label className="text-sm flex items-center gap-2">
+                  만료일
+                  <input type="date" value={subEndVal}
+                         onChange={e => setSubEndVal(e.target.value)}
+                         className="h-9 px-2 rounded border border-[color:var(--color-border-strong)] text-sm" />
+                </label>
+                <button onClick={saveSubEnd}
+                        disabled={subsBusy || (subEndVal === (selected.subscription_end || ''))}
+                        className="h-9 px-3 rounded-lg bg-[color:var(--color-brand)] text-white text-sm font-semibold disabled:bg-[#b5aeea]">
+                  저장
+                </button>
+                {selected.subscription_end && (
+                  <button onClick={() => { setSubEndVal(''); }}
+                          className="h-9 px-2 text-xs text-[color:var(--color-muted)] hover:text-red-700">
+                    지우기
+                  </button>
+                )}
+              </div>
+            </div>
+
+            <div className="pt-2 border-t border-[color:var(--color-border)]">
+              <div className="text-sm font-semibold mb-2">비밀번호 재설정</div>
+              <div className="flex items-center gap-2 flex-wrap">
+                <input type="text" value={pwVal}
+                       onChange={e => setPwVal(e.target.value)}
+                       placeholder="새 비밀번호 (6자+)"
+                       autoComplete="new-password"
+                       className="flex-1 min-w-[140px] h-9 px-2 rounded border border-[color:var(--color-border-strong)] text-sm" />
+                <button onClick={resetPassword} disabled={pwBusy || pwVal.length < 6}
+                        className="h-9 px-3 rounded-lg bg-red-600 text-white text-sm font-semibold disabled:bg-red-300">
+                  {pwBusy ? '변경 중...' : '재설정'}
+                </button>
+              </div>
+            </div>
+
+            <div className="pt-2 border-t border-[color:var(--color-border)]">
+              <div className="text-sm font-semibold mb-2">기기 초기화</div>
+              <button onClick={resetAllDevices} disabled={resetBusy || devices.length === 0}
+                      className="h-9 px-3 rounded-lg bg-red-600 text-white text-sm font-semibold disabled:bg-red-300">
+                {resetBusy ? '초기화 중...' : `전체 ${devices.length}대 초기화`}
+              </button>
+              <div className="text-xs text-[color:var(--color-muted)] mt-1">
+                초기화 후 사용자 재로그인 시 첫 기기가 다시 자동 등록됩니다 (한도 내).
+              </div>
+            </div>
+
+            <div className="pt-2 border-t border-[color:var(--color-border)]">
+              <div className="text-sm font-semibold mb-2">
+                허용 기기 수 (PC + 모바일 통합)
+              </div>
+              {detailLimits?.subscription === 'free' ? (
+                <div className="p-3 rounded bg-[color:var(--color-bg-soft)] text-sm text-[color:var(--color-muted)]">
+                  무료 플랜 — 기기 등록 불가 (0대 고정). 플랜 변경은 public.users 직접 수정.
+                </div>
+              ) : (
+                <div className="flex items-center gap-3 flex-wrap">
+                  <label className="text-sm flex items-center gap-2">
+                    통합 한도
+                    <input type="number" min={0} max={20}
+                           value={deviceVal}
+                           onChange={e => setDeviceVal(Math.max(0, Math.min(20, Number(e.target.value) || 0)))}
+                           className="w-24 h-9 px-2 rounded border border-[color:var(--color-border-strong)] text-sm" />
+                  </label>
+                  <button onClick={saveLimits}
+                          disabled={saving || !detailLimits || detailLimits.device_limit === deviceVal}
+                          className="h-9 px-3 rounded-lg bg-[color:var(--color-brand)] text-white text-sm font-semibold disabled:bg-[#b5aeea]">
+                    {saving ? '저장 중...' : '저장'}
+                  </button>
+                  <span className="text-xs text-[color:var(--color-muted)]">
+                    PC + 모바일 합산 상한. 예: 2 → 2대 자유 조합.
+                  </span>
+                </div>
+              )}
+            </div>
+
+            <div className="pt-2 border-t border-[color:var(--color-border)]">
+              <div className="text-sm font-semibold mb-2">등록된 기기</div>
+              {detailLoading && <div className="text-xs text-[color:var(--color-muted)]">불러오는 중...</div>}
+              {!detailLoading && devices.length === 0 && <div className="text-xs text-[color:var(--color-muted)]">없음</div>}
+              {devices.map(d => (
+                <div key={d.device_id} className="py-2 flex items-center justify-between gap-2 text-sm border-b border-[color:var(--color-border)] last:border-b-0">
+                  <div className="min-w-0">
+                    <div className="font-medium truncate">
+                      <span className="text-xs text-[color:var(--color-muted)] mr-1">{d.device_type === 'pc' ? 'PC' : '모바일'}</span>
+                      {uaShort(d.user_agent)}
+                    </div>
+                    <div className="text-xs text-[color:var(--color-muted)] truncate">
+                      {d.ip_last} · 최근 {fmtDate(d.last_used_at)}
+                    </div>
+                  </div>
+                  <button onClick={() => removeDevice(d)}
+                          className="h-8 px-3 rounded-lg text-xs font-semibold border border-red-200 text-red-700 hover:bg-red-50">
+                    해제
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        ) : (
+          <div className="rounded-xl border border-dashed border-[color:var(--color-border)] p-10 text-center text-sm text-[color:var(--color-muted)]">
+            왼쪽에서 사용자를 선택하세요
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ───────────────────────────────────────────────────────────
+// Tab 2: 로그
+// ───────────────────────────────────────────────────────────
+function LogsTab({ session }: { session: Session | null }) {
+  const [kind, setKind] = useState<AdminLogKind>('auth');
+  const [email, setEmail] = useState('');
+  const [eventType, setEventType] = useState('');
+  const [limit, setLimit] = useState(100);
+  const [loading, setLoading] = useState(false);
+  const [err, setErr] = useState('');
+  const [rows, setRows] = useState<Record<string, unknown>[]>([]);
+
+  async function fetchLogs() {
+    setLoading(true); setErr('');
+    try {
+      const r = await adminFetchLogs(session, kind, {
+        email: email.trim() || undefined,
+        event_type: eventType.trim() || undefined,
+        limit,
+      });
+      setRows(r.rows);
+    } catch (e) {
+      setErr(e instanceof ApiError ? `${e.status} · ${e.message}` : String(e));
+    } finally { setLoading(false); }
+  }
+
+  useEffect(() => { fetchLogs(); /* eslint-disable-next-line */ }, [kind]);
+
+  const kinds: [AdminLogKind, string][] = [
+    ['auth', '로그인/로그아웃'],
+    ['article', '매물번호 조회'],
+    ['extraction', '단지 추출'],
+    ['security', '보안 이벤트'],
+  ];
+
+  return (
+    <div>
+      <div className="flex flex-wrap items-end gap-2 mb-4">
+        <label className="text-sm">
+          <div className="text-[color:var(--color-muted)] mb-1">종류</div>
+          <select value={kind} onChange={e => setKind(e.target.value as AdminLogKind)}
+                  className="h-9 px-2 rounded border border-[color:var(--color-border-strong)] text-sm">
+            {kinds.map(([k,label]) => <option key={k} value={k}>{label}</option>)}
+          </select>
+        </label>
+        <label className="text-sm">
+          <div className="text-[color:var(--color-muted)] mb-1">이메일</div>
+          <input value={email} onChange={e => setEmail(e.target.value)}
+                 placeholder="부분 매칭"
+                 className="h-9 px-2 rounded border border-[color:var(--color-border-strong)] text-sm" />
+        </label>
+        <label className="text-sm">
+          <div className="text-[color:var(--color-muted)] mb-1">event_type</div>
+          <input value={eventType} onChange={e => setEventType(e.target.value)}
+                 placeholder="예: login_fail"
+                 className="h-9 px-2 rounded border border-[color:var(--color-border-strong)] text-sm" />
+        </label>
+        <label className="text-sm">
+          <div className="text-[color:var(--color-muted)] mb-1">개수</div>
+          <input type="number" min={1} max={500} value={limit}
+                 onChange={e => setLimit(Math.max(1, Math.min(500, Number(e.target.value) || 100)))}
+                 className="w-20 h-9 px-2 rounded border border-[color:var(--color-border-strong)] text-sm" />
+        </label>
+        <button onClick={fetchLogs} disabled={loading}
+                className="h-9 px-3 rounded bg-[color:var(--color-brand)] text-white text-sm font-semibold disabled:bg-[#b5aeea]">
+          {loading ? '...' : '조회'}
+        </button>
+      </div>
+
+      {err && <div className="p-3 mb-3 rounded bg-red-50 border border-red-200 text-red-800 text-sm">{err}</div>}
+
+      <LogsTable rows={rows} kind={kind} />
+    </div>
+  );
+}
+
+function LogsTable({ rows, kind }: { rows: Record<string, unknown>[]; kind: AdminLogKind }) {
+  if (rows.length === 0) return (
+    <div className="text-center py-10 text-sm text-[color:var(--color-muted)]">
+      로그 없음
+    </div>
+  );
+  // 컬럼 자동 감지 + 정렬
+  const priority = {
+    auth:       ['created_at', 'email', 'event_type', 'fail_reason', 'ip', 'device_type'],
+    article:    ['created_at', 'email', 'article_no', 'found', 'apt_name', 'dong', 'ho', 'ho_visible', 'ip'],
+    extraction: ['extracted_at', 'user_email', 'complex_name', 'hidden_count_before', 'hidden_inferred', 'hidden_count_final', 'ip'],
+    security:   ['created_at', 'user_id', 'event_type', 'ip'],
+  }[kind];
+  const cols = priority.filter(c => rows.some(r => r[c] !== undefined && r[c] !== null));
+  return (
+    <div className="overflow-auto rounded-lg border border-[color:var(--color-border)] bg-white max-h-[70vh]">
+      <table className="text-[12px] border-collapse w-full">
+        <thead className="bg-[color:var(--color-bg-soft)] sticky top-0">
+          <tr>
+            {cols.map(c => (
+              <th key={c} className="px-2.5 py-2 text-left font-semibold whitespace-nowrap border-b border-[color:var(--color-border)]">{c}</th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((r, i) => (
+            <tr key={i} className="border-b border-[color:var(--color-border)] last:border-b-0 hover:bg-[color:var(--color-bg-soft)]">
+              {cols.map(c => {
+                const v = r[c];
+                let txt: string;
+                if (v == null) txt = '';
+                else if (typeof v === 'object') txt = JSON.stringify(v);
+                else txt = String(v);
+                if (c.endsWith('_at')) txt = fmtDate(txt);
+                return (
+                  <td key={c} className="px-2.5 py-1.5 whitespace-nowrap align-top">
+                    {c === 'event_type' || c === 'fail_reason'
+                      ? <span className="px-1.5 py-0.5 rounded bg-[color:var(--color-bg-soft)] text-[11px] font-mono">{txt}</span>
+                      : txt}
+                  </td>
+                );
+              })}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+// ───────────────────────────────────────────────────────────
+// Tab 3: 신규 등록 (관리자 주입)
+// ───────────────────────────────────────────────────────────
+interface MetaKV { k: string; v: string; }
+
+function CreateTab({ session }: { session: Session | null }) {
+  const [email, setEmail]           = useState('');
+  const [password, setPassword]     = useState('');
+  const [phone, setPhone]           = useState('');
+  const [officeName, setOfficeName] = useState('');
+  const [subscription, setSubscription] = useState<'pro' | 'free'>('free');
+  const [subEnd, setSubEnd]         = useState('');
+  const [emailConfirm, setEmailConfirm] = useState(true);
+  const [phoneConfirm, setPhoneConfirm] = useState(false);
+  const [deviceLimit, setDeviceLimit] = useState(1);
+  const [userMeta, setUserMeta]     = useState<MetaKV[]>([{ k: 'name', v: '' }]);
+  const [appMeta,  setAppMeta]      = useState<MetaKV[]>([]);
+  const [saving, setSaving]         = useState(false);
+  const [err, setErr]               = useState('');
+  const [result, setResult]         = useState<{ email: string; user_id: string } | null>(null);
+
+  // free 선택 시 device_limit 자동 0
+  function onSubsChange(v: 'pro' | 'free') {
+    setSubscription(v);
+    if (v === 'free') setDeviceLimit(0);
+    else if (deviceLimit === 0) setDeviceLimit(1);
+  }
+
+  function setKV(list: MetaKV[], setList: (v: MetaKV[]) => void, i: number, patch: Partial<MetaKV>) {
+    setList(list.map((kv, idx) => idx === i ? { ...kv, ...patch } : kv));
+  }
+  function addKV(list: MetaKV[], setList: (v: MetaKV[]) => void) {
+    setList([...list, { k: '', v: '' }]);
+  }
+  function delKV(list: MetaKV[], setList: (v: MetaKV[]) => void, i: number) {
+    setList(list.filter((_, idx) => idx !== i));
+  }
+
+  function metaToObj(list: MetaKV[]): Record<string, unknown> | undefined {
+    const obj: Record<string, unknown> = {};
+    for (const { k, v } of list) {
+      const key = k.trim(); if (!key) continue;
+      // 숫자/불리언 자동 파싱
+      if (v === 'true')  obj[key] = true;
+      else if (v === 'false') obj[key] = false;
+      else if (v !== '' && !Number.isNaN(Number(v))) obj[key] = Number(v);
+      else obj[key] = v;
+    }
+    return Object.keys(obj).length ? obj : undefined;
+  }
+
+  async function onSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!email.trim() || password.length < 6) {
+      setErr('이메일 및 6자 이상 비밀번호 필수');
+      return;
+    }
+    setSaving(true); setErr(''); setResult(null);
+    try {
+      const r = await adminCreateUser(session, {
+        email: email.trim(), password,
+        phone: phone.trim() || undefined,
+        email_confirm: emailConfirm,
+        phone_confirm: phoneConfirm,
+        office_name: officeName.trim() || undefined,
+        subscription,
+        subscription_end: subEnd || undefined,
+        user_metadata: metaToObj(userMeta),
+        app_metadata:  metaToObj(appMeta),
+        device_limit: deviceLimit,
+      });
+      const created = (r as unknown as { user: { id: string; email: string } }).user;
+      setResult({ email: created.email, user_id: created.id });
+      setEmail(''); setPassword(''); setPhone(''); setOfficeName('');
+      setSubscription('free'); setSubEnd(''); setDeviceLimit(0);
+      setUserMeta([{ k: 'name', v: '' }]); setAppMeta([]);
+    } catch (e) {
+      setErr(e instanceof ApiError ? `${e.status} · ${e.message}` : String(e));
+    } finally { setSaving(false); }
+  }
+
+  return (
+    <form onSubmit={onSubmit} className="max-w-2xl space-y-5">
+      <Section title="기본 정보">
+        <Row label="이메일 *">
+          <input type="email" value={email} onChange={e => setEmail(e.target.value)}
+                 autoComplete="off" required
+                 className="w-full h-10 px-3 rounded-lg border border-[color:var(--color-border-strong)] text-sm focus:outline-none focus:border-[color:var(--color-brand)]" />
+        </Row>
+        <Row label="초기 비밀번호 * (6자 이상)">
+          <input type="text" value={password} onChange={e => setPassword(e.target.value)}
+                 autoComplete="off" required
+                 className="w-full h-10 px-3 rounded-lg border border-[color:var(--color-border-strong)] text-sm focus:outline-none focus:border-[color:var(--color-brand)]" />
+        </Row>
+        <Row label="전화번호 (선택)">
+          <input type="tel" value={phone} onChange={e => setPhone(e.target.value)}
+                 placeholder="+821012345678"
+                 className="w-full h-10 px-3 rounded-lg border border-[color:var(--color-border-strong)] text-sm focus:outline-none focus:border-[color:var(--color-brand)]" />
+        </Row>
+        <div className="flex gap-5 text-sm">
+          <label className="flex items-center gap-2">
+            <input type="checkbox" checked={emailConfirm}
+                   onChange={e => setEmailConfirm(e.target.checked)} />
+            이메일 자동 인증
+          </label>
+          <label className="flex items-center gap-2">
+            <input type="checkbox" checked={phoneConfirm}
+                   onChange={e => setPhoneConfirm(e.target.checked)} />
+            전화 자동 인증
+          </label>
+        </div>
+      </Section>
+
+      <Section title="사무소 · 플랜">
+        <Row label="중개사무소명">
+          <input value={officeName} onChange={e => setOfficeName(e.target.value)}
+                 placeholder="예: 행복공인중개사사무소"
+                 className="w-full h-10 px-3 rounded-lg border border-[color:var(--color-border-strong)] text-sm focus:outline-none focus:border-[color:var(--color-brand)]" />
+        </Row>
+        <div className="flex items-end gap-3 flex-wrap">
+          <label className="text-sm">
+            <div className="text-[color:var(--color-muted)] mb-1">플랜</div>
+            <select value={subscription} onChange={e => onSubsChange(e.target.value as 'pro'|'free')}
+                    className="h-10 px-2 rounded border border-[color:var(--color-border-strong)] text-sm">
+              <option value="free">free (기기 0)</option>
+              <option value="pro">pro</option>
+            </select>
+          </label>
+          <label className="text-sm">
+            <div className="text-[color:var(--color-muted)] mb-1">만료일 (선택)</div>
+            <input type="date" value={subEnd} onChange={e => setSubEnd(e.target.value)}
+                   className="h-10 px-2 rounded border border-[color:var(--color-border-strong)] text-sm" />
+          </label>
+        </div>
+      </Section>
+
+      <Section title="기기 한도 (통합)">
+        <div className="flex items-end gap-3 flex-wrap">
+          <label className="text-sm">
+            <div className="text-[color:var(--color-muted)] mb-1">허용 기기 수 (PC+모바일 합산)</div>
+            <input type="number" min={0} max={20} value={deviceLimit}
+                   disabled={subscription === 'free'}
+                   onChange={e => setDeviceLimit(Math.max(0, Math.min(20, Number(e.target.value) || 0)))}
+                   className="w-24 h-10 px-2 rounded border border-[color:var(--color-border-strong)] text-sm disabled:bg-[color:var(--color-bg-soft)]" />
+          </label>
+          <div className="text-xs text-[color:var(--color-muted)] pb-2">
+            {subscription === 'free'
+              ? 'free 플랜은 0 고정.'
+              : '예: 2 입력 → 최초 로그인 시 PC/모바일 합 2대까지 자동 등록.'}
+          </div>
+        </div>
+      </Section>
+
+      <Section title={<>user_metadata <span className="text-[11px] text-[color:var(--color-muted)] font-normal">(사용자가 수정 가능 · 예: name, nickname, phone)</span></>}>
+        <MetaEditor list={userMeta} setList={setUserMeta}
+                    setKV={setKV} addKV={addKV} delKV={delKV} />
+      </Section>
+
+      <Section title={<>app_metadata <span className="text-[11px] text-[color:var(--color-muted)] font-normal">(관리자만 수정 · 예: plan, role, subscription)</span></>}>
+        <MetaEditor list={appMeta} setList={setAppMeta}
+                    setKV={setKV} addKV={addKV} delKV={delKV} />
+      </Section>
+
+      {err && <div className="p-3 rounded bg-red-50 border border-red-200 text-red-800 text-sm">{err}</div>}
+      {result && (
+        <div className="p-3 rounded bg-green-50 border border-green-200 text-green-800 text-sm">
+          ✓ 생성: <b>{result.email}</b> <code className="text-[11px]">{result.user_id}</code>
+        </div>
+      )}
+
+      <button type="submit" disabled={saving}
+              className="h-10 px-5 rounded-lg bg-[color:var(--color-brand)] text-white text-sm font-semibold disabled:bg-[#b5aeea]">
+        {saving ? '생성 중...' : '사용자 생성'}
+      </button>
+    </form>
+  );
+}
+
+function Section({ title, children }: { title: React.ReactNode; children: React.ReactNode }) {
+  return (
+    <fieldset className="rounded-xl border border-[color:var(--color-border)] bg-white p-4 space-y-3">
+      <legend className="px-2 text-sm font-semibold">{title}</legend>
+      {children}
+    </fieldset>
+  );
+}
+
+function Row({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <label className="block">
+      <div className="text-xs text-[color:var(--color-muted)] mb-1">{label}</div>
+      {children}
+    </label>
+  );
+}
+
+function MetaEditor({
+  list, setList, setKV, addKV, delKV,
+}: {
+  list: MetaKV[];
+  setList: (v: MetaKV[]) => void;
+  setKV: (list: MetaKV[], setList: (v: MetaKV[]) => void, i: number, patch: Partial<MetaKV>) => void;
+  addKV: (list: MetaKV[], setList: (v: MetaKV[]) => void) => void;
+  delKV: (list: MetaKV[], setList: (v: MetaKV[]) => void, i: number) => void;
+}) {
+  return (
+    <div className="space-y-2">
+      {list.map((kv, i) => (
+        <div key={i} className="flex items-center gap-2">
+          <input value={kv.k}
+                 onChange={e => setKV(list, setList, i, { k: e.target.value })}
+                 placeholder="key"
+                 className="w-40 h-9 px-2 rounded border border-[color:var(--color-border-strong)] text-sm" />
+          <input value={kv.v}
+                 onChange={e => setKV(list, setList, i, { v: e.target.value })}
+                 placeholder="value (true/false/숫자 자동 변환)"
+                 className="flex-1 h-9 px-2 rounded border border-[color:var(--color-border-strong)] text-sm" />
+          <button type="button" onClick={() => delKV(list, setList, i)}
+                  className="h-9 w-9 rounded border border-[color:var(--color-border)] text-red-700 text-sm hover:bg-red-50"
+                  title="삭제">×</button>
+        </div>
+      ))}
+      <button type="button" onClick={() => addKV(list, setList)}
+              className="h-8 px-3 rounded-lg bg-[color:var(--color-bg-soft)] hover:bg-[#edeff7] border border-[color:var(--color-border)] text-xs font-semibold">
+        + key 추가
+      </button>
+    </div>
+  );
+}
