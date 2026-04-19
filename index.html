@@ -232,8 +232,8 @@
   <button class="btn btn-primary btn-lg" data-login>로그인</button>
 </main>
 
-<!-- Login Modal -->
-<div class="modal-backdrop" id="modal-login" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+<!-- Login Modal — 기본 오픈 상태 (JS 로드 실패와 무관하게 표시) -->
+<div class="modal-backdrop open" id="modal-login" role="dialog" aria-modal="true" aria-labelledby="modal-title">
   <div class="modal">
     <h2 id="modal-title">로그인</h2>
     <form id="login-form" novalidate>
@@ -505,8 +505,7 @@ $('#login-form').addEventListener('submit', async e => {
 });
 
 initSupabase();
-// 페이지 진입 시 바로 로그인 모달 노출
-setTimeout(openModal, 50);
+// (모달은 HTML 에 기본 open 상태로 렌더됨 — JS 로드 실패해도 표시 보장)
 </script>
 
 </body>
