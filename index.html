@@ -271,7 +271,7 @@ function loadDeps() {
     try {
       const [sb, fp] = await Promise.all([
         import('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm'),
-        import('https://openfpcdn.io/fingerprintjs/v4'),
+        import('https://cdn.jsdelivr.net/npm/@fingerprintjs/fingerprintjs@4/+esm'),
       ]);
       createClient  = sb.createClient;
       // v4 의 ESM 번들은 경우에 따라 default 가 다양함 — 세 가지 후보 순서대로 시도
