@@ -131,7 +131,7 @@ export default function ArticleLookup({ session }: Props) {
          r.info.price_deal || r.info.price_warrant)
       );
       if (!hasContent) {
-        setErr(`매물 정보를 찾을 수 없습니다 (#${no}) — 잠시 후 다시 시도해주세요`);
+        setErr(`매물 정보를 찾을 수 없습니다 (#${no}) — 네트워크 문제가 아니면 매물번호를 다시 한번 확인해주세요.`);
         return;
       }
       const newItem: ResultItem = { no: r.article_no, info: r.info, queriedAt: Date.now() };
