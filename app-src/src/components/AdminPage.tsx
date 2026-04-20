@@ -727,8 +727,8 @@ function LogsTable({ rows, kind }: { rows: Record<string, unknown>[]; kind: Admi
   const priority = {
     auth:       ['created_at', 'email', 'event_type', 'fail_reason', 'ip', 'device_type'],
     article:    ['created_at', 'email', 'article_no', 'found', 'apt_name', 'dong', 'ho', 'ho_visible', 'ip'],
-    extraction: ['extracted_at', 'user_email', 'complex_name', 'hidden_count_before', 'hidden_inferred', 'hidden_count_final', 'ip'],
-    security:   ['created_at', 'user_id', 'event_type', 'ip'],
+    extraction: ['extracted_at', 'email', 'complex_name', 'item_count', 'hidden_count_before', 'hidden_inferred', 'hidden_count_final', 'ip'],
+    security:   ['created_at', 'email', 'event_type', 'ip', 'user_agent', 'meta'],
   }[kind];
   const cols = priority.filter(c => rows.some(r => r[c] !== undefined && r[c] !== null));
   return (
