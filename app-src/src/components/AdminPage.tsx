@@ -4,7 +4,7 @@ import {
   adminListUsers, adminGetUserDevices,
   adminSetDeviceLimit, adminDeleteDevice, adminCreateUser,
   adminFetchLogs, adminResetAllDevices, adminSetPassword, adminSetSubscription,
-  adminDashboard, adminProxyRotate,
+  adminDashboard, adminProxyRotate, adminDeleteUser,
   type AdminUserRow, type DeviceRow, type DeviceLimits,
   type AdminLogKind, type DashboardData, ApiError,
 } from '../lib/api';
@@ -272,6 +272,7 @@ function UsersTab({ session }: { session: Session | null }) {
   const [pwVal, setPwVal] = useState('');
   const [pwBusy, setPwBusy] = useState(false);
   const [resetBusy, setResetBusy] = useState(false);
+  const [delBusy, setDelBusy] = useState(false);
 
   async function load(p = page) {
     setLoading(true); setErr('');
@@ -372,6 +373,28 @@ function UsersTab({ session }: { session: Session | null }) {
     } catch (e) {
       setDetailErr(e instanceof ApiError ? `${e.status} · ${e.message}` : String(e));
     } finally { setPwBusy(false); }
+  }
+
+  async function deleteUser() {
+    if (!selected) return;
+    const msg = `⚠ ${selected.email} 계정을 영구 삭제합니다.\n\n- 로그인 불가\n- 기기/관심단지/한도 모두 삭제\n- 과거 로그는 보존 (user_id 만 비움)\n\n계속하시겠습니까?`;
+    if (!confirm(msg)) return;
+    if (prompt(`확인: 이메일을 그대로 입력하세요`) !== selected.email) {
+      alert('이메일 불일치 — 삭제 취소');
+      return;
+    }
+    setDelBusy(true); setDetailErr('');
+    try {
+      await adminDeleteUser(session, selected.user_id);
+      setUsers(prev => prev.filter(u => u.user_id !== selected.user_id));
+      setSelected(null);
+      setDevices([]);
+      setDetailLimits(null);
+    } catch (e) {
+      setDetailErr(e instanceof ApiError ? `${e.status} · ${e.message}` : String(e));
+    } finally {
+      setDelBusy(false);
+    }
   }
 
   async function resetAllDevices() {
@@ -576,6 +599,17 @@ function UsersTab({ session }: { session: Session | null }) {
               </button>
               <div className="text-xs text-[color:var(--color-muted)] mt-1">
                 초기화 후 사용자 재로그인 시 첫 기기가 다시 자동 등록됩니다 (한도 내).
+              </div>
+            </div>
+
+            <div className="pt-2 border-t border-red-200">
+              <div className="text-sm font-semibold mb-2 text-red-700">⚠ 계정 삭제 (되돌릴 수 없음)</div>
+              <button onClick={deleteUser} disabled={delBusy}
+                      className="h-9 px-3 rounded-lg bg-red-700 text-white text-sm font-semibold disabled:bg-red-300 hover:bg-red-800">
+                {delBusy ? '삭제 중...' : '🗑 계정 영구 삭제'}
+              </button>
+              <div className="text-xs text-[color:var(--color-muted)] mt-1">
+                로그인 불가 · 기기/관심단지/한도 전부 삭제. 과거 로그는 보존.
               </div>
             </div>
 

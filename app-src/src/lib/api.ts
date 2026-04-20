@@ -390,6 +390,13 @@ export function adminResetAllDevices(
   );
 }
 
+export function adminDeleteUser(session: Session | null, userId: string) {
+  return request<{ ok: boolean; deleted_user_id: string }>(
+    `/api/admin/users/${encodeURIComponent(userId)}`, session,
+    { method: 'DELETE' },
+  );
+}
+
 export function adminSetPassword(
   session: Session | null, userId: string, password: string,
 ) {
