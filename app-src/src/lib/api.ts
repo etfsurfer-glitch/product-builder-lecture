@@ -1,7 +1,8 @@
 // 맥미니 FastAPI 서버 호출 래퍼
 import type { Session } from '@supabase/supabase-js';
 
-export const API_BASE = 'https://api.runto.online';
+export const API_BASE = import.meta.env.VITE_API_BASE ?? 'https://api.runto.online';
+export const IS_TEST_BUILD = import.meta.env.VITE_IS_TEST_BUILD === '1';
 
 export interface PublicConfig {
   turnstile_site_key: string;
