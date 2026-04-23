@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import type { Session } from '@supabase/supabase-js';
 import { getCurrentSession, goToLanding, signOut } from './lib/auth';
-import { serverLogout, getMe } from './lib/api';
+import { serverLogout, getMe, IS_TEST_BUILD, API_BASE } from './lib/api';
 import SearchPanel from './components/SearchPanel';
 import ArticleLookup from './components/ArticleLookup';
 import DeviceManager from './components/DeviceManager';
@@ -9,6 +9,16 @@ import AdminPage from './components/AdminPage';
 
 type Status = 'loading' | 'needs-login' | 'ready';
 type Tab = 'complex' | 'article';
+
+function TestBanner() {
+  if (!IS_TEST_BUILD) return null;
+  const host = API_BASE.replace(/^https?:\/\//, '');
+  return (
+    <div className="sticky top-0 z-30 bg-red-600 text-white text-center text-xs sm:text-sm font-bold py-1 px-3 shadow">
+      🧪 테스트 서버 — {host} (프로덕션 아님)
+    </div>
+  );
+}
 
 export default function App() {
   const [status, setStatus] = useState<Status>('loading');
@@ -40,15 +50,20 @@ export default function App() {
 
   if (status === 'loading') {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="spinner" />
-      </div>
+      <>
+        <TestBanner />
+        <div className="min-h-screen flex items-center justify-center">
+          <div className="spinner" />
+        </div>
+      </>
     );
   }
 
   if (status === 'needs-login') {
     return (
-      <div className="min-h-screen flex items-center justify-center px-6">
+      <>
+        <TestBanner />
+        <div className="min-h-screen flex items-center justify-center px-6">
         <div className="max-w-md w-full text-center">
           <h1 className="text-2xl font-bold mb-3">로그인이 필요합니다</h1>
           <p className="text-[color:var(--color-muted)] mb-6">
@@ -65,12 +80,14 @@ export default function App() {
           </button>
         </div>
       </div>
+      </>
     );
   }
 
   return (
     <div className="min-h-screen flex flex-col">
-      <header className="sticky top-0 z-10 bg-white/90 backdrop-blur border-b border-[color:var(--color-border)]">
+      <TestBanner />
+      <header className={`sticky ${IS_TEST_BUILD ? 'top-6 sm:top-7' : 'top-0'} z-10 bg-white/90 backdrop-blur border-b border-[color:var(--color-border)]`}>
         <div className="max-w-6xl mx-auto px-3 sm:px-6 h-14 sm:h-16 flex items-center justify-between gap-2">
           <div className="flex items-center gap-2 min-w-0">
             <span className="text-lg sm:text-xl font-extrabold tracking-tight bg-gradient-to-br from-[#6c5ce7] to-[#a29bfe] bg-clip-text text-transparent">nfind</span>
