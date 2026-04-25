@@ -316,7 +316,9 @@ export function groupRows(rows: Row[]): Row[] {
     const 매매 = group.filter(it => it['매물거래구분명'] === '매매');
     const 전세 = group.filter(it => it['매물거래구분명'] === '전세');
     const 월세 = group.filter(it => it['매물거래구분명'] === '월세');
-    computeMinMax(매매, it => rawNum(it['매매가'] ?? it['매매일반거래가']), '_매매최고', '_매매최저');
+    // 분양권은 fin.land 의 정확한 _dealPrice (만원 정수) 우선. 없으면 KB/cluster 의 매매가.
+    // 묶기 OFF 표시(213~216줄) 와 동일한 우선순위 — round 값으로 묶임 결과 오염 방지.
+    computeMinMax(매매, it => rawNum(it['_dealPrice'] ?? it['매매가'] ?? it['매매일반거래가']), '_매매최고', '_매매최저');
     computeMinMax(전세, it => rawNum(it['전세가'] ?? it['전세일반거래가']), '_전세최고', '_전세최저');
     computeMinMax(월세, it => rawNum(dep(it)), '_보증최고', '_보증최저');
     computeMinMax(월세, it => rawNum(it['월세가']), '_월세최고', '_월세최저');
