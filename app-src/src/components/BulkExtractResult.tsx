@@ -198,7 +198,7 @@ export default function BulkExtractResult({ session, jobs, onBack }: Props) {
   useEffect(() => {
     let cancelled = false;
 
-    async function poll(s: JobState) {
+    async function poll(s: JobState, transientFails = 0) {
       if (!s.job_id || cancelled) return;
       try {
         const r = await getExtractStatus(session, s.job_id, false);
@@ -221,14 +221,28 @@ export default function BulkExtractResult({ session, jobs, onBack }: Props) {
         setStates(prev => prev.map(p => p.complex_no === s.complex_no
           ? { ...p, status: 'running', pct: r.job.pct ?? 0, msg: r.job.msg || '진행 중' }
           : p));
-        const t = window.setTimeout(() => poll(s), 1500);
+        const t = window.setTimeout(() => poll(s, 0), 1500);
         timersRef.current.set(s.complex_no, t);
       } catch (e) {
         if (cancelled) return;
-        const msg = e instanceof ApiError ? `${e.status} · ${e.message}` : String(e);
-        setStates(prev => prev.map(p => p.complex_no === s.complex_no
-          ? { ...p, status: 'error', err: msg, msg: '통신 오류' }
-          : p));
+        // ApiError (4xx/5xx) 는 즉시 실패. 네트워크 에러는 backoff 재시도 —
+        // 백엔드 작업은 살아있으므로 폴링만 회복하면 결과 받음.
+        if (e instanceof ApiError) {
+          setStates(prev => prev.map(p => p.complex_no === s.complex_no
+            ? { ...p, status: 'error', err: `${e.status} · ${e.message}`, msg: '통신 오류' }
+            : p));
+          return;
+        }
+        const next = transientFails + 1;
+        if (next >= 8) {
+          setStates(prev => prev.map(p => p.complex_no === s.complex_no
+            ? { ...p, status: 'error', err: String(e), msg: '통신 오류' }
+            : p));
+          return;
+        }
+        const delay = Math.min(1500 * Math.pow(1.6, next), 10000);
+        const t = window.setTimeout(() => poll(s, next), delay);
+        timersRef.current.set(s.complex_no, t);
       }
     }
 

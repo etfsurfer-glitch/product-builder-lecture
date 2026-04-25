@@ -245,6 +245,14 @@
         <label for="password">비밀번호</label>
         <input type="password" id="password" name="password" autocomplete="current-password" required>
       </div>
+      <div class="field" style="display:flex; gap:14px; align-items:center; font-size:14px; color:#555; flex-wrap:wrap">
+        <label style="display:flex; gap:6px; align-items:center; cursor:pointer">
+          <input type="checkbox" id="remember-email" style="width:16px; height:16px"> 이메일 기억
+        </label>
+        <span style="font-size:12px; color:#888">
+          비밀번호는 브라우저(키체인)에 안전하게 저장됩니다
+        </span>
+      </div>
       <!-- 비밀번호 변경 섹션: 등록된 기기에서만 활성화 -->
       <div class="field" id="newpw-wrap" style="display:none">
         <label for="new-password">새 비밀번호 (6자 이상)</label>
@@ -386,9 +394,42 @@ async function initSupabase() {
 
 function redirectToApp() { location.href = '/app/'; }
 
+// ── 로그인 정보 저장 ─────────────────────────────────────────────────────
+// 이메일만 localStorage 저장 (보안 위험 낮음).
+// 비밀번호는 브라우저 password manager (Credential Management API) 에 위임 —
+// OS keychain 에 암호화 저장되어 XSS 로도 노출되지 않음.
+const LS_REMEMBER_EMAIL = 'nfind-remember-email';
+function loadRemembered() {
+  try {
+    const e = localStorage.getItem(LS_REMEMBER_EMAIL) || '';
+    if (e) { $('#email').value = e; $('#remember-email').checked = true; }
+  } catch { /* swallow */ }
+}
+function saveRemembered(email) {
+  try {
+    if ($('#remember-email').checked && email) localStorage.setItem(LS_REMEMBER_EMAIL, email);
+    else localStorage.removeItem(LS_REMEMBER_EMAIL);
+  } catch { /* swallow */ }
+}
+// 브라우저에 비밀번호 저장 요청 — Chrome/Edge/Safari 의 password manager 호출.
+// Firefox 는 미지원이지만 form autocomplete 로 자동 동작.
+async function rememberCredentialInBrowser(email, password) {
+  try {
+    if ('credentials' in navigator && typeof window.PasswordCredential === 'function') {
+      const cred = new window.PasswordCredential({ id: email, password, name: email });
+      await navigator.credentials.store(cred);
+    }
+  } catch { /* swallow */ }
+}
+
 function openModal() {
   $('#modal-login').classList.add('open');
-  setTimeout(() => $('#email').focus(), 80);
+  loadRemembered();
+  // 저장된 이메일 있으면 비밀번호 칸으로 포커스, 없으면 이메일 칸으로
+  setTimeout(() => {
+    const target = $('#email').value ? '#password' : '#email';
+    $(target).focus();
+  }, 80);
 }
 function closeModal() {
   $('#modal-login').classList.remove('open');
@@ -505,6 +546,11 @@ $('#login-form').addEventListener('submit', async e => {
     btn.disabled = false;
     return;
   }
+
+  // 인증 성공 — 이메일은 체크박스 상태에 따라 localStorage 저장,
+  // 비밀번호는 브라우저 password manager 에 위임 (OS keychain 에 암호화 저장).
+  saveRemembered(email);
+  await rememberCredentialInBrowser(email, password);
 
   // HttpOnly refresh cookie 저장 (XSS 방어). 실패해도 진행은 가능.
   try {

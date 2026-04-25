@@ -22,6 +22,14 @@ export class ApiError extends Error {
   constructor(status: number, message: string) { super(message); this.status = status; }
 }
 
+// 401 핸들러 — main.tsx 에서 등록. 토큰 만료 시 자동 로그아웃 + 랜딩 이동.
+// 동시 다발 401 에 여러번 트리거되지 않도록 가드.
+let _onUnauthorized: (() => void | Promise<void>) | null = null;
+let _unauthorizedTriggered = false;
+export function setUnauthorizedHandler(fn: () => void | Promise<void>) {
+  _onUnauthorized = fn;
+}
+
 async function request<T>(
   path: string,
   session: Session | null,
@@ -37,6 +45,10 @@ async function request<T>(
   const text = await r.text();
   const body = text ? safeJson(text) : null;
   if (!r.ok) {
+    if (r.status === 401 && _onUnauthorized && !_unauthorizedTriggered) {
+      _unauthorizedTriggered = true;
+      try { await _onUnauthorized(); } catch { /* swallow */ }
+    }
     const msg = (body && typeof body === 'object' && 'detail' in body)
       ? String((body as { detail: unknown }).detail)
       : text || `HTTP ${r.status}`;

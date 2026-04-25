@@ -495,7 +495,7 @@ export default function ExtractResult({ session, complex, keyword = '', onBack }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  async function poll(jobId: string) {
+  async function poll(jobId: string, transientFails = 0) {
     try {
       const r = await getExtractStatus(session, jobId, false);
       if (r.job.state === 'done') {
@@ -514,10 +514,24 @@ export default function ExtractResult({ session, complex, keyword = '', onBack }
         setLoaded(true);
         return;
       }
-      pollRef.current = window.setTimeout(() => poll(jobId), 1200);
+      pollRef.current = window.setTimeout(() => poll(jobId, 0), 1200);
     } catch (e) {
-      setErr(e instanceof ApiError ? `${e.status} · ${e.message}` : String(e));
-      setLoaded(true);
+      // ApiError (서버 4xx/5xx) 는 즉시 실패. 네트워크 에러 (iOS Safari 백그라운드
+      // 전환, 일시적 cloudflare hiccup 등) 는 backoff 재시도 — 작업은 백그라운드에서
+      // 계속 돌고 있으므로 폴링만 회복하면 결과 받을 수 있음.
+      if (e instanceof ApiError) {
+        setErr(`${e.status} · ${e.message}`);
+        setLoaded(true);
+        return;
+      }
+      const next = transientFails + 1;
+      if (next >= 8) {
+        setErr(`통신 오류 — 네트워크 확인 후 새로고침 (${String(e)})`);
+        setLoaded(true);
+        return;
+      }
+      const delay = Math.min(1000 * Math.pow(1.6, next), 8000);
+      pollRef.current = window.setTimeout(() => poll(jobId, next), delay);
     }
   }
 
