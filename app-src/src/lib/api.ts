@@ -551,12 +551,24 @@ export interface PortfolioSnapshot {
   rows:    Record<string, unknown>[];
 }
 
+export interface PriceStat {
+  count: number; min: number; max: number; median: number; avg: number;
+}
+
+export interface AreaBucketDiff {
+  label: string;                  // 예: '84㎡'
+  older: PriceStat | null;        // null 이면 해당 시점에 그 면적대 매물 없음
+  newer: PriceStat | null;
+}
+
 export interface PortfolioCompare {
   older: { savedAt: string; totalCount: number; stats: PortfolioSnapshotStats };
   newer: { savedAt: string; totalCount: number; stats: PortfolioSnapshotStats };
   added:        Array<Record<string, unknown>>;
   removed:      Array<Record<string, unknown>>;
   priceChanges: Array<Record<string, unknown>>;
+  // 거래 → 면적버킷 배열. 두 스냅샷 합쳐 ±1.5㎡ 클러스터링
+  byAreaBucket?: Partial<Record<'매매' | '전세' | '월세', AreaBucketDiff[]>>;
 }
 
 export function savePortfolio(

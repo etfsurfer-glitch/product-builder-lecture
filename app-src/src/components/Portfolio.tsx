@@ -9,7 +9,8 @@ import {
   type PortfolioListItem,
   type PortfolioCompare,
   type PortfolioSnapshot,
-  type PortfolioSnapshotStats,
+  type AreaBucketDiff,
+  type PriceStat,
 } from '../lib/api';
 import {
   COLUMNS, COLUMNS_GROUPED,
@@ -522,32 +523,35 @@ function StatCard({ title, before, after, fmt = (v: number) => v.toLocaleString(
   );
 }
 
-function PriceStatBlock({ trade, before, after }: {
-  trade: string;
-  before?: PortfolioSnapshotStats['priceStats'][string];
-  after?: PortfolioSnapshotStats['priceStats'][string];
-}) {
-  if (!before && !after) return null;
-  const b = before ?? { count: 0, min: 0, max: 0, median: 0, avg: 0 };
-  const a = after  ?? { count: 0, min: 0, max: 0, median: 0, avg: 0 };
+// 한 면적 버킷의 가격대 카드 (older vs newer)
+function AreaBucketCard({ label, older, newer }: AreaBucketDiff) {
+  const z: PriceStat = { count: 0, min: 0, max: 0, median: 0, avg: 0 };
+  const b = older ?? z;
+  const a = newer ?? z;
+  const has = (s: PriceStat | null) => !!s && s.count > 0;
   return (
     <div className="p-3 rounded-lg border border-[color:var(--color-border)] bg-white">
-      <div className="text-xs text-[color:var(--color-muted)] mb-2">{trade} 가격대 (만원)</div>
+      <div className="flex items-baseline justify-between mb-2 gap-2">
+        <div className="text-sm font-bold">{label}</div>
+        <div className="text-[11px] text-[color:var(--color-muted)] font-mono">
+          {has(older) ? `${b.count}건` : '—'} → <span className="font-bold">{has(newer) ? `${a.count}건` : '—'}</span>
+        </div>
+      </div>
       <div className="grid grid-cols-3 gap-2 text-xs font-mono">
         <div>
           <div className="text-[color:var(--color-muted)]">최저</div>
-          <div>{b.min.toLocaleString()} → <span className="font-bold">{a.min.toLocaleString()}</span></div>
-          <div className="text-[10px]">{diffNum(b.min, a.min)}</div>
+          <div>{has(older) ? b.min.toLocaleString() : '—'} → <span className="font-bold">{has(newer) ? a.min.toLocaleString() : '—'}</span></div>
+          {has(older) && has(newer) && <div className="text-[10px]">{diffNum(b.min, a.min)}</div>}
         </div>
         <div>
           <div className="text-[color:var(--color-muted)]">중간값</div>
-          <div>{b.median.toLocaleString()} → <span className="font-bold">{a.median.toLocaleString()}</span></div>
-          <div className="text-[10px]">{diffNum(b.median, a.median)}</div>
+          <div>{has(older) ? b.median.toLocaleString() : '—'} → <span className="font-bold">{has(newer) ? a.median.toLocaleString() : '—'}</span></div>
+          {has(older) && has(newer) && <div className="text-[10px]">{diffNum(b.median, a.median)}</div>}
         </div>
         <div>
           <div className="text-[color:var(--color-muted)]">최고</div>
-          <div>{b.max.toLocaleString()} → <span className="font-bold">{a.max.toLocaleString()}</span></div>
-          <div className="text-[10px]">{diffNum(b.max, a.max)}</div>
+          <div>{has(older) ? b.max.toLocaleString() : '—'} → <span className="font-bold">{has(newer) ? a.max.toLocaleString() : '—'}</span></div>
+          {has(older) && has(newer) && <div className="text-[10px]">{diffNum(b.max, a.max)}</div>}
         </div>
       </div>
     </div>
@@ -591,16 +595,30 @@ function CompareView({ compare, onBack }: { compare: PortfolioCompare; onBack: (
         ))}
       </div>
 
-      {/* 가격 통계 */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-6">
-        {trades.map(t => (
-          <PriceStatBlock
-            key={t}
-            trade={t}
-            before={compare.older.stats?.priceStats?.[t]}
-            after={compare.newer.stats?.priceStats?.[t]}
-          />
-        ))}
+      {/* 가격 통계 — 거래 × 전용면적 버킷별 (84A/B 같은 유사면적은 ±1.5㎡ 로 자동 묶음) */}
+      <div className="mb-6">
+        <div className="text-xs text-[color:var(--color-muted)] mb-2">
+          가격대 (만원) · 전용면적 버킷별
+        </div>
+        {(['매매', '전세', '월세'] as const).map(t => {
+          const buckets = compare.byAreaBucket?.[t] ?? [];
+          if (buckets.length === 0) return null;
+          return (
+            <div key={t} className="mb-4">
+              <div className="text-sm font-bold mb-2">{t}</div>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                {buckets.map(b => (
+                  <AreaBucketCard key={b.label} label={b.label} older={b.older} newer={b.newer} />
+                ))}
+              </div>
+            </div>
+          );
+        })}
+        {!compare.byAreaBucket && (
+          <div className="text-xs text-[color:var(--color-muted)]">
+            (구버전 스냅샷 — 면적 버킷 정보가 없어 통계 생략)
+          </div>
+        )}
       </div>
 
       {/* 신규 / 이탈 / 가격변동 */}
