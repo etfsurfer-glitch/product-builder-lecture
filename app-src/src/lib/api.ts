@@ -596,10 +596,54 @@ export function listPortfolio(session: Session | null) {
   );
 }
 
-export function getPortfolio(session: Session | null, key: string) {
-  return request<PortfolioSnapshot>(
-    `/api/portfolio/get?key=${encodeURIComponent(key)}`, session,
+// 큰 스냅샷 다운로드 시 byte 단위 진행률 콜백 가능. onProgress 미지정 시 기존 흐름과 동일.
+// total 이 0 이면 Content-Length 미제공 — 호출자 fallback 권장 (예: list 의 size 사용).
+export async function getPortfolio(
+  session: Session | null,
+  key: string,
+  onProgress?: (received: number, total: number) => void,
+): Promise<PortfolioSnapshot> {
+  if (!onProgress) {
+    return request<PortfolioSnapshot>(
+      `/api/portfolio/get?key=${encodeURIComponent(key)}`, session,
+    );
+  }
+  const headers: Record<string, string> = {};
+  if (session?.access_token) headers.Authorization = `Bearer ${session.access_token}`;
+  const r = await fetch(
+    `${API_BASE}/api/portfolio/get?key=${encodeURIComponent(key)}`,
+    { headers, credentials: 'include' },
   );
+  if (!r.ok) {
+    const text = await r.text();
+    const body = text ? safeJson(text) : null;
+    if (r.status === 401 && _onUnauthorized && !_unauthorizedTriggered) {
+      _unauthorizedTriggered = true;
+      try { await _onUnauthorized(); } catch { /* swallow */ }
+    }
+    const msg = (body && typeof body === 'object' && 'detail' in body)
+      ? String((body as { detail: unknown }).detail)
+      : text || `HTTP ${r.status}`;
+    throw new ApiError(r.status, msg);
+  }
+  const total = Number(r.headers.get('content-length') || 0);
+  const reader = r.body?.getReader();
+  if (!reader) return r.json() as Promise<PortfolioSnapshot>;
+  const chunks: Uint8Array[] = [];
+  let received = 0;
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    if (value) {
+      chunks.push(value);
+      received += value.length;
+      onProgress(received, total);
+    }
+  }
+  const merged = new Uint8Array(received);
+  let off = 0;
+  for (const c of chunks) { merged.set(c, off); off += c.length; }
+  return JSON.parse(new TextDecoder('utf-8').decode(merged)) as PortfolioSnapshot;
 }
 
 export function deletePortfolio(session: Session | null, key: string) {

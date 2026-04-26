@@ -45,6 +45,12 @@ function fmtPrice(v: unknown): string {
   return `${n.toLocaleString()}만`;
 }
 
+function fmtBytes(b: number): string {
+  if (b < 1024) return `${b} B`;
+  if (b < 1024 * 1024) return `${(b / 1024).toFixed(1)} KB`;
+  return `${(b / 1024 / 1024).toFixed(2)} MB`;
+}
+
 function diffNum(before: number | undefined, after: number | undefined): string {
   const b = before ?? 0;
   const a = after ?? 0;
@@ -63,6 +69,13 @@ export default function Portfolio({ session }: Props) {
   const [comparing, setComparing] = useState(false);
   const [viewing, setViewing] = useState<PortfolioSnapshot | null>(null);
   const [opening, setOpening] = useState<string>('');
+  const [progress, setProgress] = useState<{
+    phase: 'download' | 'parse';
+    received: number;
+    total: number;
+    complexName: string;
+    savedAt: string;
+  } | null>(null);
 
   async function reload() {
     setLoading(true);
@@ -124,13 +137,26 @@ export default function Portfolio({ session }: Props) {
   async function openSnapshot(it: PortfolioListItem) {
     setOpening(it.key);
     setErr('');
+    setProgress({
+      phase: 'download',
+      received: 0,
+      total: it.size || 0,
+      complexName: it.complexName || `(단지 #${it.complexPk})`,
+      savedAt: it.savedAt,
+    });
     try {
-      const snap = await getPortfolio(session, it.key);
+      const snap = await getPortfolio(session, it.key, (received, total) => {
+        setProgress(p => p ? { ...p, received, total: total || p.total } : p);
+      });
+      // bar 가 100% 로 잠깐 보이도록 한 프레임 양보 후 표 구성 단계로 전환
+      setProgress(p => p ? { ...p, phase: 'parse', received: p.total } : p);
+      await new Promise(r => requestAnimationFrame(() => setTimeout(r, 30)));
       setViewing(snap);
     } catch (e) {
       setErr(e instanceof ApiError ? `${e.status} · ${e.message}` : String(e));
     } finally {
       setOpening('');
+      setProgress(null);
     }
   }
 
@@ -264,6 +290,43 @@ export default function Portfolio({ session }: Props) {
           ))}
         </div>
       )}
+
+      {progress && (() => {
+        const pct = progress.total > 0
+          ? Math.min(100, (progress.received / progress.total) * 100)
+          : 0;
+        const isDownload = progress.phase === 'download';
+        return (
+          <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4">
+            <div className="w-full max-w-md bg-white rounded-xl shadow-xl p-5">
+              <div className="flex items-center gap-2 mb-1">
+                <span aria-hidden>{isDownload ? '📥' : '📊'}</span>
+                <span className="font-semibold">
+                  {isDownload ? '자료 취합 중...' : '표 구성 중...'}
+                </span>
+              </div>
+              <div className="text-xs text-[color:var(--color-muted)] mb-3 truncate">
+                {progress.complexName} · {fmtSavedAt(progress.savedAt)}
+              </div>
+              <div className="w-full h-2.5 rounded-full bg-[color:var(--color-bg-soft)] overflow-hidden">
+                <div
+                  className="h-full bg-[color:var(--color-brand)] transition-[width] duration-150"
+                  style={{ width: progress.total > 0 ? `${pct}%` : '100%' }}
+                />
+              </div>
+              <div className="mt-2 flex justify-between text-xs font-mono text-[color:var(--color-muted)]">
+                <span>
+                  {fmtBytes(progress.received)}
+                  {progress.total > 0 && ` / ${fmtBytes(progress.total)}`}
+                </span>
+                <span>
+                  {progress.total > 0 ? `${Math.floor(pct)}%` : '...'}
+                </span>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
     </div>
   );
 }
