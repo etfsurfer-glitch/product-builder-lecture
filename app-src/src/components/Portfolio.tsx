@@ -4,11 +4,19 @@ import {
   listPortfolio,
   comparePortfolio,
   deletePortfolio,
+  getPortfolio,
   ApiError,
   type PortfolioListItem,
   type PortfolioCompare,
+  type PortfolioSnapshot,
   type PortfolioSnapshotStats,
 } from '../lib/api';
+import {
+  COLUMNS, COLUMNS_GROUPED,
+  cellValue, frozenOffset, isLastFrozen, toMobileCols,
+  getSortable, groupRows, useIsMobile, ChipBtn,
+  type Col, type Row,
+} from './ExtractResult';
 
 interface Props { session: Session | null }
 
@@ -52,6 +60,8 @@ export default function Portfolio({ session }: Props) {
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [compare, setCompare] = useState<PortfolioCompare | null>(null);
   const [comparing, setComparing] = useState(false);
+  const [viewing, setViewing] = useState<PortfolioSnapshot | null>(null);
+  const [opening, setOpening] = useState<string>('');
 
   async function reload() {
     setLoading(true);
@@ -110,6 +120,19 @@ export default function Portfolio({ session }: Props) {
     }
   }
 
+  async function openSnapshot(it: PortfolioListItem) {
+    setOpening(it.key);
+    setErr('');
+    try {
+      const snap = await getPortfolio(session, it.key);
+      setViewing(snap);
+    } catch (e) {
+      setErr(e instanceof ApiError ? `${e.status} · ${e.message}` : String(e));
+    } finally {
+      setOpening('');
+    }
+  }
+
   async function removeItem(it: PortfolioListItem) {
     if (!confirm(`${fmtSavedAt(it.savedAt)} 스냅샷을 삭제할까요?\n(${it.complexName})`)) return;
     try {
@@ -137,6 +160,10 @@ export default function Portfolio({ session }: Props) {
     for (const g of map.values()) g.items.sort((a, b) => b.savedAt.localeCompare(a.savedAt));
     return [...map.values()].sort((a, b) => a.complexName.localeCompare(b.complexName));
   }, [items]);
+
+  if (viewing) {
+    return <SnapshotView snap={viewing} onBack={() => setViewing(null)} />;
+  }
 
   if (compare) {
     return <CompareView compare={compare} onBack={() => setCompare(null)} />;
@@ -218,6 +245,12 @@ export default function Portfolio({ session }: Props) {
                         </div>
                       </label>
                       <button
+                        onClick={() => openSnapshot(it)}
+                        disabled={opening === it.key}
+                        className="h-8 px-2.5 rounded-lg text-xs font-semibold border border-[color:var(--color-border)] bg-white hover:bg-[color:var(--color-bg-soft)] disabled:opacity-50"
+                        title="이 시점의 매물 결과 표 열기"
+                      >{opening === it.key ? '여는 중...' : '📋 보기'}</button>
+                      <button
                         onClick={() => removeItem(it)}
                         className="text-xs text-[color:var(--color-muted)] hover:text-red-700"
                         title="이 스냅샷 삭제"
@@ -230,6 +263,243 @@ export default function Portfolio({ session }: Props) {
           ))}
         </div>
       )}
+    </div>
+  );
+}
+
+
+// ── 단일 스냅샷 뷰 (단지검색 결과와 동일한 표) ─────────────────────────────────
+
+const TRADE_BG: Record<string, string> = {
+  매매: 'bg-green-50',
+  전세: 'bg-amber-50',
+  월세: 'bg-blue-50',
+};
+
+function toggleInSet<T>(s: Set<T>, v: T): Set<T> {
+  const n = new Set(s);
+  if (n.has(v)) n.delete(v); else n.add(v);
+  return n;
+}
+
+function SnapshotView({ snap, onBack }: { snap: PortfolioSnapshot; onBack: () => void }) {
+  const rows = snap.rows as Row[];
+
+  const [groupMode, setGroupMode] = useState(true);
+  const [tradeFilter, setTradeFilter] = useState<Set<string>>(new Set());
+  const [dongFilter,  setDongFilter]  = useState<Set<string>>(new Set());
+  const [sort, setSort] = useState<{ key: string; dir: 'asc' | 'desc' } | null>(null);
+
+  const tradeOptions = useMemo(() => {
+    const s = new Set<string>();
+    for (const r of rows) {
+      const t = String(r['매물거래구분명'] ?? '').split('/')[0];
+      if (t) s.add(t);
+    }
+    const order = ['매매', '전세', '월세'];
+    return Array.from(s).sort((a, b) =>
+      (order.indexOf(a) >= 0 ? order.indexOf(a) : 9) - (order.indexOf(b) >= 0 ? order.indexOf(b) : 9)
+    );
+  }, [rows]);
+
+  const dongOptions = useMemo(() => {
+    const s = new Set<string>();
+    for (const r of rows) {
+      const d = String(r['건물동명'] ?? '').trim();
+      if (d) s.add(d);
+    }
+    return Array.from(s).sort((a, b) => {
+      const na = parseInt(a, 10), nb = parseInt(b, 10);
+      if (!isNaN(na) && !isNaN(nb)) return na - nb;
+      return a.localeCompare(b);
+    });
+  }, [rows]);
+
+  const filteredRows = useMemo(() => {
+    if (!tradeFilter.size && !dongFilter.size) return rows;
+    return rows.filter(r => {
+      if (tradeFilter.size) {
+        const t = String(r['매물거래구분명'] ?? '').split('/')[0];
+        if (!tradeFilter.has(t)) return false;
+      }
+      if (dongFilter.size) {
+        const d = String(r['건물동명'] ?? '').trim();
+        if (!dongFilter.has(d)) return false;
+      }
+      return true;
+    });
+  }, [rows, tradeFilter, dongFilter]);
+
+  const groupedRows = useMemo(
+    () => (groupMode ? groupRows(filteredRows) : filteredRows),
+    [filteredRows, groupMode],
+  );
+
+  const displayRows = useMemo(() => {
+    if (!sort) return groupedRows;
+    const out = [...groupedRows];
+    out.sort((a, b) => {
+      const av = getSortable(a, sort.key);
+      const bv = getSortable(b, sort.key);
+      let c: number;
+      if (typeof av === 'number' && typeof bv === 'number') c = av - bv;
+      else c = String(av).localeCompare(String(bv), 'ko');
+      return sort.dir === 'asc' ? c : -c;
+    });
+    return out;
+  }, [groupedRows, sort]);
+
+  const isMobile = useIsMobile();
+  const displayCols: Col[] = useMemo(() => {
+    // 스냅샷엔 매물설명(특징광고내용) 이 저장되지 않으므로 컬럼에서 제거
+    const base = (groupMode ? COLUMNS_GROUPED : COLUMNS).filter(c => c.key !== '특징광고내용');
+    return isMobile ? toMobileCols(base) : base;
+  }, [groupMode, isMobile]);
+
+  function onHeaderClick(key: string) {
+    setSort(prev => {
+      if (!prev || prev.key !== key) return { key, dir: 'asc' };
+      if (prev.dir === 'asc') return { key, dir: 'desc' };
+      return null;
+    });
+  }
+
+  return (
+    <div>
+      <button onClick={onBack} className="text-sm text-[color:var(--color-muted)] hover:text-[color:var(--color-brand)] mb-2">
+        ← 내 폴더로
+      </button>
+      <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight truncate">{snap.complex.name}</h1>
+      <div className="text-sm text-[color:var(--color-muted)] truncate mb-1">
+        {snap.complex.address || ''}
+      </div>
+      <div className="text-xs text-[color:var(--color-muted)] font-mono mb-4">
+        스냅샷 시점: {fmtIso(snap.savedAt)} · 저장 당시 {snap.search.totalCount}건
+      </div>
+
+      {/* 필터 */}
+      <div className="mb-3 space-y-2">
+        {tradeOptions.length > 1 && (
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <span className="text-xs text-[color:var(--color-muted)] mr-1">거래</span>
+            <ChipBtn active={tradeFilter.size === 0} onClick={() => setTradeFilter(new Set())}>전체</ChipBtn>
+            {tradeOptions.map(t => (
+              <ChipBtn key={t} active={tradeFilter.has(t)}
+                       onClick={() => setTradeFilter(s => toggleInSet(s, t))}>{t}</ChipBtn>
+            ))}
+          </div>
+        )}
+        {dongOptions.length > 1 && (
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <span className="text-xs text-[color:var(--color-muted)] mr-1">동</span>
+            <ChipBtn active={dongFilter.size === 0} onClick={() => setDongFilter(new Set())}>전체</ChipBtn>
+            {dongOptions.map(d => (
+              <ChipBtn key={d} active={dongFilter.has(d)}
+                       onClick={() => setDongFilter(s => toggleInSet(s, d))}>{d}</ChipBtn>
+            ))}
+          </div>
+        )}
+      </div>
+
+      <div className="mb-3 flex items-center justify-between gap-3 flex-wrap">
+        <div className="text-sm text-[color:var(--color-muted)]">
+          총 <span className="font-bold text-[color:var(--color-ink)]">{rows.length}</span>건
+          {(tradeFilter.size || dongFilter.size) ? (
+            <> · 필터 <span className="font-bold text-[color:var(--color-ink)]">{filteredRows.length}</span>건</>
+          ) : null}
+          {groupMode && (
+            <> → <span className="font-bold text-[color:var(--color-ink)]">{displayRows.length}</span>묶음</>
+          )}
+        </div>
+        <button
+          onClick={() => setGroupMode(v => !v)}
+          className={
+            'h-9 px-3 rounded-lg text-sm font-semibold border transition ' +
+            (groupMode
+              ? 'bg-[color:var(--color-brand)] text-white border-[color:var(--color-brand)] hover:bg-[color:var(--color-brand-dark)]'
+              : 'bg-white text-[color:var(--color-ink)] border-[color:var(--color-border)] hover:bg-[color:var(--color-bg-soft)]')
+          }
+          title="같은 동·호·거래인 매물을 하나로 묶고 최고/최저가 표시"
+        >
+          {groupMode ? '묶기 해제' : '동일매물 묶기'}
+        </button>
+      </div>
+
+      <div className="overflow-auto rounded-xl border border-[color:var(--color-border)] bg-white max-h-[calc(100vh-260px)]">
+        <table className="text-[13px] border-collapse" style={{ minWidth: '100%' }}>
+          <thead className="bg-[color:var(--color-bg-soft)] border-b border-[color:var(--color-border)] sticky top-0 z-[2]">
+            <tr>
+              {displayCols.map((c, i) => {
+                const off = frozenOffset(displayCols, i);
+                const lastFr = isLastFrozen(displayCols, i);
+                const active = sort?.key === c.key;
+                return (
+                  <th
+                    key={c.key}
+                    onClick={() => onHeaderClick(c.key)}
+                    className={
+                      'px-2.5 py-2 text-left font-semibold whitespace-nowrap select-none cursor-pointer ' +
+                      (c.frozen ? 'sticky bg-[color:var(--color-bg-soft)] z-[3] ' : '') +
+                      (lastFr ? 'border-r border-[color:var(--color-border-strong)]' : '')
+                    }
+                    style={{ width: c.w, minWidth: c.w, left: off ?? undefined }}
+                  >
+                    {c.label}
+                    {active && (sort!.dir === 'asc' ? ' ▲' : ' ▼')}
+                  </th>
+                );
+              })}
+            </tr>
+          </thead>
+          <tbody>
+            {displayRows.map((row, i) => {
+              const trade = String(row['매물거래구분명'] ?? '').split('/')[0];
+              const rowBg = TRADE_BG[trade] ?? 'bg-white';
+              const grouped = Boolean(row['_grouped']);
+              return (
+                <tr
+                  key={i}
+                  className={`border-b border-[color:var(--color-border)] last:border-b-0 ${rowBg} hover:brightness-97${grouped ? ' font-medium' : ''}`}
+                >
+                  {displayCols.map((c, j) => {
+                    const v = cellValue(row, c);
+                    const off = frozenOffset(displayCols, j);
+                    const lastFr = isLastFrozen(displayCols, j);
+                    return (
+                      <td
+                        key={c.key}
+                        className={
+                          'px-2.5 py-1.5 ' +
+                          (c.wrap ? 'whitespace-normal break-words ' : 'whitespace-nowrap ') +
+                          (c.frozen ? `sticky z-[1] ${rowBg} ` : '') +
+                          (lastFr ? 'border-r border-[color:var(--color-border-strong)] shadow-[2px_0_0_0_rgba(0,0,0,0.03)]' : '')
+                        }
+                        style={{
+                          maxWidth: c.wrap ? c.w : undefined,
+                          left: off ?? undefined,
+                        }}
+                        title={c.wrap && v.length > 40 ? v : undefined}
+                      >
+                        {c.key === '중개업소전화번호' && v
+                          ? v.split(', ').map((p, k, arr) => {
+                              const digits = p.replace(/[^0-9]/g, '');
+                              return (
+                                <span key={k}>
+                                  {digits ? <a href={`tel:${digits}`} className="text-blue-700 hover:underline">{p}</a> : p}
+                                  {k < arr.length - 1 ? ', ' : ''}
+                                </span>
+                              );
+                            })
+                          : v}
+                      </td>
+                    );
+                  })}
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }
