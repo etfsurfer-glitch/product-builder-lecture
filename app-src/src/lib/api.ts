@@ -524,3 +524,86 @@ export function bulkExtractFavorites(
     { method: 'POST', body: JSON.stringify({ complex_nos: complexNos, keyword }) },
   );
 }
+
+// ── 내 폴더 (Cloudflare R2 매물 스냅샷) ────────────────────────────────────────
+export interface PortfolioListItem {
+  key:         string;        // R2 object key (= 식별자)
+  complexPk:   string;
+  savedAt:     string;        // 'YYYY-MM-DD_HHmm'
+  size:        number;
+  complexName: string;
+  address:     string;
+}
+
+export interface PortfolioSnapshotStats {
+  total:   number;
+  byTrade: Record<string, number>;       // {매매:N, 전세:M, 월세:K}
+  priceStats: Record<string, {
+    count: number; min: number; max: number; median: number; avg: number;
+  }>;
+}
+
+export interface PortfolioSnapshot {
+  savedAt: string;
+  complex: { pk: string; name: string; address: string };
+  search:  { keyword: string; totalCount: number };
+  stats:   PortfolioSnapshotStats;
+  rows:    Record<string, unknown>[];
+}
+
+export interface PortfolioCompare {
+  older: { savedAt: string; totalCount: number; stats: PortfolioSnapshotStats };
+  newer: { savedAt: string; totalCount: number; stats: PortfolioSnapshotStats };
+  added:        Array<Record<string, unknown>>;
+  removed:      Array<Record<string, unknown>>;
+  priceChanges: Array<Record<string, unknown>>;
+}
+
+export function savePortfolio(
+  session: Session | null,
+  payload: {
+    complex_pk: string;
+    complex_name: string;
+    address?: string;
+    keyword?: string;
+    rows: Record<string, unknown>[];
+  },
+) {
+  return request<{
+    ok: boolean; key: string; savedAt: string; size: number;
+    stats: PortfolioSnapshotStats;
+  }>(
+    '/api/portfolio/save', session,
+    { method: 'POST', body: JSON.stringify(payload) },
+  );
+}
+
+export function listPortfolio(session: Session | null) {
+  return request<{ items: PortfolioListItem[] }>(
+    '/api/portfolio/list', session,
+  );
+}
+
+export function getPortfolio(session: Session | null, key: string) {
+  return request<PortfolioSnapshot>(
+    `/api/portfolio/get?key=${encodeURIComponent(key)}`, session,
+  );
+}
+
+export function deletePortfolio(session: Session | null, key: string) {
+  return request<{ ok: boolean }>(
+    `/api/portfolio?key=${encodeURIComponent(key)}`, session,
+    { method: 'DELETE' },
+  );
+}
+
+export function comparePortfolio(
+  session: Session | null,
+  olderKey: string,
+  newerKey: string,
+) {
+  return request<PortfolioCompare>(
+    '/api/portfolio/compare', session,
+    { method: 'POST', body: JSON.stringify({ older_key: olderKey, newer_key: newerKey }) },
+  );
+}

@@ -4,6 +4,7 @@ import {
   startExtract, getExtractStatus,
   exportExcel, exportCsv, exportZip,
   exportExcelBytes,
+  savePortfolio,
   type ComplexItem, type JobStatus, ApiError,
 } from '../lib/api';
 import { isFsaSupported, getOrPickNfindRoot, writeFileToPath } from '../lib/fsaccess';
@@ -369,6 +370,8 @@ export default function ExtractResult({ session, complex, keyword = '', onBack }
   const [loaded, setLoaded] = useState(false);
   const [groupMode, setGroupMode] = useState(true);
   const [exporting, setExporting] = useState<'' | 'xlsx' | 'csv' | 'zip' | 'fsa'>('');
+  const [savingPortfolio, setSavingPortfolio] = useState(false);
+  const [portfolioMsg, setPortfolioMsg] = useState<{ kind: 'ok' | 'err'; text: string } | null>(null);
   const fsaSupported = isFsaSupported();
   const pollRef = useRef<number | null>(null);
 
@@ -414,6 +417,40 @@ export default function ExtractResult({ session, complex, keyword = '', onBack }
         : `저장 실패: ${e instanceof Error ? e.message : String(e)}`);
     } finally {
       setExporting('');
+    }
+  }
+
+  async function saveToPortfolio() {
+    if (!rows.length) return;
+    setSavingPortfolio(true);
+    setPortfolioMsg(null);
+    try {
+      // 매물설명(특징광고내용) 컬럼 제외 — 서버에서도 한번 더 거르지만 페이로드 절감
+      const cleaned = rows.map(r => {
+        const { 특징광고내용: _drop, ...rest } = r as Record<string, unknown>;
+        void _drop;
+        return rest;
+      });
+      const ret = await savePortfolio(session, {
+        complex_pk:   String(complex.complex_no || complex.obj_idnfr || ''),
+        complex_name: complex.name || '',
+        address:      complex.addr_full || complex.addr || '',
+        keyword,
+        rows: cleaned,
+      });
+      setPortfolioMsg({
+        kind: 'ok',
+        text: `내 폴더에 저장됨 · ${ret.stats.total}건 (${(ret.size / 1024).toFixed(1)} KB)`,
+      });
+    } catch (e) {
+      setPortfolioMsg({
+        kind: 'err',
+        text: e instanceof ApiError ? `${e.status} · ${e.message}` : String(e),
+      });
+    } finally {
+      setSavingPortfolio(false);
+      // 토스트 4초 후 자동 사라짐
+      window.setTimeout(() => setPortfolioMsg(null), 4000);
     }
   }
 
@@ -588,6 +625,17 @@ export default function ExtractResult({ session, complex, keyword = '', onBack }
         </div>
       )}
 
+      {portfolioMsg && (
+        <div className={
+          'mb-4 p-3 rounded-lg border text-sm ' +
+          (portfolioMsg.kind === 'ok'
+            ? 'bg-green-50 border-green-200 text-green-800'
+            : 'bg-red-50 border-red-200 text-red-800')
+        }>
+          {portfolioMsg.kind === 'ok' ? '✓ ' : '⚠ '}{portfolioMsg.text}
+        </div>
+      )}
+
       {running && (
         <div className="mb-6 p-5 rounded-xl bg-[color:var(--color-bg-soft)] border border-[color:var(--color-border)]">
           <div className="flex items-center justify-between mb-3">
@@ -653,6 +701,14 @@ export default function ExtractResult({ session, complex, keyword = '', onBack }
                 {groupMode ? '묶기 해제' : '동일매물 묶기'}
               </button>
               <div className="w-px h-6 bg-[color:var(--color-border)]" />
+              <button
+                onClick={saveToPortfolio}
+                disabled={savingPortfolio || !rows.length}
+                className="h-9 px-3 rounded-lg text-sm font-semibold border border-[color:var(--color-brand)] bg-[color:var(--color-brand)] text-white hover:bg-[color:var(--color-brand-dark)] disabled:opacity-50"
+                title="현재 검색 결과를 내 폴더에 저장 (6개월 보관, 단지별 시점 비교 가능)"
+              >
+                {savingPortfolio ? '저장 중...' : '💾 내 폴더에 저장'}
+              </button>
               {fsaSupported && (
                 <button
                   onClick={saveToNfindFolder}
