@@ -205,6 +205,27 @@ function dep(row: Row): unknown {
   return row['월세보증금'] ?? row['월세보증금액'];
 }
 
+export function formatPhone(tel: string): string {
+  const s = tel.replace(/[^0-9]/g, '');
+  if (!s) return tel;
+  if (s.startsWith('02')) {
+    if (s.length === 10) return `02-${s.slice(2, 6)}-${s.slice(6)}`;
+    if (s.length === 9)  return `02-${s.slice(2, 5)}-${s.slice(5)}`;
+  }
+  if (s.length === 11) return `${s.slice(0, 3)}-${s.slice(3, 7)}-${s.slice(7)}`;
+  if (s.length === 10) return `${s.slice(0, 3)}-${s.slice(3, 6)}-${s.slice(6)}`;
+  if (s.length === 9)  return `${s.slice(0, 2)}-${s.slice(2, 5)}-${s.slice(5)}`;
+  if (s.length === 8)  return `${s.slice(0, 4)}-${s.slice(4)}`;
+  return tel;
+}
+
+// 한 셀에 다수 번호가 "; " 또는 "/" 또는 "," 로 묶여올 수 있어 분리 후 각각 포맷
+export function formatPhoneCell(raw: string): string {
+  const parts = raw.split(/\s*[;,/|]\s*/).filter(Boolean);
+  if (parts.length <= 1) return formatPhone(raw);
+  return parts.map(formatPhone).join(', ');
+}
+
 export function cellValue(row: Row, col: Col): string {
   const trade = String(row['매물거래구분명'] ?? '');
   const presale = Boolean(row['_isPresale']);
@@ -240,6 +261,8 @@ export function cellValue(row: Row, col: Col): string {
     }
     case '인증종류':
       return verifKo(row['인증종류']);
+    case '중개업소전화번호':
+      return formatPhoneCell(String(row['중개업소전화번호'] ?? ''));
     case '입주가능일내용': {
       const v = String(row['입주가능일내용'] ?? '').trim();
       return v.toUpperCase() === 'NOW' ? '상시' : v;
@@ -726,7 +749,17 @@ export default function ExtractResult({ session, complex, keyword = '', onBack }
                             }}
                             title={c.wrap && v.length > 40 ? v : undefined}
                           >
-                            {v}
+                            {c.key === '중개업소전화번호' && v
+                              ? v.split(', ').map((p, k, arr) => {
+                                  const digits = p.replace(/[^0-9]/g, '');
+                                  return (
+                                    <span key={k}>
+                                      {digits ? <a href={`tel:${digits}`} className="text-blue-700 hover:underline">{p}</a> : p}
+                                      {k < arr.length - 1 ? ', ' : ''}
+                                    </span>
+                                  );
+                                })
+                              : v}
                           </td>
                         );
                       })}

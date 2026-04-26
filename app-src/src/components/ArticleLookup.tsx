@@ -44,10 +44,11 @@ function displayPrice(info: ArticleInfo): { label: string; main: string; sub?: s
   if (trade === '매매') {
     const main = fmtPrice(info.price_deal);
     if (!main) return null;
-    if (info.premiumPrice || info.isalePrice) {
+    if (info.premiumPrice || info.isalePrice || info.optionPrice) {
       const parts: string[] = [];
       if (info.isalePrice) parts.push(`분양가 ${fmtPrice(info.isalePrice)}`);
       if (info.premiumPrice) parts.push(`프리미엄 ${fmtPrice(info.premiumPrice)}`);
+      if (info.optionPrice) parts.push(`옵션 ${fmtPrice(info.optionPrice)}`);
       return { label: '매매', main, sub: parts.join(' · ') };
     }
     return { label: '매매', main };
@@ -61,9 +62,15 @@ function displayPrice(info: ArticleInfo): { label: string; main: string; sub?: s
 
 function formatPhone(tel: string): string {
   const s = tel.replace(/[^0-9]/g, '');
+  if (!s) return tel;
+  if (s.startsWith('02')) {
+    if (s.length === 10) return `02-${s.slice(2, 6)}-${s.slice(6)}`;
+    if (s.length === 9)  return `02-${s.slice(2, 5)}-${s.slice(5)}`;
+  }
   if (s.length === 11) return `${s.slice(0, 3)}-${s.slice(3, 7)}-${s.slice(7)}`;
   if (s.length === 10) return `${s.slice(0, 3)}-${s.slice(3, 6)}-${s.slice(6)}`;
   if (s.length === 9)  return `${s.slice(0, 2)}-${s.slice(2, 5)}-${s.slice(5)}`;
+  if (s.length === 8)  return `${s.slice(0, 4)}-${s.slice(4)}`;
   return tel;
 }
 

@@ -166,6 +166,7 @@ export interface ArticleInfo {
   articleFeatureDesc?: string;
   isalePrice?: number | null;
   premiumPrice?: number | null;
+  optionPrice?: number | null;
   price_deal?: number | null;
   price_warrant?: number | null;
   price_rent?: number | null;
