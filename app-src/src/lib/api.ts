@@ -1,25 +1,29 @@
 // 맥미니 FastAPI 서버 호출 래퍼
 import type { Session } from '@supabase/supabase-js';
+import { isHostAlive } from './health';
 
 // VITE_API_BASE_BACKUP 가 빌드 시 주입되면 멀티 호스트 페일오버 활성.
 // 비어 있으면 단일 호스트 (현재 운영) 동작 유지.
 const PRIMARY_API = import.meta.env.VITE_API_BASE ?? 'https://api.runto.online';
 const BACKUP_API  = (import.meta.env.VITE_API_BASE_BACKUP as string | undefined) || '';
-const API_HOSTS: readonly string[] = BACKUP_API ? [PRIMARY_API, BACKUP_API] : [PRIMARY_API];
+export const API_HOSTS: readonly string[] = BACKUP_API ? [PRIMARY_API, BACKUP_API] : [PRIMARY_API];
 
 // 호환용 — App.tsx 가 표시 hostname 추출에 사용. 항상 primary 를 노출.
 export const API_BASE = PRIMARY_API;
 export const IS_TEST_BUILD = import.meta.env.VITE_IS_TEST_BUILD === '1';
 
 // ── 멀티 호스트 페일오버 ──────────────────────────────────────────────────────
-// 동작: primary 호출이 네트워크 에러 / header timeout / origin-down 5xx (502/503/504/
-//   521~526/530) 일 때 backup 으로 자동 폴백. 500 같은 app-level 에러는 폴백 안 함
-//   (백업도 같은 코드라 같은 에러 가능성).
-// sticky: backup 으로 성공했으면 30분간 backup 우선. TTL 만료 후 primary 재시도.
+// 동작: 백그라운드 health pinger 가 호스트 alive/dead 상태를 추적 (lib/health.ts).
+//   요청 전 dead 호스트는 후순위로 미루고, 살아있는 호스트만 우선 시도. per-request
+//   timeout 으로 죽음을 감지하지 않으므로 느린 매물 조회도 abort 안 됨.
+// 폴백 트리거: 네트워크 에러 또는 origin-down 5xx (502/503/504/521~526/530).
+//   500 같은 app-level 에러는 폴백 안 함 (백업도 같은 코드라 같은 에러 가능성).
+// sticky: 한 번 사용한 호스트를 30분 우선. dead 가 된 sticky 는 자동 우회.
+// 안전망: HARD_CAP_MS — 정말 stuck 된 요청만 끊는 상한선 (의도된 abort 가 아님).
 const STICKY_IDX_KEY = 'runto_api_host_idx';
 const STICKY_EXP_KEY = 'runto_api_host_idx_exp';
 const STICKY_TTL_MS  = 30 * 60 * 1000;
-const HEADER_TIMEOUT_MS = 8000;  // 헤더 응답까지의 timeout. 본문 스트림은 무제한.
+const HARD_CAP_MS    = 180_000;  // 안전망 — 정상 요청은 절대 닿지 않아야 함.
 // Cloudflare 가 origin 도달 실패 시 반환하는 코드 셋 — 다음 호스트로 폴백 트리거.
 const ORIGIN_DOWN_STATUS = new Set([502, 503, 504, 521, 522, 523, 524, 525, 526, 530]);
 
@@ -28,7 +32,11 @@ function getStickyIdx(): number {
   try {
     const idx = parseInt(localStorage.getItem(STICKY_IDX_KEY) ?? '0', 10);
     const exp = parseInt(localStorage.getItem(STICKY_EXP_KEY) ?? '0', 10);
-    if (idx > 0 && idx < API_HOSTS.length && Date.now() < exp) return idx;
+    if (idx > 0 && idx < API_HOSTS.length && Date.now() < exp) {
+      // sticky 가 dead 상태면 무시 (TTL 안에서 헬스 회복하면 다시 잡힘)
+      if (!isHostAlive(API_HOSTS[idx])) return 0;
+      return idx;
+    }
     if (idx > 0) {
       localStorage.removeItem(STICKY_IDX_KEY);
       localStorage.removeItem(STICKY_EXP_KEY);
@@ -67,16 +75,21 @@ async function fetchWithFailover(path: string, init: RequestInit = {}): Promise<
     return fetch(`${API_HOSTS[0]}${path}`, init);
   }
   const startIdx = getStickyIdx();
-  const order: number[] = [];
+  // sticky 부터 라운드로빈 → alive 우선, dead 호스트는 마지막에 시도 (헬스가 틀릴 가능성 대비)
+  const raw: number[] = [];
   for (let off = 0; off < API_HOSTS.length; off++) {
-    order.push((startIdx + off) % API_HOSTS.length);
+    raw.push((startIdx + off) % API_HOSTS.length);
   }
+  const aliveIdx = raw.filter(i => isHostAlive(API_HOSTS[i]));
+  const deadIdx  = raw.filter(i => !isHostAlive(API_HOSTS[i]));
+  const order = aliveIdx.length > 0 ? [...aliveIdx, ...deadIdx] : raw;
+
   let lastErr: unknown = null;
   for (const idx of order) {
     const ctrl  = new AbortController();
     const timer = setTimeout(
-      () => ctrl.abort(new DOMException('header-timeout', 'AbortError')),
-      HEADER_TIMEOUT_MS,
+      () => ctrl.abort(new DOMException('hard-timeout', 'AbortError')),
+      HARD_CAP_MS,
     );
     try {
       const sig = init.signal ? combineSignals(ctrl.signal, init.signal) : ctrl.signal;
