@@ -1,8 +1,98 @@
 // 맥미니 FastAPI 서버 호출 래퍼
 import type { Session } from '@supabase/supabase-js';
 
-export const API_BASE = import.meta.env.VITE_API_BASE ?? 'https://api.runto.online';
+// VITE_API_BASE_BACKUP 가 빌드 시 주입되면 멀티 호스트 페일오버 활성.
+// 비어 있으면 단일 호스트 (현재 운영) 동작 유지.
+const PRIMARY_API = import.meta.env.VITE_API_BASE ?? 'https://api.runto.online';
+const BACKUP_API  = (import.meta.env.VITE_API_BASE_BACKUP as string | undefined) || '';
+const API_HOSTS: readonly string[] = BACKUP_API ? [PRIMARY_API, BACKUP_API] : [PRIMARY_API];
+
+// 호환용 — App.tsx 가 표시 hostname 추출에 사용. 항상 primary 를 노출.
+export const API_BASE = PRIMARY_API;
 export const IS_TEST_BUILD = import.meta.env.VITE_IS_TEST_BUILD === '1';
+
+// ── 멀티 호스트 페일오버 ──────────────────────────────────────────────────────
+// 동작: primary 호출 실패(네트워크 에러/header timeout)면 backup 으로 자동 폴백.
+//   5xx HTTP 응답은 폴백 안 함 — 도달은 됐고 같은 코드라 backup 도 같은 결과 가능성.
+// sticky: backup 으로 성공했으면 30분간 backup 우선. TTL 만료 후 primary 재시도.
+const STICKY_IDX_KEY = 'runto_api_host_idx';
+const STICKY_EXP_KEY = 'runto_api_host_idx_exp';
+const STICKY_TTL_MS  = 30 * 60 * 1000;
+const HEADER_TIMEOUT_MS = 8000;  // 헤더 응답까지의 timeout. 본문 스트림은 무제한.
+
+function getStickyIdx(): number {
+  if (API_HOSTS.length < 2) return 0;
+  try {
+    const idx = parseInt(localStorage.getItem(STICKY_IDX_KEY) ?? '0', 10);
+    const exp = parseInt(localStorage.getItem(STICKY_EXP_KEY) ?? '0', 10);
+    if (idx > 0 && idx < API_HOSTS.length && Date.now() < exp) return idx;
+    if (idx > 0) {
+      localStorage.removeItem(STICKY_IDX_KEY);
+      localStorage.removeItem(STICKY_EXP_KEY);
+    }
+  } catch { /* localStorage 비활성: 무시 */ }
+  return 0;
+}
+
+function setStickyIdx(idx: number) {
+  if (API_HOSTS.length < 2) return;
+  try {
+    if (idx <= 0) {
+      localStorage.removeItem(STICKY_IDX_KEY);
+      localStorage.removeItem(STICKY_EXP_KEY);
+    } else {
+      localStorage.setItem(STICKY_IDX_KEY, String(idx));
+      localStorage.setItem(STICKY_EXP_KEY, String(Date.now() + STICKY_TTL_MS));
+    }
+  } catch { /* 무시 */ }
+}
+
+function combineSignals(a: AbortSignal, b: AbortSignal): AbortSignal {
+  const anyFn = (AbortSignal as unknown as { any?: (s: AbortSignal[]) => AbortSignal }).any;
+  if (typeof anyFn === 'function') return anyFn([a, b]);
+  const ctrl = new AbortController();
+  const link = (s: AbortSignal) => {
+    if (s.aborted) ctrl.abort(s.reason);
+    else s.addEventListener('abort', () => ctrl.abort(s.reason), { once: true });
+  };
+  link(a); link(b);
+  return ctrl.signal;
+}
+
+async function fetchWithFailover(path: string, init: RequestInit = {}): Promise<Response> {
+  if (API_HOSTS.length === 1) {
+    return fetch(`${API_HOSTS[0]}${path}`, init);
+  }
+  const startIdx = getStickyIdx();
+  const order: number[] = [];
+  for (let off = 0; off < API_HOSTS.length; off++) {
+    order.push((startIdx + off) % API_HOSTS.length);
+  }
+  let lastErr: unknown = null;
+  for (const idx of order) {
+    const ctrl  = new AbortController();
+    const timer = setTimeout(
+      () => ctrl.abort(new DOMException('header-timeout', 'AbortError')),
+      HEADER_TIMEOUT_MS,
+    );
+    try {
+      const sig = init.signal ? combineSignals(ctrl.signal, init.signal) : ctrl.signal;
+      const res = await fetch(`${API_HOSTS[idx]}${path}`, { ...init, signal: sig });
+      clearTimeout(timer);
+      setStickyIdx(idx);  // 도달 성공 — 5xx 라도 이 호스트는 살아 있음
+      return res;
+    } catch (e) {
+      clearTimeout(timer);
+      lastErr = e;
+      // 호출자가 abort 한 경우엔 폴백 시도 안 함
+      if (init.signal?.aborted) throw e;
+    }
+  }
+  throw lastErr instanceof Error ? lastErr : new Error('all api hosts unreachable');
+}
+
+// 진단용 — 현재 어느 호스트가 active 인지. App.tsx 등에서 표시 가능.
+export function getActiveApiHost(): string { return API_HOSTS[getStickyIdx()]; }
 
 export interface PublicConfig {
   turnstile_site_key: string;
@@ -12,7 +102,7 @@ export interface PublicConfig {
 }
 
 export async function fetchPublicConfig(): Promise<PublicConfig> {
-  const r = await fetch(`${API_BASE}/api/config/public`, { cache: 'no-store' });
+  const r = await fetchWithFailover('/api/config/public', { cache: 'no-store' });
   if (!r.ok) throw new Error(`public config ${r.status}`);
   return r.json();
 }
@@ -41,7 +131,7 @@ async function request<T>(
   };
   if (session?.access_token) headers.Authorization = `Bearer ${session.access_token}`;
 
-  const r = await fetch(`${API_BASE}${path}`, { ...init, headers, credentials: 'include' });
+  const r = await fetchWithFailover(path, { ...init, headers, credentials: 'include' });
   const text = await r.text();
   const body = text ? safeJson(text) : null;
   if (!r.ok) {
@@ -443,7 +533,7 @@ export interface ExportReq {
 async function downloadExport(
   session: Session | null, path: string, body: ExportReq, defaultName: string,
 ) {
-  const r = await fetch(`${API_BASE}${path}`, {
+  const r = await fetchWithFailover(path, {
     method: 'POST',
     headers: {
       'Content-Type':  'application/json',
@@ -484,7 +574,7 @@ export function exportZip(session: Session | null, body: ExportReq) {
 async function fetchExportBytes(
   session: Session | null, path: string, body: ExportReq,
 ): Promise<{ bytes: ArrayBuffer; filename: string }> {
-  const r = await fetch(`${API_BASE}${path}`, {
+  const r = await fetchWithFailover(path, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -610,8 +700,8 @@ export async function getPortfolio(
   }
   const headers: Record<string, string> = {};
   if (session?.access_token) headers.Authorization = `Bearer ${session.access_token}`;
-  const r = await fetch(
-    `${API_BASE}/api/portfolio/get?key=${encodeURIComponent(key)}`,
+  const r = await fetchWithFailover(
+    `/api/portfolio/get?key=${encodeURIComponent(key)}`,
     { headers, credentials: 'include' },
   );
   if (!r.ok) {

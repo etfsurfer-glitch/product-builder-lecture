@@ -14,3 +14,7 @@ app-src/*.tsbuildinfo
 
 # 로컬 테스트/작업 폴더 (배포 대상 아님)
 무제 폴더/
+
+# 코드 수정 전 백업 스냅샷 (<name>.bak.YYYYMMDD_HHMMSS_<tag> 형식)
+*.bak.*/
+*.bak.*
