@@ -1,7 +1,12 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import type { Session } from '@supabase/supabase-js';
 import { getArticle, type ArticleInfo, ApiError } from '../lib/api';
-import { verifKo } from './ExtractResult';
+import {
+  verifKo,
+  COLUMNS, cellValue, frozenOffset, isLastFrozen,
+  toMobileCols, useIsMobile, TRADE_BG_EXPORT,
+  type Row,
+} from './ExtractResult';
 
 interface Props { session: Session | null; }
 
@@ -244,15 +249,19 @@ export default function ArticleLookup({ session }: Props) {
         </div>
       )}
 
-      <div className="space-y-4">
-        {items.map(item => (
-          <ArticleCard
-            key={item.no + item.queriedAt}
-            item={item}
-            onRemove={() => removeItem(item.no)}
-          />
-        ))}
-      </div>
+      {accumulate && items.length > 0 ? (
+        <ArticleAccumTable items={items} onRemove={removeItem} />
+      ) : (
+        <div className="space-y-4">
+          {items.map(item => (
+            <ArticleCard
+              key={item.no + item.queriedAt}
+              item={item}
+              onRemove={() => removeItem(item.no)}
+            />
+          ))}
+        </div>
+      )}
 
       {items.length === 0 && !err && (
         <div className="text-center py-12 text-[color:var(--color-muted)] text-sm">
@@ -261,6 +270,167 @@ export default function ArticleLookup({ session }: Props) {
       )}
     </div>
   );
+}
+
+// ── 누적 표 (ExtractResult 와 동일 컬럼/스타일 사용) ─────────────────────────
+function ArticleAccumTable({
+  items, onRemove,
+}: { items: ResultItem[]; onRemove: (no: string) => void }) {
+  const isMobile = useIsMobile();
+  const displayCols = useMemo(
+    () => (isMobile ? toMobileCols(COLUMNS) : COLUMNS),
+    [isMobile],
+  );
+  const rows = useMemo(() => items.map(it => articleInfoToRow(it.no, it.info)), [items]);
+
+  return (
+    <div>
+      <div className="overflow-auto rounded-xl border border-[color:var(--color-border)] bg-white max-h-[calc(100vh-260px)]">
+        <table className="text-[13px] border-collapse" style={{ minWidth: '100%' }}>
+          <thead className="bg-[color:var(--color-bg-soft)] border-b border-[color:var(--color-border)] sticky top-0 z-[2]">
+            <tr>
+              <th
+                className="px-2 py-2 text-center font-semibold whitespace-nowrap bg-[color:var(--color-bg-soft)] sticky left-0 z-[3]"
+                style={{ width: 36, minWidth: 36 }}
+                title="이 행 지우기"
+              >
+                {/* 빈 헤더 — '×' 컬럼 */}
+              </th>
+              {displayCols.map((c, i) => {
+                const off = frozenOffset(displayCols, i);
+                const lastFr = isLastFrozen(displayCols, i);
+                return (
+                  <th
+                    key={c.key}
+                    className={
+                      'px-2.5 py-2 text-left font-semibold whitespace-nowrap bg-[color:var(--color-bg-soft)] ' +
+                      (c.frozen ? 'sticky z-[3] ' : '') +
+                      (lastFr ? 'border-r border-[color:var(--color-border-strong)] shadow-[2px_0_0_0_rgba(0,0,0,0.03)] ' : '')
+                    }
+                    style={{
+                      minWidth: c.w, maxWidth: c.wrap ? c.w : undefined,
+                      // 첫번째 frozen 컬럼은 '×' 컬럼(36px) 만큼 밀림
+                      left: off != null ? off + 36 : undefined,
+                    }}
+                  >
+                    {c.label}
+                  </th>
+                );
+              })}
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((row, i) => {
+              const trade = String(row['매물거래구분명'] ?? '').split('/')[0];
+              const rowBg = TRADE_BG_EXPORT[trade as keyof typeof TRADE_BG_EXPORT] ?? 'bg-white';
+              const no = String(row['_articleNo'] ?? '');
+              return (
+                <tr
+                  key={no + '_' + i}
+                  className={`border-b border-[color:var(--color-border)] last:border-b-0 ${rowBg} hover:brightness-97`}
+                >
+                  <td
+                    className={`sticky left-0 z-[1] ${rowBg} px-1 py-1.5 text-center align-middle`}
+                    style={{ width: 36, minWidth: 36 }}
+                  >
+                    <button
+                      onClick={() => onRemove(no)}
+                      className="w-7 h-7 rounded-md hover:bg-white/60 text-[color:var(--color-muted)] hover:text-[color:var(--color-ink)] text-base leading-none"
+                      title={`#${no} 행 지우기`}
+                      aria-label="지우기"
+                    >
+                      ×
+                    </button>
+                  </td>
+                  {displayCols.map((c, j) => {
+                    const v = cellValue(row, c);
+                    const off = frozenOffset(displayCols, j);
+                    const lastFr = isLastFrozen(displayCols, j);
+                    return (
+                      <td
+                        key={c.key}
+                        className={
+                          'px-2.5 py-1.5 ' +
+                          (c.wrap ? 'whitespace-normal break-words ' : 'whitespace-nowrap ') +
+                          (c.frozen ? `sticky z-[1] ${rowBg} ` : '') +
+                          (lastFr ? 'border-r border-[color:var(--color-border-strong)] shadow-[2px_0_0_0_rgba(0,0,0,0.03)]' : '')
+                        }
+                        style={{
+                          maxWidth: c.wrap ? c.w : undefined,
+                          left: off != null ? off + 36 : undefined,
+                        }}
+                        title={c.wrap && v.length > 40 ? v : undefined}
+                      >
+                        {c.key === '중개업소전화번호' && v
+                          ? v.split(', ').map((p, k, arr) => {
+                              const digits = p.replace(/[^0-9]/g, '');
+                              return (
+                                <span key={k}>
+                                  {digits ? <a href={`tel:${digits}`} className="text-blue-700 hover:underline">{p}</a> : p}
+                                  {k < arr.length - 1 ? ', ' : ''}
+                                </span>
+                              );
+                            })
+                          : v}
+                      </td>
+                    );
+                  })}
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+// ArticleInfo → ExtractResult Row 매핑 (cellValue 가 기대하는 키 집합).
+// 단건 조회는 prem min/max 범위가 없으므로 본 매물의 premiumPrice 를 _premiumMin 한 칸에만 채움.
+function articleInfoToRow(articleNo: string, info: ArticleInfo): Row {
+  const trade = tradeKo(info.tradeType);
+  const isPresale = !!(info.premiumPrice || info.isalePrice || info.optionPrice
+    || info.realEstateTypeName === '분양권');
+  const floorText = info.floor_num ? `${info.floor_num}` : (info.floorInfo ?? '');
+  const moveIn = info.moveInPossibleYmd
+    ? fmtYmd(info.moveInPossibleYmd)
+    : (info.moveInTypeName ?? '');
+  const phoneCell = (info.broker_tels ?? []).filter(Boolean).join(', ');
+  // 가격 분기 — cellValue 가 trade 보고 알아서 빈 셀 처리하므로 채워두기만 하면 됨
+  const dealPrice = trade === '매매' ? (info.price_deal ?? '') : '';
+  const jeonsePrice = trade === '전세' ? (info.price_warrant ?? '') : '';
+  const wolDeposit  = trade === '월세' ? (info.price_warrant ?? '') : '';
+  const wolMonthly  = trade === '월세' ? (info.price_rent ?? '') : '';
+
+  return {
+    _articleNo: articleNo,           // remove 핸들러용 (cellValue 미사용)
+    매물거래구분명: trade,
+    단지명:        info.aptName ?? '',
+    건물동명:      info.dong ?? '',
+    건물호명:      info.ho ?? '',
+    해당층수:      floorText,
+    방향구분명:    info.direction ?? '',
+    등록년월일:    info.article_confirm_ymd ?? '',
+    인증종류:      info.verificationTypeName ?? info.verificationTypeCode ?? '',
+    공급면적:      info.supplyArea ?? '',
+    전용면적:      info.exclusiveArea ?? '',
+    매매가:        dealPrice,
+    전세가:        jeonsePrice,
+    월세보증금:    wolDeposit,
+    월세가:        wolMonthly,
+    방수:          info.roomCount ?? '',
+    욕실수:        info.bathroomCount ?? '',
+    입주가능일내용: moveIn,
+    중개업소명:    info.realtor_name ?? '',
+    중개업소전화번호: phoneCell,
+    특징광고내용:  info.articleFeatureDesc ?? '',
+    // 분양권 메타 — cellValue 의 _저/고프리미엄 / _분양옵션 컬럼이 참조
+    _isPresale:    isPresale,
+    _dealPrice:    isPresale ? (info.price_deal ?? null) : null,
+    _premiumMin:   isPresale && info.premiumPrice != null ? info.premiumPrice : null,
+    _premiumMax:   null,                         // 단건 조회는 범위 정보 없음
+    _optionPrice:  isPresale ? (info.optionPrice ?? null) : null,
+  };
 }
 
 // ── 단건 카드 ─────────────────────────────────────────────────────────────
