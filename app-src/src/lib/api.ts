@@ -12,13 +12,16 @@ export const API_BASE = PRIMARY_API;
 export const IS_TEST_BUILD = import.meta.env.VITE_IS_TEST_BUILD === '1';
 
 // ── 멀티 호스트 페일오버 ──────────────────────────────────────────────────────
-// 동작: primary 호출 실패(네트워크 에러/header timeout)면 backup 으로 자동 폴백.
-//   5xx HTTP 응답은 폴백 안 함 — 도달은 됐고 같은 코드라 backup 도 같은 결과 가능성.
+// 동작: primary 호출이 네트워크 에러 / header timeout / origin-down 5xx (502/503/504/
+//   521~526/530) 일 때 backup 으로 자동 폴백. 500 같은 app-level 에러는 폴백 안 함
+//   (백업도 같은 코드라 같은 에러 가능성).
 // sticky: backup 으로 성공했으면 30분간 backup 우선. TTL 만료 후 primary 재시도.
 const STICKY_IDX_KEY = 'runto_api_host_idx';
 const STICKY_EXP_KEY = 'runto_api_host_idx_exp';
 const STICKY_TTL_MS  = 30 * 60 * 1000;
 const HEADER_TIMEOUT_MS = 8000;  // 헤더 응답까지의 timeout. 본문 스트림은 무제한.
+// Cloudflare 가 origin 도달 실패 시 반환하는 코드 셋 — 다음 호스트로 폴백 트리거.
+const ORIGIN_DOWN_STATUS = new Set([502, 503, 504, 521, 522, 523, 524, 525, 526, 530]);
 
 function getStickyIdx(): number {
   if (API_HOSTS.length < 2) return 0;
@@ -79,7 +82,13 @@ async function fetchWithFailover(path: string, init: RequestInit = {}): Promise<
       const sig = init.signal ? combineSignals(ctrl.signal, init.signal) : ctrl.signal;
       const res = await fetch(`${API_HOSTS[idx]}${path}`, { ...init, signal: sig });
       clearTimeout(timer);
-      setStickyIdx(idx);  // 도달 성공 — 5xx 라도 이 호스트는 살아 있음
+      // origin-down 응답이면 다음 호스트 시도 (마지막 호스트에선 그대로 반환)
+      const isLast = idx === order[order.length - 1];
+      if (ORIGIN_DOWN_STATUS.has(res.status) && !isLast) {
+        lastErr = new Error(`origin-down ${res.status} from ${API_HOSTS[idx]}`);
+        continue;
+      }
+      setStickyIdx(idx);
       return res;
     } catch (e) {
       clearTimeout(timer);
