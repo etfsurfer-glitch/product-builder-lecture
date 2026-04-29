@@ -4,7 +4,8 @@ import {
   adminListUsers, adminGetUserDevices,
   adminSetDeviceLimit, adminDeleteDevice, adminCreateUser,
   adminFetchLogs, adminResetAllDevices, adminSetPassword, adminSetSubscription,
-  adminDashboardMulti, adminProxyRotate, adminDeleteUser,
+  adminDashboardMulti, adminProxyRotateForHost, adminDeleteUser,
+  getAdminForceHostIdx, setAdminForceHostIdx, API_HOSTS,
   type AdminUserRow, type DeviceRow, type DeviceLimits,
   type AdminLogKind, type DashboardWithHost, ApiError,
 } from '../lib/api';
@@ -46,9 +47,18 @@ function fmtDate(s: string | null | undefined): string {
 
 export default function AdminPage({ session, onBack }: Props) {
   const [tab, setTab] = useState<Tab>('dash');
+  const [forceHost, setForceHost] = useState<number>(getAdminForceHostIdx());
+
+  function changeForceHost(idx: number) {
+    setAdminForceHostIdx(idx);
+    setForceHost(idx);
+  }
+
+  const showSelector = API_HOSTS.length > 1;
+
   return (
     <div>
-      <div className="mb-4 flex items-center justify-between">
+      <div className="mb-4 flex items-center justify-between gap-3 flex-wrap">
         <div>
           <button onClick={onBack}
                   className="text-sm text-[color:var(--color-muted)] hover:text-[color:var(--color-brand)] mb-2">
@@ -56,6 +66,31 @@ export default function AdminPage({ session, onBack }: Props) {
           </button>
           <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight">관리자</h1>
         </div>
+        {showSelector && (
+          <div className="flex items-center gap-2 text-sm">
+            <span className="text-[color:var(--color-muted)]">서버:</span>
+            <div className="flex rounded-lg border border-[color:var(--color-border-strong)] overflow-hidden">
+              <button onClick={() => changeForceHost(-1)}
+                      className={`px-3 py-1.5 text-xs font-semibold transition ${forceHost === -1
+                        ? 'bg-[color:var(--color-brand)] text-white'
+                        : 'bg-white hover:bg-[color:var(--color-bg-soft)]'}`}>
+                자동
+              </button>
+              <button onClick={() => changeForceHost(0)}
+                      className={`px-3 py-1.5 text-xs font-bold transition border-l border-[color:var(--color-border-strong)] ${forceHost === 0
+                        ? 'bg-emerald-600 text-white'
+                        : 'bg-white text-emerald-700 hover:bg-emerald-50'}`}>
+                🅰️ A
+              </button>
+              <button onClick={() => changeForceHost(1)}
+                      className={`px-3 py-1.5 text-xs font-bold transition border-l border-[color:var(--color-border-strong)] ${forceHost === 1
+                        ? 'bg-blue-600 text-white'
+                        : 'bg-white text-blue-700 hover:bg-blue-50'}`}>
+                🅱️ B
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
       <div className="mb-4 border-b border-[color:var(--color-border)] flex gap-1 overflow-x-auto">
@@ -87,7 +122,6 @@ function DashTab({ session }: { session: Session | null }) {
   const [results, setResults] = useState<DashboardWithHost[]>([]);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState('');
-  const [rotating, setRotating] = useState(false);
   const [auto, setAuto] = useState(true);
 
   async function load(silent = false) {
@@ -111,20 +145,6 @@ function DashTab({ session }: { session: Session | null }) {
     // eslint-disable-next-line
   }, [auto]);
 
-  // 회전: sticky 호스트의 wg 회전 (양쪽 별도 회전은 추후 작업)
-  async function rotate() {
-    if (!confirm('VPN 서버를 즉시 회전할까요? (현재 sticky 호스트만 회전)')) return;
-    setRotating(true);
-    try {
-      await adminProxyRotate(session);
-      await load(true);
-    } catch (e) {
-      alert(e instanceof ApiError ? `${e.status} · ${e.message}` : String(e));
-    } finally {
-      setRotating(false);
-    }
-  }
-
   if (loading && results.length === 0) return <div className="p-6 text-sm text-[color:var(--color-muted)]">불러오는 중...</div>;
   if (err && results.length === 0)     return <div className="p-3 rounded bg-red-50 border border-red-200 text-red-800 text-sm">{err}</div>;
 
@@ -142,28 +162,45 @@ function DashTab({ session }: { session: Session | null }) {
                   className="h-8 px-2.5 rounded border border-[color:var(--color-border)] text-xs font-semibold hover:bg-[color:var(--color-bg-soft)]">
             새로고침
           </button>
-          <button onClick={rotate} disabled={rotating}
-                  className="h-8 px-3 rounded-lg bg-[color:var(--color-brand)] text-white text-xs font-semibold disabled:bg-[#b5aeea]">
-            {rotating ? '회전 중...' : '🔄 sticky 회전'}
-          </button>
         </div>
       </div>
 
       <div className={`grid gap-4 ${results.length > 1 ? 'grid-cols-1 lg:grid-cols-2' : 'grid-cols-1'}`}>
-        {results.map(r => <DashHostCard key={r.host} result={r} />)}
+        {results.map(r => <DashHostCard key={r.host} result={r} session={session} onReload={() => load(true)} />)}
       </div>
     </div>
   );
 }
 
 // 단일 host 의 dashboard 표시
-function DashHostCard({ result }: { result: DashboardWithHost }) {
+function DashHostCard({
+  result, session, onReload,
+}: {
+  result: DashboardWithHost;
+  session: Session | null;
+  onReload: () => void;
+}) {
+  const [rotating, setRotating] = useState(false);
   const hostShort = result.host.replace(/^https?:\/\//, '');
   const hostLabel = hostShort.includes('api-b')
     ? <span className="text-blue-700">🅱️ B</span>
     : hostShort.startsWith('api.')
       ? <span className="text-emerald-700">🅰️ A</span>
       : <span>{hostShort}</span>;
+  const hostShortName = hostShort.includes('api-b') ? 'B' : hostShort.startsWith('api.') ? 'A' : hostShort;
+
+  async function rotate() {
+    if (!confirm(`${hostShortName} 서버의 VPN 을 즉시 회전할까요?`)) return;
+    setRotating(true);
+    try {
+      await adminProxyRotateForHost(session, result.host);
+      onReload();
+    } catch (e) {
+      alert(e instanceof ApiError ? `${e.status} · ${e.message}` : String(e));
+    } finally {
+      setRotating(false);
+    }
+  }
 
   if (result.error) {
     return (
@@ -183,8 +220,14 @@ function DashHostCard({ result }: { result: DashboardWithHost }) {
 
   return (
     <div className="space-y-3">
-      <div className="text-sm font-semibold flex items-center gap-2">
-        {hostLabel} <code className="text-xs text-[color:var(--color-muted)]">{hostShort}</code>
+      <div className="text-sm font-semibold flex items-center justify-between gap-2 flex-wrap">
+        <div className="flex items-center gap-2">
+          {hostLabel} <code className="text-xs text-[color:var(--color-muted)]">{hostShort}</code>
+        </div>
+        <button onClick={rotate} disabled={rotating}
+                className="h-7 px-2.5 rounded-lg bg-[color:var(--color-brand)] text-white text-[11px] font-semibold disabled:bg-[#b5aeea]">
+          {rotating ? '회전 중...' : `🔄 ${hostShortName} 회전`}
+        </button>
       </div>
       <div className="text-xs text-[color:var(--color-muted)]">
         시간 {fmtTime(now)} · uptime {fmtUptime(data.server.uptime_sec)} · pid {data.server.pid}

@@ -22,7 +22,27 @@ export const IS_TEST_BUILD = import.meta.env.VITE_IS_TEST_BUILD === '1';
 // 안전망: HARD_CAP_MS — 정말 stuck 된 요청만 끊는 상한선 (의도된 abort 가 아님).
 const STICKY_IDX_KEY = 'runto_api_host_idx';
 const STICKY_EXP_KEY = 'runto_api_host_idx_exp';
+const ADMIN_FORCE_KEY = 'admin_force_host_idx';   // 관리자 전용 강제 호스트 (-1 = 자동)
 const STICKY_TTL_MS  = 30 * 60 * 1000;
+
+// 관리자 강제 호스트 — AdminPage 의 서버 선택기. -1 (자동) / 0 (A) / 1 (B).
+// 설정되어 있으면 fetchWithFailover 가 sticky 무시하고 강제 호스트만 사용 (페일오버 안 함).
+export function getAdminForceHostIdx(): number {
+  try {
+    const v = parseInt(localStorage.getItem(ADMIN_FORCE_KEY) ?? '-1', 10);
+    if (v >= 0 && v < API_HOSTS.length) return v;
+  } catch { /* 무시 */ }
+  return -1;
+}
+export function setAdminForceHostIdx(idx: number) {
+  try {
+    if (idx < 0 || idx >= API_HOSTS.length) {
+      localStorage.removeItem(ADMIN_FORCE_KEY);
+    } else {
+      localStorage.setItem(ADMIN_FORCE_KEY, String(idx));
+    }
+  } catch { /* 무시 */ }
+}
 const HARD_CAP_MS    = 180_000;  // 안전망 — 정상 요청은 절대 닿지 않아야 함.
 // Cloudflare 가 origin 도달 실패 시 반환하는 코드 셋 — 다음 호스트로 폴백 트리거.
 const ORIGIN_DOWN_STATUS = new Set([502, 503, 504, 521, 522, 523, 524, 525, 526, 530]);
@@ -73,6 +93,11 @@ function combineSignals(a: AbortSignal, b: AbortSignal): AbortSignal {
 async function fetchWithFailover(path: string, init: RequestInit = {}): Promise<Response> {
   if (API_HOSTS.length === 1) {
     return fetch(`${API_HOSTS[0]}${path}`, init);
+  }
+  // 관리자 강제 호스트 — 설정되어 있으면 페일오버 없이 그 호스트만 사용
+  const forced = getAdminForceHostIdx();
+  if (forced >= 0) {
+    return fetch(`${API_HOSTS[forced]}${path}`, init);
   }
   const startIdx = getStickyIdx();
   // sticky 부터 라운드로빈 → alive 우선, dead 호스트는 마지막에 시도 (헬스가 틀릴 가능성 대비)
@@ -528,6 +553,27 @@ export function adminProxyRotate(session: Session | null) {
   return request<{ ok: boolean; status: unknown }>(
     '/api/admin/proxy/rotate', session, { method: 'POST' },
   );
+}
+
+// 이중화: 명시적 host 의 VPN 회전 (sticky·force 무관, A·B 각각 회전 버튼용)
+export async function adminProxyRotateForHost(
+  session: Session | null,
+  host: string,
+): Promise<{ ok: boolean; status: unknown }> {
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+  if (session?.access_token) headers.Authorization = `Bearer ${session.access_token}`;
+  const r = await fetch(`${host}/api/admin/proxy/rotate`, {
+    method: 'POST', headers, credentials: 'include',
+  });
+  const text = await r.text();
+  if (!r.ok) {
+    const body = text ? safeJson(text) : null;
+    const msg = (body && typeof body === 'object' && 'detail' in body)
+      ? String((body as { detail: unknown }).detail)
+      : text || `HTTP ${r.status}`;
+    throw new ApiError(r.status, msg);
+  }
+  return JSON.parse(text);
 }
 
 export function adminFetchLogs(
