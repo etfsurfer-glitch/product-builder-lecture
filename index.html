@@ -301,10 +301,12 @@ function loadDeps() {
 }
 
 // 이중화: login 시점 random 분산 (50:50). a 또는 b sticky 결정.
+// api.runto.online 의 DNS CNAME 이 A 의 nfind-api 만 가리키므로 idx 0 = A 와 동등.
+// api-a.runto.online 라우팅은 미생성 — api.runto.online 으로 대체.
 // app-src 의 fetchWithFailover 가 이후 sticky idx 보고 같은 host 유지.
 const LOGIN_HOSTS = [
-  'https://api-a.runto.online',
-  'https://api-b.runto.online',
+  'https://api.runto.online',     // idx 0 = A (DNS → nfind-api)
+  'https://api-b.runto.online',   // idx 1 = B (nfind-api-b)
 ];
 const API = LOGIN_HOSTS[Math.floor(Math.random() * LOGIN_HOSTS.length)];
 console.log('[nfind] login host:', API);
