@@ -310,6 +310,37 @@ const LOGIN_HOSTS = [
 let API = LOGIN_HOSTS[Math.floor(Math.random() * LOGIN_HOSTS.length)];
 console.log('[nfind] page-default host:', API);
 
+// 페일오버: 현재 API 호스트 → 실패 시 나머지 호스트로 즉시 재시도.
+// 성공 시 API 변수를 동작한 호스트로 갱신 (이후 호출은 sticky).
+// 트리거: 네트워크 에러 + Cloudflare origin-down (502/503/504/521~526/530).
+const ORIGIN_DOWN = new Set([502, 503, 504, 521, 522, 523, 524, 525, 526, 530]);
+async function fetchFailover(path, init = {}) {
+  const order = [API, ...LOGIN_HOSTS.filter(h => h !== API)];
+  let lastErr = null;
+  for (let i = 0; i < order.length; i++) {
+    const host = order[i];
+    const isLast = i === order.length - 1;
+    try {
+      const r = await fetch(`${host}${path}`, init);
+      if (ORIGIN_DOWN.has(r.status) && !isLast) {
+        lastErr = new Error(`origin-down ${r.status} from ${host}`);
+        console.warn(`[nfind] ${host}${path} → ${r.status}, failover 시도`);
+        continue;
+      }
+      if (host !== API) {
+        console.log(`[nfind] failover sticky: ${API} → ${host}`);
+        API = host;
+      }
+      return r;
+    } catch (e) {
+      lastErr = e;
+      console.warn(`[nfind] ${host}${path} 네트워크 에러:`, e?.message || e);
+      if (init.signal?.aborted) throw e;
+    }
+  }
+  throw lastErr instanceof Error ? lastErr : new Error('all hosts unreachable');
+}
+
 const $  = s => document.querySelector(s);
 
 let supabase = null;
@@ -372,7 +403,7 @@ async function deviceVerify(accessToken) {
     user_agent:      navigator.userAgent || '',
     turnstile_token: '',   // TURNSTILE_REQUIRED=1 일 때 위젯 토큰 주입 자리
   };
-  const r = await fetch(`${API}/api/auth/device/verify`, {
+  const r = await fetchFailover(`/api/auth/device/verify`, {
     method: 'POST',
     credentials: 'include',
     headers: {
@@ -388,7 +419,7 @@ async function deviceVerify(accessToken) {
 async function initSupabase() {
   try {
     await loadDeps();
-    const r = await fetch(`${API}/api/config/public`, { cache: 'no-store' });
+    const r = await fetchFailover(`/api/config/public`, { cache: 'no-store' });
     if (!r.ok) throw new Error(`config ${r.status}`);
     const cfg = await r.json();
     supabase = createClient(cfg.supabase_url, cfg.supabase_anon_key, {
@@ -507,7 +538,7 @@ $('#login-form').addEventListener('submit', async e => {
     setStatus('기기 인증 중...', 'loading');
     try {
       const [fpRaw, uuid] = await Promise.all([getVisitorId(), getOrCreateUuid()]);
-      const r = await fetch(`${API}/api/auth/reset-password-by-device`, {
+      const r = await fetchFailover(`/api/auth/reset-password-by-device`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, new_password: newPw, fp_raw: fpRaw, uuid_stored: uuid }),
@@ -567,7 +598,7 @@ $('#login-form').addEventListener('submit', async e => {
   API = LOGIN_HOSTS[Math.floor(Math.random() * LOGIN_HOSTS.length)];
   console.log('[nfind] login host (this attempt):', API);
   try {
-    const r = await fetch(`${API}/api/auth/login-complete`, {
+    const r = await fetchFailover(`/api/auth/login-complete`, {
       method: 'POST',
       credentials: 'include',
       headers: {
