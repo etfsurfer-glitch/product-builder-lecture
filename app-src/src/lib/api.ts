@@ -478,6 +478,52 @@ export function adminDashboard(session: Session | null) {
   return request<DashboardData>('/api/admin/dashboard', session);
 }
 
+// 이중화: 명시적 host 로 dashboard 호출 (sticky 무관, A·B 각각 호출용)
+async function adminDashboardForHost(
+  session: Session | null,
+  host: string,
+): Promise<DashboardData> {
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+  if (session?.access_token) headers.Authorization = `Bearer ${session.access_token}`;
+  const r = await fetch(`${host}/api/admin/dashboard`, { headers, credentials: 'include' });
+  const text = await r.text();
+  if (!r.ok) {
+    const body = text ? safeJson(text) : null;
+    const msg = (body && typeof body === 'object' && 'detail' in body)
+      ? String((body as { detail: unknown }).detail)
+      : text || `HTTP ${r.status}`;
+    throw new ApiError(r.status, msg);
+  }
+  return JSON.parse(text);
+}
+
+// 양쪽 host 동시 호출 — admin 페이지에서 A·B 상태 비교용.
+// API_HOSTS 가 1개면 1건만 반환.
+export interface DashboardWithHost {
+  host: string;
+  data: DashboardData | null;
+  error: string | null;
+}
+
+export async function adminDashboardMulti(
+  session: Session | null,
+): Promise<DashboardWithHost[]> {
+  return Promise.all(
+    API_HOSTS.map(async (host) => {
+      try {
+        const data = await adminDashboardForHost(session, host);
+        return { host, data, error: null };
+      } catch (e) {
+        return {
+          host,
+          data: null,
+          error: e instanceof ApiError ? `${e.status} · ${e.message}` : String(e),
+        };
+      }
+    }),
+  );
+}
+
 export function adminProxyRotate(session: Session | null) {
   return request<{ ok: boolean; status: unknown }>(
     '/api/admin/proxy/rotate', session, { method: 'POST' },

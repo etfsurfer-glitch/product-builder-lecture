@@ -4,9 +4,9 @@ import {
   adminListUsers, adminGetUserDevices,
   adminSetDeviceLimit, adminDeleteDevice, adminCreateUser,
   adminFetchLogs, adminResetAllDevices, adminSetPassword, adminSetSubscription,
-  adminDashboard, adminProxyRotate, adminDeleteUser,
+  adminDashboardMulti, adminProxyRotate, adminDeleteUser,
   type AdminUserRow, type DeviceRow, type DeviceLimits,
-  type AdminLogKind, type DashboardData, ApiError,
+  type AdminLogKind, type DashboardWithHost, ApiError,
 } from '../lib/api';
 
 type AdminUserFull = AdminUserRow & {
@@ -84,7 +84,7 @@ export default function AdminPage({ session, onBack }: Props) {
 // Tab 1: 계정관리
 // ───────────────────────────────────────────────────────────
 function DashTab({ session }: { session: Session | null }) {
-  const [data, setData] = useState<DashboardData | null>(null);
+  const [results, setResults] = useState<DashboardWithHost[]>([]);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState('');
   const [rotating, setRotating] = useState(false);
@@ -94,8 +94,8 @@ function DashTab({ session }: { session: Session | null }) {
     if (!silent) setLoading(true);
     setErr('');
     try {
-      const d = await adminDashboard(session);
-      setData(d);
+      const r = await adminDashboardMulti(session);
+      setResults(r);
     } catch (e) {
       setErr(e instanceof ApiError ? `${e.status} · ${e.message}` : String(e));
     } finally {
@@ -111,8 +111,9 @@ function DashTab({ session }: { session: Session | null }) {
     // eslint-disable-next-line
   }, [auto]);
 
+  // 회전: sticky 호스트의 wg 회전 (양쪽 별도 회전은 추후 작업)
   async function rotate() {
-    if (!confirm('VPN 서버를 즉시 회전할까요?')) return;
+    if (!confirm('VPN 서버를 즉시 회전할까요? (현재 sticky 호스트만 회전)')) return;
     setRotating(true);
     try {
       await adminProxyRotate(session);
@@ -124,18 +125,14 @@ function DashTab({ session }: { session: Session | null }) {
     }
   }
 
-  if (loading && !data) return <div className="p-6 text-sm text-[color:var(--color-muted)]">불러오는 중...</div>;
-  if (err && !data)     return <div className="p-3 rounded bg-red-50 border border-red-200 text-red-800 text-sm">{err}</div>;
-  if (!data)            return null;
-
-  const vpn = data.vpn;
-  const now = data.now;
+  if (loading && results.length === 0) return <div className="p-6 text-sm text-[color:var(--color-muted)]">불러오는 중...</div>;
+  if (err && results.length === 0)     return <div className="p-3 rounded bg-red-50 border border-red-200 text-red-800 text-sm">{err}</div>;
 
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between gap-2 flex-wrap">
         <div className="text-xs text-[color:var(--color-muted)]">
-          서버 시간 {fmtTime(now)} · uptime {fmtUptime(data.server.uptime_sec)} · pid {data.server.pid}
+          {results.length > 1 ? `${results.length}개 노드` : '단일 노드'} · 동시 조회
         </div>
         <div className="flex items-center gap-2">
           <label className="text-xs flex items-center gap-1 cursor-pointer">
@@ -145,10 +142,54 @@ function DashTab({ session }: { session: Session | null }) {
                   className="h-8 px-2.5 rounded border border-[color:var(--color-border)] text-xs font-semibold hover:bg-[color:var(--color-bg-soft)]">
             새로고침
           </button>
+          <button onClick={rotate} disabled={rotating}
+                  className="h-8 px-3 rounded-lg bg-[color:var(--color-brand)] text-white text-xs font-semibold disabled:bg-[#b5aeea]">
+            {rotating ? '회전 중...' : '🔄 sticky 회전'}
+          </button>
         </div>
       </div>
 
-      {/* VPN */}
+      <div className={`grid gap-4 ${results.length > 1 ? 'grid-cols-1 lg:grid-cols-2' : 'grid-cols-1'}`}>
+        {results.map(r => <DashHostCard key={r.host} result={r} />)}
+      </div>
+    </div>
+  );
+}
+
+// 단일 host 의 dashboard 표시
+function DashHostCard({ result }: { result: DashboardWithHost }) {
+  const hostShort = result.host.replace(/^https?:\/\//, '');
+  const hostLabel = hostShort.includes('api-b')
+    ? <span className="text-blue-700">🅱️ B</span>
+    : hostShort.startsWith('api.')
+      ? <span className="text-emerald-700">🅰️ A</span>
+      : <span>{hostShort}</span>;
+
+  if (result.error) {
+    return (
+      <div className="rounded-xl border border-red-200 bg-red-50 p-4 space-y-2">
+        <div className="text-sm font-semibold flex items-center gap-2">
+          {hostLabel} <code className="text-xs text-[color:var(--color-muted)]">{hostShort}</code>
+        </div>
+        <div className="text-red-800 text-sm">⚠️ {result.error}</div>
+      </div>
+    );
+  }
+  if (!result.data) return null;
+
+  const data = result.data;
+  const vpn = data.vpn;
+  const now = data.now;
+
+  return (
+    <div className="space-y-3">
+      <div className="text-sm font-semibold flex items-center gap-2">
+        {hostLabel} <code className="text-xs text-[color:var(--color-muted)]">{hostShort}</code>
+      </div>
+      <div className="text-xs text-[color:var(--color-muted)]">
+        시간 {fmtTime(now)} · uptime {fmtUptime(data.server.uptime_sec)} · pid {data.server.pid}
+      </div>
+
       <Card title="🌐 VPN">
         <KV k="모드" v={vpn.mode} />
         <KV k="연결 상태" v={vpn.connected
@@ -165,15 +206,8 @@ function DashTab({ session }: { session: Session | null }) {
           : '비활성'} />
         <KV k="회전 간격" v={vpn.rotate_interval_sec > 0 ? `${Math.round(vpn.rotate_interval_sec/60)}분` : '비활성'} />
         <KV k="최근 실패" v={`${vpn.recent_failures}/${vpn.fail_threshold} (초과 시 자동 회전)`} />
-        <div className="pt-2">
-          <button onClick={rotate} disabled={rotating}
-                  className="h-8 px-3 rounded-lg bg-[color:var(--color-brand)] text-white text-xs font-semibold disabled:bg-[#b5aeea]">
-            {rotating ? '회전 중...' : '🔄 지금 회전'}
-          </button>
-        </div>
       </Card>
 
-      {/* 인증 */}
       <Card title="🔑 인증 크레덴셜">
         <KV k="Bearer" v={data.creds.bearer
           ? <span className="text-green-700">✓</span>
@@ -186,7 +220,6 @@ function DashTab({ session }: { session: Session | null }) {
           : '-'} />
       </Card>
 
-      {/* 작업 */}
       <Card title="⚙️ 백그라운드 작업">
         <KV k="전체" v={String(data.jobs.total)} />
         <KV k="진행 중" v={<><b>{data.jobs.active}</b> <span className="text-xs text-[color:var(--color-muted)]">(대기 {data.jobs.pending} · 실행 {data.jobs.running})</span></>} />
@@ -194,7 +227,6 @@ function DashTab({ session }: { session: Session | null }) {
         <KV k="실패" v={String(data.jobs.error)} />
       </Card>
 
-      {/* 시스템 */}
       <Card title="🖥️ 시스템">
         <KV k="호스트:포트" v={`${data.server.host}:${data.server.port}`} />
         <KV k="프로세스 ID" v={String(data.server.pid)} />
