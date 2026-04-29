@@ -301,14 +301,13 @@ function loadDeps() {
 }
 
 // 이중화: A/B 분산 호스트.
-// API 변수는 페이지 로드 시 한 번 결정 — config/public, device/verify 등 일반 호출용 (페이지 동안 일관).
-// login-complete 는 별도로 매 시점 random (logout+login 반복에서도 분산 보장).
+// API 변수: 페이지 로드 시 한 번 random + login 직전 매번 갱신 (login + device/verify 같은 host 통일).
 // app-src 의 fetchWithFailover 가 이후 sticky idx 보고 같은 host 유지.
 const LOGIN_HOSTS = [
   'https://api.runto.online',     // idx 0 = A (DNS → nfind-api)
   'https://api-b.runto.online',   // idx 1 = B (nfind-api-b)
 ];
-const API = LOGIN_HOSTS[Math.floor(Math.random() * LOGIN_HOSTS.length)];
+let API = LOGIN_HOSTS[Math.floor(Math.random() * LOGIN_HOSTS.length)];
 console.log('[nfind] page-default host:', API);
 
 const $  = s => document.querySelector(s);
@@ -563,12 +562,12 @@ $('#login-form').addEventListener('submit', async e => {
   await rememberCredentialInBrowser(email, password);
 
   // HttpOnly refresh cookie 저장 (XSS 방어). 실패해도 진행은 가능.
-  // 이중화: 매 login 시점 random host — logout+login 반복도 분산
-  // + 응답의 server_id 로 app-src sticky idx 미리 설정 (host 일관 유지)
-  const loginHost = LOGIN_HOSTS[Math.floor(Math.random() * LOGIN_HOSTS.length)];
-  console.log('[nfind] login host (this attempt):', loginHost);
+  // 이중화: 매 login 시점 API 변수 자체 갱신 — 이후 device/verify 도 같은 host 사용 (인증 흐름 일관)
+  // + 응답의 server_id 로 app-src sticky idx 무조건 갱신 (이전 sticky 덮어씀)
+  API = LOGIN_HOSTS[Math.floor(Math.random() * LOGIN_HOSTS.length)];
+  console.log('[nfind] login host (this attempt):', API);
   try {
-    const r = await fetch(`${loginHost}/api/auth/login-complete`, {
+    const r = await fetch(`${API}/api/auth/login-complete`, {
       method: 'POST',
       credentials: 'include',
       headers: {
@@ -580,13 +579,19 @@ $('#login-form').addEventListener('submit', async e => {
         refresh_token: data.session.refresh_token,
       }),
     });
-    // 이중화: server_id 받아 app-src sticky storage 동기화 (b 만 저장; a 는 default 0)
+    // 이중화: server_id 받아 app-src sticky storage 무조건 갱신 (이전 sticky 덮어씀)
     if (r.ok) {
       const j = await r.json().catch(() => ({}));
-      if (j && j.server_id === 'b') {
+      if (j && j.server_id) {
         try {
-          localStorage.setItem('runto_api_host_idx', '1');
-          localStorage.setItem('runto_api_host_idx_exp', String(Date.now() + 30 * 60 * 1000));
+          if (j.server_id === 'b') {
+            localStorage.setItem('runto_api_host_idx', '1');
+            localStorage.setItem('runto_api_host_idx_exp', String(Date.now() + 30 * 60 * 1000));
+          } else {
+            // server_id === 'a' → idx 0 (default), 이전 idx 1 sticky 가 있으면 비움
+            localStorage.removeItem('runto_api_host_idx');
+            localStorage.removeItem('runto_api_host_idx_exp');
+          }
         } catch {}
       }
     }
