@@ -300,16 +300,16 @@ function loadDeps() {
   return _depsReady;
 }
 
-// 이중화: login 시점 random 분산 (50:50). a 또는 b sticky 결정.
-// api.runto.online 의 DNS CNAME 이 A 의 nfind-api 만 가리키므로 idx 0 = A 와 동등.
-// api-a.runto.online 라우팅은 미생성 — api.runto.online 으로 대체.
+// 이중화: A/B 분산 호스트.
+// API 변수는 페이지 로드 시 한 번 결정 — config/public, device/verify 등 일반 호출용 (페이지 동안 일관).
+// login-complete 는 별도로 매 시점 random (logout+login 반복에서도 분산 보장).
 // app-src 의 fetchWithFailover 가 이후 sticky idx 보고 같은 host 유지.
 const LOGIN_HOSTS = [
   'https://api.runto.online',     // idx 0 = A (DNS → nfind-api)
   'https://api-b.runto.online',   // idx 1 = B (nfind-api-b)
 ];
 const API = LOGIN_HOSTS[Math.floor(Math.random() * LOGIN_HOSTS.length)];
-console.log('[nfind] login host:', API);
+console.log('[nfind] page-default host:', API);
 
 const $  = s => document.querySelector(s);
 
@@ -563,9 +563,12 @@ $('#login-form').addEventListener('submit', async e => {
   await rememberCredentialInBrowser(email, password);
 
   // HttpOnly refresh cookie 저장 (XSS 방어). 실패해도 진행은 가능.
+  // 이중화: 매 login 시점 random host — logout+login 반복도 분산
   // + 응답의 server_id 로 app-src sticky idx 미리 설정 (host 일관 유지)
+  const loginHost = LOGIN_HOSTS[Math.floor(Math.random() * LOGIN_HOSTS.length)];
+  console.log('[nfind] login host (this attempt):', loginHost);
   try {
-    const r = await fetch(`${API}/api/auth/login-complete`, {
+    const r = await fetch(`${loginHost}/api/auth/login-complete`, {
       method: 'POST',
       credentials: 'include',
       headers: {
