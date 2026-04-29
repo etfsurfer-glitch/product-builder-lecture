@@ -791,9 +791,9 @@ function LogsTable({ rows, kind }: { rows: Record<string, unknown>[]; kind: Admi
   );
   // 컬럼 자동 감지 + 정렬
   const priority = {
-    auth:       ['created_at', 'email', 'event_type', 'fail_reason', 'ip', 'device_type'],
-    article:    ['created_at', 'email', 'article_no', 'found', 'apt_name', 'dong', 'ho', 'ho_visible', 'ip'],
-    extraction: ['extracted_at', 'email', 'complex_name', 'item_count', 'hidden_count_before', 'hidden_inferred', 'hidden_count_final', 'ip'],
+    auth:       ['created_at', 'server_id', 'email', 'event_type', 'fail_reason', 'ip', 'device_type'],
+    article:    ['created_at', 'server_id', 'email', 'article_no', 'found', 'apt_name', 'dong', 'ho', 'ho_visible', 'ip'],
+    extraction: ['extracted_at', 'server_id', 'email', 'complex_name', 'item_count', 'hidden_count_before', 'hidden_inferred', 'hidden_count_final', 'ip'],
     security:   ['created_at', 'email', 'event_type', 'ip', 'user_agent', 'meta'],
   }[kind];
   const cols = priority.filter(c => rows.some(r => r[c] !== undefined && r[c] !== null));
@@ -821,7 +821,15 @@ function LogsTable({ rows, kind }: { rows: Record<string, unknown>[]; kind: Admi
                   <td key={c} className="px-2.5 py-1.5 whitespace-nowrap align-top">
                     {c === 'event_type' || c === 'fail_reason'
                       ? <span className="px-1.5 py-0.5 rounded bg-[color:var(--color-bg-soft)] text-[11px] font-mono">{txt}</span>
-                      : txt}
+                      : c === 'server_id'
+                        ? (txt === 'a'
+                            ? <span className="px-1.5 py-0.5 rounded bg-emerald-50 border border-emerald-200 text-emerald-800 text-[11px] font-bold">🅰️ A</span>
+                            : txt === 'b'
+                              ? <span className="px-1.5 py-0.5 rounded bg-blue-50 border border-blue-200 text-blue-800 text-[11px] font-bold">🅱️ B</span>
+                              : txt
+                                ? <span className="px-1.5 py-0.5 rounded bg-[color:var(--color-bg-soft)] text-[11px] font-mono">{txt}</span>
+                                : <span className="text-[color:var(--color-muted)] text-[11px]">-</span>)
+                        : txt}
                   </td>
                 );
               })}
