@@ -300,7 +300,15 @@ function loadDeps() {
   return _depsReady;
 }
 
-const API = 'https://api.runto.online';
+// 이중화: login 시점 random 분산 (50:50). a 또는 b sticky 결정.
+// app-src 의 fetchWithFailover 가 이후 sticky idx 보고 같은 host 유지.
+const LOGIN_HOSTS = [
+  'https://api-a.runto.online',
+  'https://api-b.runto.online',
+];
+const API = LOGIN_HOSTS[Math.floor(Math.random() * LOGIN_HOSTS.length)];
+console.log('[nfind] login host:', API);
+
 const $  = s => document.querySelector(s);
 
 let supabase = null;
@@ -553,8 +561,9 @@ $('#login-form').addEventListener('submit', async e => {
   await rememberCredentialInBrowser(email, password);
 
   // HttpOnly refresh cookie 저장 (XSS 방어). 실패해도 진행은 가능.
+  // + 응답의 server_id 로 app-src sticky idx 미리 설정 (host 일관 유지)
   try {
-    await fetch(`${API}/api/auth/login-complete`, {
+    const r = await fetch(`${API}/api/auth/login-complete`, {
       method: 'POST',
       credentials: 'include',
       headers: {
@@ -566,6 +575,16 @@ $('#login-form').addEventListener('submit', async e => {
         refresh_token: data.session.refresh_token,
       }),
     });
+    // 이중화: server_id 받아 app-src sticky storage 동기화 (b 만 저장; a 는 default 0)
+    if (r.ok) {
+      const j = await r.json().catch(() => ({}));
+      if (j && j.server_id === 'b') {
+        try {
+          localStorage.setItem('runto_api_host_idx', '1');
+          localStorage.setItem('runto_api_host_idx_exp', String(Date.now() + 30 * 60 * 1000));
+        } catch {}
+      }
+    }
   } catch (e) {
     console.warn('[nfind] login-complete 스킵:', e);
   }
