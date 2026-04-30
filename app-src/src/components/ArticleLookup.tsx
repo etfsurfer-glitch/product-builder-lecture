@@ -17,8 +17,10 @@ interface ResultItem {
 }
 
 // tradeType 코드 → 한글 (scrapers.py _TRADE_MAP 동일)
+// 네이버 표준: A1=매매, B1=전세, B2=월세, B3=단기임대.
+// C1/C2 는 일부 CP 가 사용하는 비표준 월세 코드 — 호환 위해 유지.
 const TRADE_MAP: Record<string, string> = {
-  A1: '매매', B1: '전세', B2: '전세', C1: '월세', C2: '월세',
+  A1: '매매', B1: '전세', B2: '월세', B3: '단기임대', C1: '월세', C2: '월세',
 };
 
 function tradeKo(v: unknown): string {
