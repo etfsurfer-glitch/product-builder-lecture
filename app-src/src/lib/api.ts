@@ -867,3 +867,101 @@ export function comparePortfolio(
     { method: 'POST', body: JSON.stringify({ older_key: olderKey, newer_key: newerKey }) },
   );
 }
+
+
+// ── admin: 분양권 cache 모니터링 ─────────────────────────────────────────
+export interface PresaleComplexSummary {
+  naver_complex_no: string;
+  presale_code: string;
+  last_full_fetch_at: string | null;
+  article_count: number;
+  actual_count: number;
+  trades: { 매매: number; 전세: number; 월세: number };
+  premium_filled_count: number;
+  option_filled_count: number;
+}
+
+export function adminPresaleSummary(session: Session | null) {
+  return request<{ ok: boolean; count: number; complexes: PresaleComplexSummary[] }>(
+    '/api/admin/presale/summary', session,
+  );
+}
+
+export interface PresaleArticleRow {
+  article_no: string;
+  naver_complex_no: string;
+  presale_code: string;
+  building_name: string | null;
+  floor_info: string | null;
+  trade_type_code: string | null;
+  realtor_name: string | null;
+  article_confirm_ymd: string | null;
+  price_deal: number | null;
+  price_warrant: number | null;
+  price_rent: number | null;
+  deal_or_warrant_prc: string | null;
+  premium_min: number | null;
+  premium_max: number | null;
+  option_price: number | null;
+  updated_at: string;
+}
+
+export function adminPresaleArticles(
+  session: Session | null,
+  cno: string, code: string = '', limit: number = 500,
+) {
+  const qs = new URLSearchParams({
+    naver_complex_no: cno,
+    ...(code ? { presale_code: code } : {}),
+    limit: String(limit),
+  }).toString();
+  return request<{ ok: boolean; count: number; articles: PresaleArticleRow[] }>(
+    `/api/admin/presale/articles?${qs}`, session,
+  );
+}
+
+export interface PresaleExtractLog {
+  id: number;
+  naver_complex_no: string;
+  presale_code: string | null;
+  cache_hit_count: number | null;
+  changed_count: number | null;
+  delete_count: number | null;
+  elapsed_sec: number | null;
+  cache_valid: boolean | null;
+  extracted_at: string;
+}
+
+export function adminPresaleLog(
+  session: Session | null,
+  limit: number = 100, cno: string = '',
+) {
+  const qs = new URLSearchParams({
+    limit: String(limit),
+    ...(cno ? { naver_complex_no: cno } : {}),
+  }).toString();
+  return request<{ ok: boolean; count: number; logs: PresaleExtractLog[] }>(
+    `/api/admin/presale/log?${qs}`, session,
+  );
+}
+
+export interface PresalePopularRow {
+  naver_complex_no: string;
+  extract_count: number;
+  avg_elapsed_sec: number;
+  avg_hit: number;
+  avg_changed: number;
+  cache_valid_pct: number;
+}
+
+export function adminPresalePopular(
+  session: Session | null,
+  days: number = 7, limit: number = 30,
+) {
+  const qs = new URLSearchParams({
+    days: String(days), limit: String(limit),
+  }).toString();
+  return request<{ ok: boolean; days: number; count: number; complexes: PresalePopularRow[] }>(
+    `/api/admin/presale/popular?${qs}`, session,
+  );
+}

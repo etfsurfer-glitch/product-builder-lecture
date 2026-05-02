@@ -6,8 +6,10 @@ import {
   adminFetchLogs, adminResetAllDevices, adminSetPassword, adminSetSubscription,
   adminDashboardMulti, adminProxyRotateForHost, adminDeleteUser,
   getAdminForceHostIdx, setAdminForceHostIdx, API_HOSTS,
+  adminPresaleSummary, adminPresaleArticles, adminPresaleLog, adminPresalePopular,
   type AdminUserRow, type DeviceRow, type DeviceLimits,
   type AdminLogKind, type DashboardWithHost, ApiError,
+  type PresaleComplexSummary, type PresaleArticleRow, type PresaleExtractLog, type PresalePopularRow,
 } from '../lib/api';
 
 type AdminUserFull = AdminUserRow & {
@@ -21,7 +23,7 @@ interface Props {
   onBack:  () => void;
 }
 
-type Tab = 'dash' | 'users' | 'logs' | 'create';
+type Tab = 'dash' | 'users' | 'logs' | 'create' | 'presale';
 
 function uaShort(ua: string): string {
   if (!ua) return '';
@@ -94,7 +96,7 @@ export default function AdminPage({ session, onBack }: Props) {
       </div>
 
       <div className="mb-4 border-b border-[color:var(--color-border)] flex gap-1 overflow-x-auto">
-        {([['dash','대시보드'],['users','계정관리'],['logs','로그'],['create','신규 등록']] as [Tab,string][]).map(([k,label]) => (
+        {([['dash','대시보드'],['users','계정관리'],['logs','로그'],['create','신규 등록'],['presale','분양권 캐시']] as [Tab,string][]).map(([k,label]) => (
           <button key={k} onClick={() => setTab(k)}
                   className={
                     'px-4 py-2.5 text-sm font-semibold border-b-2 -mb-px transition ' +
@@ -107,10 +109,11 @@ export default function AdminPage({ session, onBack }: Props) {
         ))}
       </div>
 
-      {tab === 'dash'   && <DashTab   session={session} />}
-      {tab === 'users'  && <UsersTab  session={session} />}
-      {tab === 'logs'   && <LogsTab   session={session} />}
-      {tab === 'create' && <CreateTab session={session} />}
+      {tab === 'dash'    && <DashTab    session={session} />}
+      {tab === 'users'   && <UsersTab   session={session} />}
+      {tab === 'logs'    && <LogsTab    session={session} />}
+      {tab === 'create'  && <CreateTab  session={session} />}
+      {tab === 'presale' && <PresaleTab session={session} />}
     </div>
   );
 }
@@ -1110,6 +1113,368 @@ function MetaEditor({
               className="h-8 px-3 rounded-lg bg-[color:var(--color-bg-soft)] hover:bg-[#edeff7] border border-[color:var(--color-border)] text-xs font-semibold">
         + key 추가
       </button>
+    </div>
+  );
+}
+
+// ───────────────────────────────────────────────────────────
+// Tab 5: 분양권 캐시 모니터링
+// ───────────────────────────────────────────────────────────
+function PresaleTab({ session }: { session: Session | null }) {
+  const [section, setSection] = useState<'summary' | 'popular' | 'log' | 'articles'>('summary');
+  return (
+    <div>
+      <div className="mb-3 flex flex-wrap gap-2">
+        {([
+          ['summary',  '단지 요약'],
+          ['popular',  '인기 단지'],
+          ['log',      '추출 이력'],
+          ['articles', '매물 상세'],
+        ] as [typeof section, string][]).map(([k, label]) => (
+          <button key={k} onClick={() => setSection(k)}
+                  className={
+                    'h-8 px-3 rounded-lg text-xs font-semibold border transition ' +
+                    (section === k
+                      ? 'bg-[color:var(--color-brand)] text-white border-[color:var(--color-brand)]'
+                      : 'bg-white text-[color:var(--color-ink)] border-[color:var(--color-border)] hover:bg-[color:var(--color-bg-soft)]')
+                  }>
+            {label}
+          </button>
+        ))}
+      </div>
+      {section === 'summary'  && <PresaleSummarySection  session={session} />}
+      {section === 'popular'  && <PresalePopularSection  session={session} />}
+      {section === 'log'      && <PresaleLogSection      session={session} />}
+      {section === 'articles' && <PresaleArticlesSection session={session} />}
+    </div>
+  );
+}
+
+function PresaleSummarySection({ session }: { session: Session | null }) {
+  const [rows, setRows] = useState<PresaleComplexSummary[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [err, setErr] = useState('');
+  const load = async () => {
+    setLoading(true);
+    setErr('');
+    try {
+      const r = await adminPresaleSummary(session);
+      if (!r.ok) throw new Error('서버 오류');
+      setRows(r.complexes);
+    } catch (e) {
+      setErr(e instanceof ApiError ? e.message : (e as Error).message);
+    } finally {
+      setLoading(false);
+    }
+  };
+  useEffect(() => { load(); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [session]);
+  return (
+    <div>
+      <div className="mb-2 flex items-center justify-between">
+        <div className="text-sm text-[color:var(--color-muted)]">
+          {loading ? '로딩 중...' : `총 ${rows.length} 단지`}
+        </div>
+        <button onClick={load}
+                className="h-8 px-3 rounded-lg bg-[color:var(--color-bg-soft)] hover:bg-[#edeff7] border border-[color:var(--color-border)] text-xs font-semibold">
+          새로고침
+        </button>
+      </div>
+      {err && <div className="text-sm text-red-700 mb-2">{err}</div>}
+      <div className="overflow-x-auto rounded-lg border border-[color:var(--color-border)]">
+        <table className="w-full text-sm">
+          <thead className="bg-[color:var(--color-bg-soft)]">
+            <tr>
+              <Th>단지번호</Th>
+              <Th>코드</Th>
+              <Th>마지막 추출</Th>
+              <Th>매물(메타/실제)</Th>
+              <Th>매매</Th>
+              <Th>전세</Th>
+              <Th>월세</Th>
+              <Th>프미</Th>
+              <Th>옵션</Th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map(r => (
+              <tr key={`${r.naver_complex_no}_${r.presale_code}`}
+                  className="border-t border-[color:var(--color-border)] hover:bg-[color:var(--color-bg-soft)]">
+                <Td><span className="font-mono">{r.naver_complex_no}</span></Td>
+                <Td>{r.presale_code}</Td>
+                <Td>{fmtDate(r.last_full_fetch_at)}</Td>
+                <Td>{r.article_count} / {r.actual_count}</Td>
+                <Td>{r.trades['매매']}</Td>
+                <Td>{r.trades['전세']}</Td>
+                <Td>{r.trades['월세']}</Td>
+                <Td>{r.premium_filled_count}</Td>
+                <Td>{r.option_filled_count}</Td>
+              </tr>
+            ))}
+            {!loading && rows.length === 0 && (
+              <tr><td colSpan={9} className="px-3 py-4 text-center text-[color:var(--color-muted)]">데이터 없음</td></tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+function PresalePopularSection({ session }: { session: Session | null }) {
+  const [rows, setRows] = useState<PresalePopularRow[]>([]);
+  const [days, setDays] = useState(7);
+  const [limit, setLimit] = useState(30);
+  const [loading, setLoading] = useState(true);
+  const [err, setErr] = useState('');
+  const load = async () => {
+    setLoading(true);
+    setErr('');
+    try {
+      const r = await adminPresalePopular(session, days, limit);
+      if (!r.ok) throw new Error('서버 오류');
+      setRows(r.complexes);
+    } catch (e) {
+      setErr(e instanceof ApiError ? e.message : (e as Error).message);
+    } finally {
+      setLoading(false);
+    }
+  };
+  useEffect(() => { load(); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [session]);
+  return (
+    <div>
+      <div className="mb-2 flex flex-wrap items-center gap-2">
+        <label className="text-sm">최근
+          <input type="number" value={days} min={1} max={90}
+                 onChange={e => setDays(Math.max(1, Math.min(90, Number(e.target.value) || 1)))}
+                 className="mx-1 w-16 h-8 px-2 rounded border border-[color:var(--color-border-strong)] text-sm" />
+          일
+        </label>
+        <label className="text-sm">상위
+          <input type="number" value={limit} min={1} max={200}
+                 onChange={e => setLimit(Math.max(1, Math.min(200, Number(e.target.value) || 1)))}
+                 className="mx-1 w-16 h-8 px-2 rounded border border-[color:var(--color-border-strong)] text-sm" />
+          건
+        </label>
+        <button onClick={load}
+                className="h-8 px-3 rounded-lg bg-[color:var(--color-brand)] text-white text-xs font-semibold">
+          조회
+        </button>
+        <span className="text-sm text-[color:var(--color-muted)] ml-2">
+          {loading ? '로딩 중...' : `${rows.length} 단지`}
+        </span>
+      </div>
+      {err && <div className="text-sm text-red-700 mb-2">{err}</div>}
+      <div className="overflow-x-auto rounded-lg border border-[color:var(--color-border)]">
+        <table className="w-full text-sm">
+          <thead className="bg-[color:var(--color-bg-soft)]">
+            <tr>
+              <Th>순위</Th>
+              <Th>단지번호</Th>
+              <Th>추출 횟수</Th>
+              <Th>평균 소요(초)</Th>
+              <Th>평균 hit</Th>
+              <Th>평균 변경</Th>
+              <Th>cache valid %</Th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((r, i) => (
+              <tr key={r.naver_complex_no}
+                  className="border-t border-[color:var(--color-border)] hover:bg-[color:var(--color-bg-soft)]">
+                <Td>{i + 1}</Td>
+                <Td><span className="font-mono">{r.naver_complex_no}</span></Td>
+                <Td>{r.extract_count}</Td>
+                <Td>{r.avg_elapsed_sec}</Td>
+                <Td>{r.avg_hit}</Td>
+                <Td>{r.avg_changed}</Td>
+                <Td>{r.cache_valid_pct}%</Td>
+              </tr>
+            ))}
+            {!loading && rows.length === 0 && (
+              <tr><td colSpan={7} className="px-3 py-4 text-center text-[color:var(--color-muted)]">데이터 없음</td></tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+function PresaleLogSection({ session }: { session: Session | null }) {
+  const [rows, setRows] = useState<PresaleExtractLog[]>([]);
+  const [cno, setCno] = useState('');
+  const [limit, setLimit] = useState(100);
+  const [loading, setLoading] = useState(true);
+  const [err, setErr] = useState('');
+  const load = async () => {
+    setLoading(true);
+    setErr('');
+    try {
+      const r = await adminPresaleLog(session, limit, cno);
+      if (!r.ok) throw new Error('서버 오류');
+      setRows(r.logs);
+    } catch (e) {
+      setErr(e instanceof ApiError ? e.message : (e as Error).message);
+    } finally {
+      setLoading(false);
+    }
+  };
+  useEffect(() => { load(); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [session]);
+  return (
+    <div>
+      <div className="mb-2 flex flex-wrap items-center gap-2">
+        <input value={cno} onChange={e => setCno(e.target.value)}
+               placeholder="단지번호 (옵션)"
+               className="w-44 h-8 px-2 rounded border border-[color:var(--color-border-strong)] text-sm" />
+        <label className="text-sm">최근
+          <input type="number" value={limit} min={1} max={1000}
+                 onChange={e => setLimit(Math.max(1, Math.min(1000, Number(e.target.value) || 1)))}
+                 className="mx-1 w-20 h-8 px-2 rounded border border-[color:var(--color-border-strong)] text-sm" />
+          건
+        </label>
+        <button onClick={load}
+                className="h-8 px-3 rounded-lg bg-[color:var(--color-brand)] text-white text-xs font-semibold">
+          조회
+        </button>
+        <span className="text-sm text-[color:var(--color-muted)] ml-2">
+          {loading ? '로딩 중...' : `${rows.length} 건`}
+        </span>
+      </div>
+      {err && <div className="text-sm text-red-700 mb-2">{err}</div>}
+      <div className="overflow-x-auto rounded-lg border border-[color:var(--color-border)]">
+        <table className="w-full text-sm">
+          <thead className="bg-[color:var(--color-bg-soft)]">
+            <tr>
+              <Th>시각</Th>
+              <Th>단지번호</Th>
+              <Th>코드</Th>
+              <Th>cache hit</Th>
+              <Th>변경</Th>
+              <Th>삭제</Th>
+              <Th>소요(초)</Th>
+              <Th>cache valid</Th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map(r => (
+              <tr key={r.id}
+                  className="border-t border-[color:var(--color-border)] hover:bg-[color:var(--color-bg-soft)]">
+                <Td>{fmtDate(r.extracted_at)}</Td>
+                <Td><span className="font-mono">{r.naver_complex_no}</span></Td>
+                <Td>{r.presale_code ?? ''}</Td>
+                <Td>{r.cache_hit_count ?? '-'}</Td>
+                <Td>{r.changed_count ?? '-'}</Td>
+                <Td>{r.delete_count ?? '-'}</Td>
+                <Td>{r.elapsed_sec ?? '-'}</Td>
+                <Td>{r.cache_valid === null ? '-' : r.cache_valid ? '✓' : '✗'}</Td>
+              </tr>
+            ))}
+            {!loading && rows.length === 0 && (
+              <tr><td colSpan={8} className="px-3 py-4 text-center text-[color:var(--color-muted)]">데이터 없음</td></tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+function PresaleArticlesSection({ session }: { session: Session | null }) {
+  const [rows, setRows] = useState<PresaleArticleRow[]>([]);
+  const [cno, setCno] = useState('');
+  const [code, setCode] = useState('');
+  const [limit, setLimit] = useState(500);
+  const [loading, setLoading] = useState(false);
+  const [err, setErr] = useState('');
+  const load = async () => {
+    if (!cno.trim()) { setErr('단지번호를 입력하세요'); return; }
+    setLoading(true);
+    setErr('');
+    try {
+      const r = await adminPresaleArticles(session, cno.trim(), code.trim(), limit);
+      if (!r.ok) throw new Error('서버 오류');
+      setRows(r.articles);
+    } catch (e) {
+      setErr(e instanceof ApiError ? e.message : (e as Error).message);
+    } finally {
+      setLoading(false);
+    }
+  };
+  return (
+    <div>
+      <div className="mb-2 flex flex-wrap items-center gap-2">
+        <input value={cno} onChange={e => setCno(e.target.value)}
+               placeholder="단지번호 (필수)"
+               className="w-44 h-8 px-2 rounded border border-[color:var(--color-border-strong)] text-sm" />
+        <select value={code} onChange={e => setCode(e.target.value)}
+                className="h-8 px-2 rounded border border-[color:var(--color-border-strong)] text-sm">
+          <option value="">전체</option>
+          <option value="B01">B01 (아파트)</option>
+          <option value="B02">B02 (오피/생숙)</option>
+        </select>
+        <label className="text-sm">최대
+          <input type="number" value={limit} min={1} max={10000}
+                 onChange={e => setLimit(Math.max(1, Math.min(10000, Number(e.target.value) || 1)))}
+                 className="mx-1 w-20 h-8 px-2 rounded border border-[color:var(--color-border-strong)] text-sm" />
+          건
+        </label>
+        <button onClick={load}
+                className="h-8 px-3 rounded-lg bg-[color:var(--color-brand)] text-white text-xs font-semibold">
+          조회
+        </button>
+        <span className="text-sm text-[color:var(--color-muted)] ml-2">
+          {loading ? '로딩 중...' : `${rows.length} 건`}
+        </span>
+      </div>
+      {err && <div className="text-sm text-red-700 mb-2">{err}</div>}
+      <div className="overflow-x-auto rounded-lg border border-[color:var(--color-border)]">
+        <table className="w-full text-sm">
+          <thead className="bg-[color:var(--color-bg-soft)]">
+            <tr>
+              <Th>매물번호</Th>
+              <Th>코드</Th>
+              <Th>거래</Th>
+              <Th>동</Th>
+              <Th>층</Th>
+              <Th>매매</Th>
+              <Th>전세</Th>
+              <Th>월세</Th>
+              <Th>가격(원본)</Th>
+              <Th>프미 min</Th>
+              <Th>프미 max</Th>
+              <Th>옵션</Th>
+              <Th>중개사</Th>
+              <Th>확인일</Th>
+              <Th>업데이트</Th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map(r => (
+              <tr key={r.article_no}
+                  className="border-t border-[color:var(--color-border)] hover:bg-[color:var(--color-bg-soft)]">
+                <Td><span className="font-mono">{r.article_no}</span></Td>
+                <Td>{r.presale_code}</Td>
+                <Td>{r.trade_type_code ?? ''}</Td>
+                <Td>{r.building_name ?? ''}</Td>
+                <Td>{r.floor_info ?? ''}</Td>
+                <Td>{r.price_deal ?? ''}</Td>
+                <Td>{r.price_warrant ?? ''}</Td>
+                <Td>{r.price_rent ?? ''}</Td>
+                <Td>{r.deal_or_warrant_prc ?? ''}</Td>
+                <Td>{r.premium_min ?? ''}</Td>
+                <Td>{r.premium_max ?? ''}</Td>
+                <Td>{r.option_price ?? ''}</Td>
+                <Td>{r.realtor_name ?? ''}</Td>
+                <Td>{r.article_confirm_ymd ?? ''}</Td>
+                <Td>{fmtDate(r.updated_at)}</Td>
+              </tr>
+            ))}
+            {!loading && rows.length === 0 && (
+              <tr><td colSpan={15} className="px-3 py-4 text-center text-[color:var(--color-muted)]">조회 결과 없음</td></tr>
+            )}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }
