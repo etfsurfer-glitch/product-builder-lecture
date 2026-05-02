@@ -968,3 +968,87 @@ export function adminPresalePopular(
     `/api/admin/presale/popular?${qs}`, session,
   );
 }
+
+// ── admin: 분양권 preheat 리스트 + 수동 트리거 ─────────────────────────────
+export interface PresalePreheatEntry {
+  naver_complex_no: string;
+  presale_code:     string;
+  complex_name:     string | null;
+  enabled:          boolean;
+  priority:         number;
+  created_at?:      string;
+  updated_at?:      string;
+}
+
+export function adminPresalePreheatList(session: Session | null) {
+  return request<{ ok: boolean; count: number; entries: PresalePreheatEntry[] }>(
+    '/api/admin/presale/preheat-list', session,
+  );
+}
+
+export function adminPresalePreheatUpsert(
+  session: Session | null,
+  entry: Omit<PresalePreheatEntry, 'created_at' | 'updated_at'>,
+) {
+  return request<{ ok: boolean; entry?: PresalePreheatEntry; error?: string }>(
+    '/api/admin/presale/preheat-list', session,
+    { method: 'POST', body: JSON.stringify(entry) },
+  );
+}
+
+export function adminPresalePreheatDelete(
+  session: Session | null,
+  cno: string, code: string = 'B01',
+) {
+  const qs = new URLSearchParams({
+    naver_complex_no: cno, presale_code: code,
+  }).toString();
+  return request<{ ok: boolean; error?: string }>(
+    `/api/admin/presale/preheat-list?${qs}`, session,
+    { method: 'DELETE' },
+  );
+}
+
+export function adminPresaleResetNow(session: Session | null) {
+  return request<{
+    ok: boolean; articles_err?: string | null; meta_err?: string | null; elapsed_sec?: number;
+  }>(
+    '/api/admin/presale/reset-now', session,
+    { method: 'POST' },
+  );
+}
+
+export interface PresaleRoutineResult {
+  ok: boolean;
+  host: string;
+  do_delete: boolean;
+  delete_result?: unknown;
+  preheat_results: Array<{
+    ok: boolean;
+    naver_complex_no: string;
+    presale_code: string;
+    complex_name: string;
+    count?: number;
+    error?: string;
+    elapsed_sec: number;
+  }>;
+  preheated_ok: number;
+  preheated_fail: number;
+  assigned_count: number;
+  total_enabled: number;
+  elapsed_sec: number;
+}
+
+export function adminPresalePreheatNow(
+  session: Session | null,
+  host: 'A' | 'B' | 'all' = 'all',
+  doDelete: boolean = false,
+) {
+  const qs = new URLSearchParams({
+    host, do_delete: String(doDelete),
+  }).toString();
+  return request<PresaleRoutineResult>(
+    `/api/admin/presale/preheat-now?${qs}`, session,
+    { method: 'POST' },
+  );
+}

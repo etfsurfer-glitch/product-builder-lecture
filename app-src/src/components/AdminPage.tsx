@@ -7,9 +7,12 @@ import {
   adminDashboardMulti, adminProxyRotateForHost, adminDeleteUser,
   getAdminForceHostIdx, setAdminForceHostIdx, API_HOSTS,
   adminPresaleSummary, adminPresaleArticles, adminPresaleLog, adminPresalePopular,
+  adminPresalePreheatList, adminPresalePreheatUpsert, adminPresalePreheatDelete,
+  adminPresaleResetNow, adminPresalePreheatNow,
   type AdminUserRow, type DeviceRow, type DeviceLimits,
   type AdminLogKind, type DashboardWithHost, ApiError,
   type PresaleComplexSummary, type PresaleArticleRow, type PresaleExtractLog, type PresalePopularRow,
+  type PresalePreheatEntry, type PresaleRoutineResult,
 } from '../lib/api';
 
 type AdminUserFull = AdminUserRow & {
@@ -1143,7 +1146,7 @@ function ComplexCell({ cno, name }: { cno: string; name: string | null | undefin
 }
 
 function PresaleTab({ session }: { session: Session | null }) {
-  const [section, setSection] = useState<'summary' | 'popular' | 'log' | 'articles'>('summary');
+  const [section, setSection] = useState<'summary' | 'popular' | 'log' | 'articles' | 'preheat'>('summary');
   return (
     <div>
       <div className="mb-3 flex flex-wrap gap-2">
@@ -1152,6 +1155,7 @@ function PresaleTab({ session }: { session: Session | null }) {
           ['popular',  '인기 단지'],
           ['log',      '추출 이력'],
           ['articles', '매물 상세'],
+          ['preheat',  'Preheat 관리'],
         ] as [typeof section, string][]).map(([k, label]) => (
           <button key={k} onClick={() => setSection(k)}
                   className={
@@ -1168,6 +1172,7 @@ function PresaleTab({ session }: { session: Session | null }) {
       {section === 'popular'  && <PresalePopularSection  session={session} />}
       {section === 'log'      && <PresaleLogSection      session={session} />}
       {section === 'articles' && <PresaleArticlesSection session={session} />}
+      {section === 'preheat'  && <PresalePreheatSection  session={session} />}
     </div>
   );
 }
@@ -1505,6 +1510,276 @@ function PresaleArticlesSection({ session }: { session: Session | null }) {
             ))}
             {!loading && rows.length === 0 && (
               <tr><td colSpan={15} className="px-3 py-4 text-center text-[color:var(--color-muted)]">조회 결과 없음</td></tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+function PresalePreheatSection({ session }: { session: Session | null }) {
+  const [rows, setRows] = useState<PresalePreheatEntry[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [err, setErr] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [running, setRunning] = useState<'reset' | 'A' | 'B' | 'all' | null>(null);
+  const [result, setResult] = useState<PresaleRoutineResult | null>(null);
+  // 신규 추가 폼
+  const [newCno, setNewCno]     = useState('');
+  const [newCode, setNewCode]   = useState<'B01' | 'B02'>('B01');
+  const [newName, setNewName]   = useState('');
+  const [newPrio, setNewPrio]   = useState(100);
+
+  const load = async () => {
+    setLoading(true); setErr('');
+    try {
+      const r = await adminPresalePreheatList(session);
+      if (!r.ok) throw new Error('서버 오류');
+      setRows(r.entries);
+    } catch (e) {
+      setErr(e instanceof ApiError ? e.message : (e as Error).message);
+    } finally {
+      setLoading(false);
+    }
+  };
+  useEffect(() => { load(); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [session]);
+
+  const upsertEntry = async (entry: Omit<PresalePreheatEntry, 'created_at' | 'updated_at'>) => {
+    setBusy(true); setErr('');
+    try {
+      const r = await adminPresalePreheatUpsert(session, entry);
+      if (!r.ok) throw new Error(r.error || '서버 오류');
+      await load();
+    } catch (e) {
+      setErr(e instanceof ApiError ? e.message : (e as Error).message);
+    } finally { setBusy(false); }
+  };
+  const addNew = async () => {
+    if (!newCno.trim()) { setErr('단지번호 필요'); return; }
+    await upsertEntry({
+      naver_complex_no: newCno.trim(),
+      presale_code:     newCode,
+      complex_name:     newName.trim() || null,
+      enabled:          true,
+      priority:         newPrio,
+    });
+    setNewCno(''); setNewName(''); setNewPrio(100);
+  };
+  const toggleEnabled = (r: PresalePreheatEntry) => upsertEntry({
+    naver_complex_no: r.naver_complex_no,
+    presale_code:     r.presale_code,
+    complex_name:     r.complex_name,
+    enabled:          !r.enabled,
+    priority:         r.priority,
+  });
+  const updatePrio = (r: PresalePreheatEntry, p: number) => upsertEntry({
+    naver_complex_no: r.naver_complex_no,
+    presale_code:     r.presale_code,
+    complex_name:     r.complex_name,
+    enabled:          r.enabled,
+    priority:         p,
+  });
+  const removeEntry = async (r: PresalePreheatEntry) => {
+    if (!confirm(`삭제: ${r.complex_name || r.naver_complex_no} (${r.presale_code})?`)) return;
+    setBusy(true); setErr('');
+    try {
+      const x = await adminPresalePreheatDelete(session, r.naver_complex_no, r.presale_code);
+      if (!x.ok) throw new Error(x.error || '서버 오류');
+      await load();
+    } catch (e) {
+      setErr(e instanceof ApiError ? e.message : (e as Error).message);
+    } finally { setBusy(false); }
+  };
+
+  const runReset = async () => {
+    if (!confirm('정말 모든 분양권 캐시를 DELETE 합니까? (log 는 유지)')) return;
+    setRunning('reset'); setErr(''); setResult(null);
+    try {
+      const r = await adminPresaleResetNow(session);
+      setResult({
+        ok: r.ok, host: 'reset', do_delete: true, delete_result: r,
+        preheat_results: [], preheated_ok: 0, preheated_fail: 0,
+        assigned_count: 0, total_enabled: 0, elapsed_sec: r.elapsed_sec ?? 0,
+      });
+    } catch (e) {
+      setErr(e instanceof ApiError ? e.message : (e as Error).message);
+    } finally { setRunning(null); }
+  };
+  const runPreheat = async (host: 'A' | 'B' | 'all', doDelete: boolean) => {
+    if (doDelete && !confirm(`reset 포함 preheat 실행 (host=${host})?`)) return;
+    setRunning(host); setErr(''); setResult(null);
+    try {
+      const r = await adminPresalePreheatNow(session, host, doDelete);
+      setResult(r);
+    } catch (e) {
+      setErr(e instanceof ApiError ? e.message : (e as Error).message);
+    } finally { setRunning(null); }
+  };
+
+  // A/B 분담 미리보기 (priority 정렬, 짝수=A, 홀수=B)
+  const enabledSorted = rows
+    .filter(r => r.enabled)
+    .slice()
+    .sort((a, b) => a.priority - b.priority || a.naver_complex_no.localeCompare(b.naver_complex_no));
+  const aSlice = enabledSorted.filter((_, i) => i % 2 === 0);
+  const bSlice = enabledSorted.filter((_, i) => i % 2 === 1);
+
+  return (
+    <div>
+      {/* 수동 트리거 패널 */}
+      <div className="mb-4 p-3 rounded-lg border border-[color:var(--color-border)] bg-[color:var(--color-bg-soft)]">
+        <div className="text-sm font-semibold mb-2">수동 실행</div>
+        <div className="flex flex-wrap gap-2">
+          <button onClick={runReset} disabled={!!running}
+                  className="h-8 px-3 rounded bg-red-600 text-white text-xs font-semibold disabled:opacity-40">
+            {running === 'reset' ? '실행 중...' : '⚠ 즉시 reset (DELETE)'}
+          </button>
+          <button onClick={() => runPreheat('A', false)} disabled={!!running}
+                  className="h-8 px-3 rounded bg-[color:var(--color-brand)] text-white text-xs font-semibold disabled:opacity-40">
+            {running === 'A' ? '실행 중...' : `A 분담 preheat (${aSlice.length}건)`}
+          </button>
+          <button onClick={() => runPreheat('B', false)} disabled={!!running}
+                  className="h-8 px-3 rounded bg-[color:var(--color-brand)] text-white text-xs font-semibold disabled:opacity-40">
+            {running === 'B' ? '실행 중...' : `B 분담 preheat (${bSlice.length}건)`}
+          </button>
+          <button onClick={() => runPreheat('all', false)} disabled={!!running}
+                  className="h-8 px-3 rounded bg-gray-600 text-white text-xs font-semibold disabled:opacity-40">
+            {running === 'all' ? '실행 중...' : `전체 preheat (${enabledSorted.length}건)`}
+          </button>
+          <button onClick={() => runPreheat('all', true)} disabled={!!running}
+                  className="h-8 px-3 rounded bg-orange-600 text-white text-xs font-semibold disabled:opacity-40"
+                  title="reset 후 전체 preheat — 5am routine 시뮬레이션">
+            {running === 'all' ? '실행 중...' : 'reset + 전체 preheat'}
+          </button>
+        </div>
+        <div className="mt-2 text-xs text-[color:var(--color-muted)]">
+          분담: A = 짝수 인덱스 ({aSlice.length}건), B = 홀수 인덱스 ({bSlice.length}건). 우선순위 작은 순.
+        </div>
+      </div>
+
+      {/* 실행 결과 */}
+      {result && (
+        <div className="mb-4 p-3 rounded-lg border border-[color:var(--color-border)] bg-white">
+          <div className="text-sm font-semibold mb-2">
+            결과 — host=<span className="font-mono">{result.host}</span>
+            {result.do_delete && <span className="ml-2 text-red-700">(DELETE 포함)</span>}
+            <span className="ml-2 text-[color:var(--color-muted)]">{result.elapsed_sec}s</span>
+          </div>
+          {result.preheat_results.length > 0 && (
+            <div className="text-xs mb-2">
+              ✓ {result.preheated_ok} 성공 / ✗ {result.preheated_fail} 실패
+              (assigned {result.assigned_count} / total {result.total_enabled})
+            </div>
+          )}
+          {result.preheat_results.length > 0 && (
+            <div className="overflow-x-auto rounded border border-[color:var(--color-border)] max-h-72">
+              <table className="w-full text-xs">
+                <thead className="bg-[color:var(--color-bg-soft)] sticky top-0">
+                  <tr>
+                    <Th>결과</Th><Th>단지</Th><Th>code</Th><Th>건수</Th><Th>소요</Th><Th>오류</Th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {result.preheat_results.map((p, i) => (
+                    <tr key={i} className="border-t border-[color:var(--color-border)]">
+                      <Td>{p.ok ? '✓' : '✗'}</Td>
+                      <Td>
+                        {p.complex_name || ''}
+                        <span className="ml-1 font-mono text-[color:var(--color-muted)]">#{p.naver_complex_no}</span>
+                      </Td>
+                      <Td>{p.presale_code}</Td>
+                      <Td>{p.count ?? '-'}</Td>
+                      <Td>{p.elapsed_sec}s</Td>
+                      <Td><span className="text-red-700">{p.error ?? ''}</span></Td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* 신규 추가 */}
+      <div className="mb-3 flex flex-wrap items-center gap-2">
+        <input value={newCno} onChange={e => setNewCno(e.target.value)}
+               placeholder="단지번호 (필수)"
+               className="w-40 h-8 px-2 rounded border border-[color:var(--color-border-strong)] text-sm" />
+        <select value={newCode} onChange={e => setNewCode(e.target.value as 'B01' | 'B02')}
+                className="h-8 px-2 rounded border border-[color:var(--color-border-strong)] text-sm">
+          <option value="B01">B01 (아파트)</option>
+          <option value="B02">B02 (오피·생숙)</option>
+        </select>
+        <input value={newName} onChange={e => setNewName(e.target.value)}
+               placeholder="단지명 (선택)"
+               className="w-56 h-8 px-2 rounded border border-[color:var(--color-border-strong)] text-sm" />
+        <input type="number" value={newPrio}
+               onChange={e => setNewPrio(Number(e.target.value) || 0)}
+               placeholder="우선순위"
+               className="w-20 h-8 px-2 rounded border border-[color:var(--color-border-strong)] text-sm" />
+        <button onClick={addNew} disabled={busy || !newCno.trim()}
+                className="h-8 px-3 rounded-lg bg-[color:var(--color-brand)] text-white text-xs font-semibold disabled:opacity-40">
+          추가
+        </button>
+      </div>
+
+      {err && <div className="text-sm text-red-700 mb-2">{err}</div>}
+
+      <div className="overflow-x-auto rounded-lg border border-[color:var(--color-border)]">
+        <table className="w-full text-sm">
+          <thead className="bg-[color:var(--color-bg-soft)]">
+            <tr>
+              <Th>활성</Th>
+              <Th>우선순위</Th>
+              <Th>분담</Th>
+              <Th>단지</Th>
+              <Th>타입</Th>
+              <Th>업데이트</Th>
+              <Th>삭제</Th>
+            </tr>
+          </thead>
+          <tbody>
+            {(loading ? [] : enabledSorted.concat(rows.filter(r => !r.enabled).sort(
+              (a, b) => a.priority - b.priority || a.naver_complex_no.localeCompare(b.naver_complex_no))))
+              .map((r, i) => {
+                const isEnabled  = r.enabled;
+                const idxEnabled = enabledSorted.findIndex(x =>
+                  x.naver_complex_no === r.naver_complex_no && x.presale_code === r.presale_code);
+                const host = !isEnabled ? '-' : (idxEnabled % 2 === 0 ? 'A' : 'B');
+                return (
+                  <tr key={`${r.naver_complex_no}_${r.presale_code}_${i}`}
+                      className={'border-t border-[color:var(--color-border)] hover:bg-[color:var(--color-bg-soft)] ' +
+                                 (isEnabled ? '' : 'opacity-50')}>
+                    <Td>
+                      <input type="checkbox" checked={r.enabled}
+                             onChange={() => toggleEnabled(r)} disabled={busy} />
+                    </Td>
+                    <Td>
+                      <input type="number" defaultValue={r.priority}
+                             onBlur={e => {
+                               const v = Number(e.target.value);
+                               if (!Number.isNaN(v) && v !== r.priority) updatePrio(r, v);
+                             }}
+                             className="w-16 h-7 px-1 rounded border border-[color:var(--color-border)] text-sm" />
+                    </Td>
+                    <Td>{host}</Td>
+                    <Td><ComplexCell cno={r.naver_complex_no} name={r.complex_name} /></Td>
+                    <Td>{presaleCodeLabel(r.presale_code)}</Td>
+                    <Td>{r.updated_at ? fmtDate(r.updated_at) : ''}</Td>
+                    <Td>
+                      <button onClick={() => removeEntry(r)} disabled={busy}
+                              className="h-7 px-2 rounded border border-[color:var(--color-border)] text-red-700 text-xs hover:bg-red-50">
+                        ×
+                      </button>
+                    </Td>
+                  </tr>
+                );
+              })}
+            {!loading && rows.length === 0 && (
+              <tr><td colSpan={7} className="px-3 py-4 text-center text-[color:var(--color-muted)]">
+                preheat 대상 단지 없음 — 위에서 추가하세요
+              </td></tr>
             )}
           </tbody>
         </table>
