@@ -9,6 +9,7 @@ import {
   adminPresaleSummary, adminPresaleArticles, adminPresaleLog, adminPresalePopular,
   adminPresalePreheatList, adminPresalePreheatUpsert, adminPresalePreheatDelete,
   adminPresaleResetNow, adminPresalePreheatNow,
+  searchComplex, type ComplexItem,
   type AdminUserRow, type DeviceRow, type DeviceLimits,
   type AdminLogKind, type DashboardWithHost, ApiError,
   type PresaleComplexSummary, type PresaleArticleRow, type PresaleExtractLog, type PresalePopularRow,
@@ -1527,11 +1528,12 @@ function PresalePreheatSection({ session }: { session: Session | null }) {
   const [busy, setBusy] = useState(false);
   const [running, setRunning] = useState<'reset' | 'A' | 'B' | 'all' | null>(null);
   const [result, setResult] = useState<PresaleRoutineResult | null>(null);
-  // 신규 추가 폼
-  const [newCno, setNewCno]     = useState('');
-  const [newCode, setNewCode]   = useState<'B01' | 'B02'>('B01');
-  const [newName, setNewName]   = useState('');
-  const [newPrio, setNewPrio]   = useState(100);
+  // 신규 추가 — 검색 기반
+  const [searchKw, setSearchKw]               = useState('');
+  const [searching, setSearching]             = useState(false);
+  const [searchResults, setSearchResults]     = useState<ComplexItem[]>([]);
+  const [selectedComplex, setSelectedComplex] = useState<ComplexItem | null>(null);
+  const [newPrio, setNewPrio]                 = useState(100);
 
   const load = async () => {
     setLoading(true); setErr('');
@@ -1557,16 +1559,44 @@ function PresalePreheatSection({ session }: { session: Session | null }) {
       setErr(e instanceof ApiError ? e.message : (e as Error).message);
     } finally { setBusy(false); }
   };
+  const detectCode = (slnd: string): 'B01' | 'B02' => (
+    /오피스텔|생활숙박시설/.test(slnd || '') ? 'B02' : 'B01'
+  );
+  const doSearch = async () => {
+    if (!searchKw.trim()) { setErr('검색어 입력 필요'); return; }
+    setSearching(true); setErr(''); setSearchResults([]);
+    try {
+      const r = await searchComplex(session, searchKw.trim());
+      if (!r.ok) throw new Error('검색 실패');
+      // 분양권 단지만 필터
+      const onlyPresale = r.items.filter(c => (c.slnd_nm || '').includes('분양권'));
+      setSearchResults(onlyPresale);
+      if (onlyPresale.length === 0 && r.items.length > 0) {
+        setErr(`검색 결과 ${r.items.length}건 — 분양권 단지 없음`);
+      }
+    } catch (e) {
+      setErr(e instanceof ApiError ? e.message : (e as Error).message);
+    } finally { setSearching(false); }
+  };
+  const selectResult = (c: ComplexItem) => {
+    setSelectedComplex(c);
+    setSearchResults([]);
+    setSearchKw('');
+  };
+  const clearSelection = () => {
+    setSelectedComplex(null);
+    setNewPrio(100);
+  };
   const addNew = async () => {
-    if (!newCno.trim()) { setErr('단지번호 필요'); return; }
+    if (!selectedComplex) { setErr('단지 선택 필요'); return; }
     await upsertEntry({
-      naver_complex_no: newCno.trim(),
-      presale_code:     newCode,
-      complex_name:     newName.trim() || null,
+      naver_complex_no: selectedComplex.complex_no,
+      presale_code:     detectCode(selectedComplex.slnd_nm),
+      complex_name:     selectedComplex.name || null,
       enabled:          true,
       priority:         newPrio,
     });
-    setNewCno(''); setNewName(''); setNewPrio(100);
+    clearSelection();
   };
   const toggleEnabled = (r: PresalePreheatEntry) => upsertEntry({
     naver_complex_no: r.naver_complex_no,
@@ -1703,27 +1733,68 @@ function PresalePreheatSection({ session }: { session: Session | null }) {
         </div>
       )}
 
-      {/* 신규 추가 */}
-      <div className="mb-3 flex flex-wrap items-center gap-2">
-        <input value={newCno} onChange={e => setNewCno(e.target.value)}
-               placeholder="단지번호 (필수)"
-               className="w-40 h-8 px-2 rounded border border-[color:var(--color-border-strong)] text-sm" />
-        <select value={newCode} onChange={e => setNewCode(e.target.value as 'B01' | 'B02')}
-                className="h-8 px-2 rounded border border-[color:var(--color-border-strong)] text-sm">
-          <option value="B01">B01 (아파트)</option>
-          <option value="B02">B02 (오피·생숙)</option>
-        </select>
-        <input value={newName} onChange={e => setNewName(e.target.value)}
-               placeholder="단지명 (선택)"
-               className="w-56 h-8 px-2 rounded border border-[color:var(--color-border-strong)] text-sm" />
-        <input type="number" value={newPrio}
-               onChange={e => setNewPrio(Number(e.target.value) || 0)}
-               placeholder="우선순위"
-               className="w-20 h-8 px-2 rounded border border-[color:var(--color-border-strong)] text-sm" />
-        <button onClick={addNew} disabled={busy || !newCno.trim()}
-                className="h-8 px-3 rounded-lg bg-[color:var(--color-brand)] text-white text-xs font-semibold disabled:opacity-40">
-          추가
-        </button>
+      {/* 신규 추가 — 검색 기반 */}
+      <div className="mb-3 p-3 rounded-lg border border-[color:var(--color-border)] bg-white">
+        <div className="text-sm font-semibold mb-2">단지 추가</div>
+        {!selectedComplex ? (
+          <>
+            <div className="flex flex-wrap items-center gap-2">
+              <input value={searchKw}
+                     onChange={e => setSearchKw(e.target.value)}
+                     onKeyDown={e => { if (e.key === 'Enter') doSearch(); }}
+                     placeholder="단지명 검색 (예: 탕정푸르지오, 한화포레나)"
+                     className="flex-1 min-w-[240px] h-8 px-2 rounded border border-[color:var(--color-border-strong)] text-sm" />
+              <button onClick={doSearch} disabled={searching || !searchKw.trim()}
+                      className="h-8 px-3 rounded-lg bg-[color:var(--color-brand)] text-white text-xs font-semibold disabled:opacity-40">
+                {searching ? '검색 중...' : '검색'}
+              </button>
+            </div>
+            {searchResults.length > 0 && (
+              <div className="mt-2 max-h-72 overflow-y-auto rounded border border-[color:var(--color-border)]">
+                {searchResults.map(c => (
+                  <button key={c.complex_no}
+                          onClick={() => selectResult(c)}
+                          className="w-full text-left px-3 py-2 border-b border-[color:var(--color-border)] last:border-b-0 hover:bg-[color:var(--color-bg-soft)] text-sm">
+                    <div className="font-semibold">{c.name}
+                      <span className="ml-2 text-xs text-[color:var(--color-muted)] font-normal">
+                        {c.slnd_nm} · {detectCode(c.slnd_nm)}
+                      </span>
+                    </div>
+                    <div className="text-xs text-[color:var(--color-muted)]">
+                      <span className="font-mono">#{c.complex_no}</span> · {c.addr_full || c.addr || ''}
+                    </div>
+                  </button>
+                ))}
+              </div>
+            )}
+          </>
+        ) : (
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="flex-1 min-w-[200px]">
+              <div className="text-sm font-semibold">{selectedComplex.name}
+                <span className="ml-2 text-xs text-[color:var(--color-muted)] font-normal">
+                  {selectedComplex.slnd_nm} · {detectCode(selectedComplex.slnd_nm)}
+                </span>
+              </div>
+              <div className="text-xs text-[color:var(--color-muted)]">
+                <span className="font-mono">#{selectedComplex.complex_no}</span> · {selectedComplex.addr_full || ''}
+              </div>
+            </div>
+            <label className="text-sm">우선순위
+              <input type="number" value={newPrio}
+                     onChange={e => setNewPrio(Number(e.target.value) || 0)}
+                     className="ml-1 w-20 h-8 px-2 rounded border border-[color:var(--color-border-strong)] text-sm" />
+            </label>
+            <button onClick={addNew} disabled={busy}
+                    className="h-8 px-3 rounded-lg bg-[color:var(--color-brand)] text-white text-xs font-semibold disabled:opacity-40">
+              추가
+            </button>
+            <button onClick={clearSelection} disabled={busy}
+                    className="h-8 px-3 rounded-lg border border-[color:var(--color-border)] text-xs font-semibold">
+              취소
+            </button>
+          </div>
+        )}
       </div>
 
       {err && <div className="text-sm text-red-700 mb-2">{err}</div>}
