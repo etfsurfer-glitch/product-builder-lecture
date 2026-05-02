@@ -873,6 +873,7 @@ export function comparePortfolio(
 export interface PresaleComplexSummary {
   naver_complex_no: string;
   presale_code: string;
+  complex_name: string | null;
   last_full_fetch_at: string | null;
   article_count: number;
   actual_count: number;
@@ -915,7 +916,7 @@ export function adminPresaleArticles(
     ...(code ? { presale_code: code } : {}),
     limit: String(limit),
   }).toString();
-  return request<{ ok: boolean; count: number; articles: PresaleArticleRow[] }>(
+  return request<{ ok: boolean; count: number; complex_name: string | null; articles: PresaleArticleRow[] }>(
     `/api/admin/presale/articles?${qs}`, session,
   );
 }
@@ -924,6 +925,7 @@ export interface PresaleExtractLog {
   id: number;
   naver_complex_no: string;
   presale_code: string | null;
+  complex_name: string | null;
   cache_hit_count: number | null;
   changed_count: number | null;
   delete_count: number | null;
@@ -947,6 +949,7 @@ export function adminPresaleLog(
 
 export interface PresalePopularRow {
   naver_complex_no: string;
+  complex_name: string | null;
   extract_count: number;
   avg_elapsed_sec: number;
   avg_hit: number;

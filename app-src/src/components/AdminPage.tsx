@@ -1120,6 +1120,28 @@ function MetaEditor({
 // ───────────────────────────────────────────────────────────
 // Tab 5: 분양권 캐시 모니터링
 // ───────────────────────────────────────────────────────────
+const PRESALE_CODE_LABEL: Record<string, string> = {
+  B01: 'B01 (아파트)',
+  B02: 'B02 (오피·생숙)',
+};
+function presaleCodeLabel(code: string | null | undefined): string {
+  if (!code) return '';
+  return PRESALE_CODE_LABEL[code] ?? code;
+}
+function ComplexCell({ cno, name }: { cno: string; name: string | null | undefined }) {
+  return (
+    <div className="leading-tight">
+      <div className="font-semibold">{name || <span className="text-[color:var(--color-muted)]">(이름 없음)</span>}</div>
+      <a href={`https://new.land.naver.com/complexes/${cno}`}
+         target="_blank" rel="noopener noreferrer"
+         className="font-mono text-xs text-[color:var(--color-brand)] underline"
+         title="네이버 단지 페이지 열기">
+        #{cno}
+      </a>
+    </div>
+  );
+}
+
 function PresaleTab({ session }: { session: Session | null }) {
   const [section, setSection] = useState<'summary' | 'popular' | 'log' | 'articles'>('summary');
   return (
@@ -1184,8 +1206,8 @@ function PresaleSummarySection({ session }: { session: Session | null }) {
         <table className="w-full text-sm">
           <thead className="bg-[color:var(--color-bg-soft)]">
             <tr>
-              <Th>단지번호</Th>
-              <Th>코드</Th>
+              <Th>단지</Th>
+              <Th>타입</Th>
               <Th>마지막 추출</Th>
               <Th>매물(메타/실제)</Th>
               <Th>매매</Th>
@@ -1199,8 +1221,8 @@ function PresaleSummarySection({ session }: { session: Session | null }) {
             {rows.map(r => (
               <tr key={`${r.naver_complex_no}_${r.presale_code}`}
                   className="border-t border-[color:var(--color-border)] hover:bg-[color:var(--color-bg-soft)]">
-                <Td><span className="font-mono">{r.naver_complex_no}</span></Td>
-                <Td>{r.presale_code}</Td>
+                <Td><ComplexCell cno={r.naver_complex_no} name={r.complex_name} /></Td>
+                <Td>{presaleCodeLabel(r.presale_code)}</Td>
                 <Td>{fmtDate(r.last_full_fetch_at)}</Td>
                 <Td>{r.article_count} / {r.actual_count}</Td>
                 <Td>{r.trades['매매']}</Td>
@@ -1269,7 +1291,7 @@ function PresalePopularSection({ session }: { session: Session | null }) {
           <thead className="bg-[color:var(--color-bg-soft)]">
             <tr>
               <Th>순위</Th>
-              <Th>단지번호</Th>
+              <Th>단지</Th>
               <Th>추출 횟수</Th>
               <Th>평균 소요(초)</Th>
               <Th>평균 hit</Th>
@@ -1282,7 +1304,7 @@ function PresalePopularSection({ session }: { session: Session | null }) {
               <tr key={r.naver_complex_no}
                   className="border-t border-[color:var(--color-border)] hover:bg-[color:var(--color-bg-soft)]">
                 <Td>{i + 1}</Td>
-                <Td><span className="font-mono">{r.naver_complex_no}</span></Td>
+                <Td><ComplexCell cno={r.naver_complex_no} name={r.complex_name} /></Td>
                 <Td>{r.extract_count}</Td>
                 <Td>{r.avg_elapsed_sec}</Td>
                 <Td>{r.avg_hit}</Td>
@@ -1346,8 +1368,8 @@ function PresaleLogSection({ session }: { session: Session | null }) {
           <thead className="bg-[color:var(--color-bg-soft)]">
             <tr>
               <Th>시각</Th>
-              <Th>단지번호</Th>
-              <Th>코드</Th>
+              <Th>단지</Th>
+              <Th>타입</Th>
               <Th>cache hit</Th>
               <Th>변경</Th>
               <Th>삭제</Th>
@@ -1360,8 +1382,8 @@ function PresaleLogSection({ session }: { session: Session | null }) {
               <tr key={r.id}
                   className="border-t border-[color:var(--color-border)] hover:bg-[color:var(--color-bg-soft)]">
                 <Td>{fmtDate(r.extracted_at)}</Td>
-                <Td><span className="font-mono">{r.naver_complex_no}</span></Td>
-                <Td>{r.presale_code ?? ''}</Td>
+                <Td><ComplexCell cno={r.naver_complex_no} name={r.complex_name} /></Td>
+                <Td>{presaleCodeLabel(r.presale_code)}</Td>
                 <Td>{r.cache_hit_count ?? '-'}</Td>
                 <Td>{r.changed_count ?? '-'}</Td>
                 <Td>{r.delete_count ?? '-'}</Td>
@@ -1381,6 +1403,7 @@ function PresaleLogSection({ session }: { session: Session | null }) {
 
 function PresaleArticlesSection({ session }: { session: Session | null }) {
   const [rows, setRows] = useState<PresaleArticleRow[]>([]);
+  const [cname, setCname] = useState<string | null>(null);
   const [cno, setCno] = useState('');
   const [code, setCode] = useState('');
   const [limit, setLimit] = useState(500);
@@ -1394,6 +1417,7 @@ function PresaleArticlesSection({ session }: { session: Session | null }) {
       const r = await adminPresaleArticles(session, cno.trim(), code.trim(), limit);
       if (!r.ok) throw new Error('서버 오류');
       setRows(r.articles);
+      setCname(r.complex_name ?? null);
     } catch (e) {
       setErr(e instanceof ApiError ? e.message : (e as Error).message);
     } finally {
@@ -1427,12 +1451,22 @@ function PresaleArticlesSection({ session }: { session: Session | null }) {
         </span>
       </div>
       {err && <div className="text-sm text-red-700 mb-2">{err}</div>}
+      {cname && rows.length > 0 && (
+        <div className="mb-2 text-sm">
+          <span className="font-semibold">{cname}</span>
+          <a href={`https://new.land.naver.com/complexes/${cno.trim()}`}
+             target="_blank" rel="noopener noreferrer"
+             className="ml-2 font-mono text-xs text-[color:var(--color-brand)] underline">
+            #{cno.trim()}
+          </a>
+        </div>
+      )}
       <div className="overflow-x-auto rounded-lg border border-[color:var(--color-border)]">
         <table className="w-full text-sm">
           <thead className="bg-[color:var(--color-bg-soft)]">
             <tr>
               <Th>매물번호</Th>
-              <Th>코드</Th>
+              <Th>타입</Th>
               <Th>거래</Th>
               <Th>동</Th>
               <Th>층</Th>
@@ -1453,7 +1487,7 @@ function PresaleArticlesSection({ session }: { session: Session | null }) {
               <tr key={r.article_no}
                   className="border-t border-[color:var(--color-border)] hover:bg-[color:var(--color-bg-soft)]">
                 <Td><span className="font-mono">{r.article_no}</span></Td>
-                <Td>{r.presale_code}</Td>
+                <Td>{presaleCodeLabel(r.presale_code)}</Td>
                 <Td>{r.trade_type_code ?? ''}</Td>
                 <Td>{r.building_name ?? ''}</Td>
                 <Td>{r.floor_info ?? ''}</Td>
