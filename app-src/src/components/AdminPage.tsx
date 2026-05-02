@@ -9,7 +9,7 @@ import {
   adminPresaleSummary, adminPresaleArticles, adminPresaleLog, adminPresalePopular,
   adminPresalePreheatList, adminPresalePreheatUpsert, adminPresalePreheatDelete,
   adminPresaleResetNow, adminPresalePreheatNow,
-  searchComplex, type ComplexItem,
+  presaleSearch, type PresaleSearchItem,
   type AdminUserRow, type DeviceRow, type DeviceLimits,
   type AdminLogKind, type DashboardWithHost, ApiError,
   type PresaleComplexSummary, type PresaleArticleRow, type PresaleExtractLog, type PresalePopularRow,
@@ -1531,8 +1531,8 @@ function PresalePreheatSection({ session }: { session: Session | null }) {
   // 신규 추가 — 검색 기반
   const [searchKw, setSearchKw]               = useState('');
   const [searching, setSearching]             = useState(false);
-  const [searchResults, setSearchResults]     = useState<ComplexItem[]>([]);
-  const [selectedComplex, setSelectedComplex] = useState<ComplexItem | null>(null);
+  const [searchResults, setSearchResults]     = useState<PresaleSearchItem[]>([]);
+  const [selectedComplex, setSelectedComplex] = useState<PresaleSearchItem | null>(null);
   const [newPrio, setNewPrio]                 = useState(100);
 
   const load = async () => {
@@ -1559,26 +1559,31 @@ function PresalePreheatSection({ session }: { session: Session | null }) {
       setErr(e instanceof ApiError ? e.message : (e as Error).message);
     } finally { setBusy(false); }
   };
-  const detectCode = (slnd: string): 'B01' | 'B02' => (
-    /오피스텔|생활숙박시설/.test(slnd || '') ? 'B02' : 'B01'
-  );
   const doSearch = async () => {
     if (!searchKw.trim()) { setErr('검색어 입력 필요'); return; }
     setSearching(true); setErr(''); setSearchResults([]);
     try {
-      const r = await searchComplex(session, searchKw.trim());
-      if (!r.ok) throw new Error('검색 실패');
-      // 분양권 단지만 필터
-      const onlyPresale = r.items.filter(c => (c.slnd_nm || '').includes('분양권'));
-      setSearchResults(onlyPresale);
-      if (onlyPresale.length === 0 && r.items.length > 0) {
-        setErr(`검색 결과 ${r.items.length}건 — 분양권 단지 없음`);
+      const kw = searchKw.trim();
+      const [r1, r2] = await Promise.all([
+        presaleSearch(session, kw, '아파트분양권'),
+        presaleSearch(session, kw, '오피스텔분양권'),
+      ]);
+      if (!r1.ok && !r2.ok) throw new Error('검색 실패');
+      const merged: PresaleSearchItem[] = [];
+      const seen = new Set<string>();
+      for (const it of [...(r1.items || []), ...(r2.items || [])]) {
+        const k = it.naver_complex_no + ':' + it.presale_code;
+        if (seen.has(k)) continue;
+        seen.add(k);
+        merged.push(it);
       }
+      setSearchResults(merged);
+      if (merged.length === 0) setErr('검색 결과 없음');
     } catch (e) {
       setErr(e instanceof ApiError ? e.message : (e as Error).message);
     } finally { setSearching(false); }
   };
-  const selectResult = (c: ComplexItem) => {
+  const selectResult = (c: PresaleSearchItem) => {
     setSelectedComplex(c);
     setSearchResults([]);
     setSearchKw('');
@@ -1590,8 +1595,8 @@ function PresalePreheatSection({ session }: { session: Session | null }) {
   const addNew = async () => {
     if (!selectedComplex) { setErr('단지 선택 필요'); return; }
     await upsertEntry({
-      naver_complex_no: selectedComplex.complex_no,
-      presale_code:     detectCode(selectedComplex.slnd_nm),
+      naver_complex_no: selectedComplex.naver_complex_no,
+      presale_code:     selectedComplex.presale_code,
       complex_name:     selectedComplex.name || null,
       enabled:          true,
       priority:         newPrio,
@@ -1752,16 +1757,16 @@ function PresalePreheatSection({ session }: { session: Session | null }) {
             {searchResults.length > 0 && (
               <div className="mt-2 max-h-72 overflow-y-auto rounded border border-[color:var(--color-border)]">
                 {searchResults.map(c => (
-                  <button key={c.complex_no}
+                  <button key={c.naver_complex_no + ':' + c.presale_code}
                           onClick={() => selectResult(c)}
                           className="w-full text-left px-3 py-2 border-b border-[color:var(--color-border)] last:border-b-0 hover:bg-[color:var(--color-bg-soft)] text-sm">
                     <div className="font-semibold">{c.name}
                       <span className="ml-2 text-xs text-[color:var(--color-muted)] font-normal">
-                        {c.slnd_nm} · {detectCode(c.slnd_nm)}
+                        {c.slnd_nm} · {c.presale_code}
                       </span>
                     </div>
                     <div className="text-xs text-[color:var(--color-muted)]">
-                      <span className="font-mono">#{c.complex_no}</span> · {c.addr_full || c.addr || ''}
+                      <span className="font-mono">#{c.naver_complex_no}</span> · {c.addr_full || c.addr || ''}
                     </div>
                   </button>
                 ))}
@@ -1773,11 +1778,11 @@ function PresalePreheatSection({ session }: { session: Session | null }) {
             <div className="flex-1 min-w-[200px]">
               <div className="text-sm font-semibold">{selectedComplex.name}
                 <span className="ml-2 text-xs text-[color:var(--color-muted)] font-normal">
-                  {selectedComplex.slnd_nm} · {detectCode(selectedComplex.slnd_nm)}
+                  {selectedComplex.slnd_nm} · {selectedComplex.presale_code}
                 </span>
               </div>
               <div className="text-xs text-[color:var(--color-muted)]">
-                <span className="font-mono">#{selectedComplex.complex_no}</span> · {selectedComplex.addr_full || ''}
+                <span className="font-mono">#{selectedComplex.naver_complex_no}</span> · {selectedComplex.addr_full || ''}
               </div>
             </div>
             <label className="text-sm">우선순위

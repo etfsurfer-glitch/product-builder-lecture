@@ -224,6 +224,32 @@ export function searchComplex(
   );
 }
 
+export interface PresaleSearchItem {
+  name: string;
+  slnd_nm: string;
+  addr: string;
+  addr_full: string;
+  naver_complex_no: string;
+  presale_nm: string;
+  presale_code: 'B01' | 'B02';
+  세대수?: string;
+  입주?: string;
+  lat?: string;
+  lng?: string;
+}
+
+export function presaleSearch(
+  session: Session | null,
+  keyword: string,
+  presale_nm: '아파트분양권' | '오피스텔분양권' = '아파트분양권',
+) {
+  return request<{ ok: boolean; count: number; items: PresaleSearchItem[] }>(
+    '/api/presale/search',
+    session,
+    { method: 'POST', body: JSON.stringify({ keyword, presale_nm }) },
+  );
+}
+
 export function startExtract(
   session: Session | null,
   complex: ComplexItem,
