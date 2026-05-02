@@ -1475,6 +1475,7 @@ function PresaleArticlesSection({ session }: { session: Session | null }) {
               <Th>거래</Th>
               <Th>동</Th>
               <Th>층</Th>
+              <Th>호수</Th>
               <Th>매매</Th>
               <Th>전세</Th>
               <Th>월세</Th>
@@ -1496,6 +1497,7 @@ function PresaleArticlesSection({ session }: { session: Session | null }) {
                 <Td>{r.trade_type_code ?? ''}</Td>
                 <Td>{r.building_name ?? ''}</Td>
                 <Td>{r.floor_info ?? ''}</Td>
+                <Td>{r.unit_no ?? ''}</Td>
                 <Td>{r.price_deal ?? ''}</Td>
                 <Td>{r.price_warrant ?? ''}</Td>
                 <Td>{r.price_rent ?? ''}</Td>
@@ -1509,7 +1511,7 @@ function PresaleArticlesSection({ session }: { session: Session | null }) {
               </tr>
             ))}
             {!loading && rows.length === 0 && (
-              <tr><td colSpan={15} className="px-3 py-4 text-center text-[color:var(--color-muted)]">조회 결과 없음</td></tr>
+              <tr><td colSpan={16} className="px-3 py-4 text-center text-[color:var(--color-muted)]">조회 결과 없음</td></tr>
             )}
           </tbody>
         </table>

@@ -894,6 +894,7 @@ export interface PresaleArticleRow {
   presale_code: string;
   building_name: string | null;
   floor_info: string | null;
+  unit_no: string | null;
   trade_type_code: string | null;
   realtor_name: string | null;
   article_confirm_ymd: string | null;
