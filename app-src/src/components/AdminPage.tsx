@@ -8,7 +8,7 @@ import {
   getAdminForceHostIdx, setAdminForceHostIdx, API_HOSTS,
   adminPresaleSummary, adminPresaleArticles, adminPresaleLog, adminPresalePopular,
   adminPresalePreheatList, adminPresalePreheatUpsert, adminPresalePreheatDelete,
-  adminPresaleResetNow, adminPresalePreheatNow,
+  adminPresaleResetNow, adminPresalePreheatNow, adminPresalePreheatBulkExtract,
   presaleSearch, type PresaleSearchItem,
   type AdminUserRow, type DeviceRow, type DeviceLimits,
   type AdminLogKind, type DashboardWithHost, ApiError,
@@ -1666,6 +1666,42 @@ function PresalePreheatSection({ session }: { session: Session | null }) {
 
   return (
     <div>
+      {/* Favorites preheat (새 시스템) — 매일 05:10 cron + 수동 트리거 */}
+      <div className="mb-4 p-3 rounded-lg border border-[color:var(--color-border)] bg-[color:var(--color-bg-soft)]">
+        <div className="text-sm font-semibold mb-2">⭐ Favorites preheat 일괄추출 (관심단지 'preheat' 폴더)</div>
+        <div className="text-xs text-[color:var(--color-muted)] mb-2">
+          관리자 본인의 관심단지 'preheat' 폴더 → A·B 분담 (인덱스 짝/홀) → 단지별 3분 인터벌. 매일 05:10 자동 실행.
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <button onClick={async () => {
+              if (!confirm('관리자 본인의 관심단지 preheat 폴더를 즉시 일괄추출 합니다. (한 host 가 모두 처리, 약 30분~1시간)')) return;
+              setRunning('all');
+              try {
+                const r = await adminPresalePreheatBulkExtract(session, 'all');
+                alert(`OK\nhost=${r.host}, total=${r.total}, my share=${r.share}, jobs=${r.jobs?.length ?? 0}`);
+              } catch (e) {
+                alert((e instanceof ApiError ? e.message : (e as Error).message));
+              } finally { setRunning(null); }
+            }} disabled={!!running}
+            className="h-8 px-3 rounded bg-[color:var(--color-brand)] text-white text-xs font-semibold disabled:opacity-40">
+            {running === 'all' ? '실행 중...' : '▶️ 즉시 일괄추출 (수동 트리거)'}
+          </button>
+          <button onClick={async () => {
+              if (!confirm('정말 모든 분양권 캐시를 DELETE 합니까? (log 는 유지)')) return;
+              setRunning('reset'); setErr(''); setResult(null);
+              try {
+                const r = await adminPresaleResetNow(session);
+                alert(`OK\n${JSON.stringify(r).slice(0, 300)}`);
+              } catch (e) {
+                alert(e instanceof ApiError ? e.message : (e as Error).message);
+              } finally { setRunning(null); }
+            }} disabled={!!running}
+            className="h-8 px-3 rounded bg-red-600 text-white text-xs font-semibold disabled:opacity-40">
+            🗑️ 캐시 전체 삭제
+          </button>
+        </div>
+      </div>
+
       {/* 수동 트리거 패널 */}
       <div className="mb-4 p-3 rounded-lg border border-[color:var(--color-border)] bg-[color:var(--color-bg-soft)]">
         <div className="text-sm font-semibold mb-2">수동 실행</div>

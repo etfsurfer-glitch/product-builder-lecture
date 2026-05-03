@@ -1067,6 +1067,27 @@ export interface PresaleRoutineResult {
   elapsed_sec: number;
 }
 
+export interface PreheatBulkResult {
+  ok: boolean;
+  host: string;
+  total: number;
+  share: number;
+  jobs: { complex_no: string; job_id: string | null; name: string; addr_full?: string }[];
+  note?: string;
+  error?: string;
+}
+
+export function adminPresalePreheatBulkExtract(
+  session: Session | null,
+  host: 'A' | 'B' | 'all' = 'all',
+) {
+  return request<PreheatBulkResult>(
+    `/api/admin/presale/preheat-bulk-extract?host=${host}`,
+    session,
+    { method: 'POST' },
+  );
+}
+
 export function adminPresalePreheatNow(
   session: Session | null,
   host: 'A' | 'B' | 'all' = 'all',
