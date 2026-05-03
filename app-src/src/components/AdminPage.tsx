@@ -1430,8 +1430,46 @@ function PresaleArticlesSection({ session }: { session: Session | null }) {
       setLoading(false);
     }
   };
+  // Favorites preheat 패널용 state (분양권 캐시 section 안에 표시)
+  const [preheatBusy, setPreheatBusy] = useState(false);
   return (
     <div>
+      {/* Favorites preheat 일괄추출 + 캐시 전체 삭제 — 분양권 캐시 section 상단 */}
+      <div className="mb-4 p-3 rounded-lg border border-[color:var(--color-border)] bg-[color:var(--color-bg-soft)]">
+        <div className="text-sm font-semibold mb-2">⭐ Favorites preheat 일괄추출 (관심단지 'preheat' 폴더)</div>
+        <div className="text-xs text-[color:var(--color-muted)] mb-2">
+          관리자 본인의 관심단지 'preheat' 폴더 → 단지별 3분 인터벌. 매일 05:10 자동 실행 + 즉시 트리거.
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <button onClick={async () => {
+              if (!confirm('관리자 본인의 관심단지 preheat 폴더를 즉시 일괄추출 합니다. (한 host 가 모두 처리, 약 30분~1시간)')) return;
+              setPreheatBusy(true);
+              try {
+                const r = await adminPresalePreheatBulkExtract(session, 'all');
+                alert(`OK\nhost=${r.host}, total=${r.total}, my share=${r.share}, jobs=${r.jobs?.length ?? 0}`);
+              } catch (e) {
+                alert((e instanceof ApiError ? e.message : (e as Error).message));
+              } finally { setPreheatBusy(false); }
+            }} disabled={preheatBusy}
+            className="h-8 px-3 rounded bg-[color:var(--color-brand)] text-white text-xs font-semibold disabled:opacity-40">
+            {preheatBusy ? '실행 중...' : '▶️ 즉시 일괄추출 (수동 트리거)'}
+          </button>
+          <button onClick={async () => {
+              if (!confirm('정말 모든 분양권 캐시를 DELETE 합니까? (log 는 유지)')) return;
+              setPreheatBusy(true);
+              try {
+                const r = await adminPresaleResetNow(session);
+                alert(`OK\n${JSON.stringify(r).slice(0, 300)}`);
+              } catch (e) {
+                alert(e instanceof ApiError ? e.message : (e as Error).message);
+              } finally { setPreheatBusy(false); }
+            }} disabled={preheatBusy}
+            className="h-8 px-3 rounded bg-red-600 text-white text-xs font-semibold disabled:opacity-40">
+            🗑️ 캐시 전체 삭제
+          </button>
+        </div>
+      </div>
+
       <div className="mb-2 flex flex-wrap items-center gap-2">
         <input value={cno} onChange={e => setCno(e.target.value)}
                placeholder="단지번호 (필수)"
