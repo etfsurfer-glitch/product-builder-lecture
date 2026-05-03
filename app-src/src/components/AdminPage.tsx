@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import type { Session } from '@supabase/supabase-js';
+import BulkExtractResult from './BulkExtractResult';
 import {
   adminListUsers, adminGetUserDevices,
   adminSetDeviceLimit, adminDeleteDevice, adminCreateUser,
@@ -9,6 +10,7 @@ import {
   adminPresaleSummary, adminPresaleArticles, adminPresaleLog, adminPresalePopular,
   adminPresalePreheatList, adminPresalePreheatUpsert, adminPresalePreheatDelete,
   adminPresaleResetNow, adminPresalePreheatNow, adminPresalePreheatBulkExtract,
+  type BulkExtractJob,
   presaleSearch, type PresaleSearchItem,
   type AdminUserRow, type DeviceRow, type DeviceLimits,
   type AdminLogKind, type DashboardWithHost, ApiError,
@@ -1432,6 +1434,16 @@ function PresaleArticlesSection({ session }: { session: Session | null }) {
   };
   // Favorites preheat 패널용 state (분양권 캐시 section 안에 표시)
   const [preheatBusy, setPreheatBusy] = useState(false);
+  const [bulkJobs, setBulkJobs] = useState<BulkExtractJob[] | null>(null);
+  if (bulkJobs) {
+    return (
+      <BulkExtractResult
+        session={session}
+        jobs={bulkJobs}
+        onBack={() => setBulkJobs(null)}
+      />
+    );
+  }
   return (
     <div>
       {/* Favorites preheat 일괄추출 + 캐시 전체 삭제 — 분양권 캐시 section 상단 */}
@@ -1446,7 +1458,11 @@ function PresaleArticlesSection({ session }: { session: Session | null }) {
               setPreheatBusy(true);
               try {
                 const r = await adminPresalePreheatBulkExtract(session, 'all');
-                alert(`OK\nhost=${r.host}, total=${r.total}, my share=${r.share}, jobs=${r.jobs?.length ?? 0}`);
+                if (r.jobs && r.jobs.length > 0) {
+                  setBulkJobs(r.jobs as BulkExtractJob[]);
+                } else {
+                  alert(`완료 — host=${r.host}, total=${r.total}, share=${r.share}, jobs=0\n${r.note || ''}`);
+                }
               } catch (e) {
                 alert((e instanceof ApiError ? e.message : (e as Error).message));
               } finally { setPreheatBusy(false); }
@@ -1669,6 +1685,7 @@ function PresalePreheatSection({ session }: { session: Session | null }) {
     } finally { setBusy(false); }
   };
 
+  const [preheatBulkJobs, setPreheatBulkJobs] = useState<BulkExtractJob[] | null>(null);
   const runReset = async () => {
     if (!confirm('정말 모든 분양권 캐시를 DELETE 합니까? (log 는 유지)')) return;
     setRunning('reset'); setErr(''); setResult(null);
@@ -1702,6 +1719,15 @@ function PresalePreheatSection({ session }: { session: Session | null }) {
   const aSlice = enabledSorted.filter((_, i) => i % 2 === 0);
   const bSlice = enabledSorted.filter((_, i) => i % 2 === 1);
 
+  if (preheatBulkJobs) {
+    return (
+      <BulkExtractResult
+        session={session}
+        jobs={preheatBulkJobs}
+        onBack={() => setPreheatBulkJobs(null)}
+      />
+    );
+  }
   return (
     <div>
       {/* Favorites preheat (새 시스템) — 매일 05:10 cron + 수동 트리거 */}
@@ -1716,7 +1742,11 @@ function PresalePreheatSection({ session }: { session: Session | null }) {
               setRunning('all');
               try {
                 const r = await adminPresalePreheatBulkExtract(session, 'all');
-                alert(`OK\nhost=${r.host}, total=${r.total}, my share=${r.share}, jobs=${r.jobs?.length ?? 0}`);
+                if (r.jobs && r.jobs.length > 0) {
+                  setPreheatBulkJobs(r.jobs as BulkExtractJob[]);
+                } else {
+                  alert(`완료 — host=${r.host}, total=${r.total}, share=${r.share}, jobs=0\n${r.note || ''}`);
+                }
               } catch (e) {
                 alert((e instanceof ApiError ? e.message : (e as Error).message));
               } finally { setRunning(null); }
