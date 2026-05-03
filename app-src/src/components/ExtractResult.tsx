@@ -42,6 +42,7 @@ export const COLUMNS: Col[] = [
   { label: '매매가',      key: '_매매가',          w: 110 },
   { label: '프리미엄(저)', key: '_저프리미엄',      w: 96 },
   { label: '프리미엄(고)', key: '_고프리미엄',      w: 96 },
+  { label: '프리미엄(개별)', key: '_프리미엄개별', w: 100 },
   { label: '분양옵션',    key: '_분양옵션',        w: 88 },
   { label: '전세가',      key: '_전세가',          w: 104 },
   { label: '보증금',      key: '_보증금',          w: 96 },
@@ -236,6 +237,7 @@ export function cellValue(row: Row, col: Col): string {
       if (trade !== '매매') return '';
       if (presale && row['_dealPrice']) return fmtPrice(row['_dealPrice']);
       return fmtPrice(row['매매가'] ?? row['매매일반거래가']);
+    case '_프리미엄개별': return presale && row['_premiumActual'] != null ? fmtPrice(row['_premiumActual']) : '';
     case '_저프리미엄':
       return presale && row['_premiumMin'] != null ? fmtPrice(row['_premiumMin']) : '';
     case '_고프리미엄':

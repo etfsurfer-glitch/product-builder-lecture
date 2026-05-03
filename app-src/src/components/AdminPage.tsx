@@ -1483,6 +1483,7 @@ function PresaleArticlesSection({ session }: { session: Session | null }) {
               <Th>가격(원본)</Th>
               <Th>프미 min</Th>
               <Th>프미 max</Th>
+              <Th>프미 actual</Th>
               <Th>옵션</Th>
               <Th>중개사</Th>
               <Th>확인일</Th>
@@ -1505,6 +1506,7 @@ function PresaleArticlesSection({ session }: { session: Session | null }) {
                 <Td>{r.deal_or_warrant_prc ?? ''}</Td>
                 <Td>{r.premium_min ?? ''}</Td>
                 <Td>{r.premium_max ?? ''}</Td>
+                <Td>{r.premium_actual ?? ''}</Td>
                 <Td>{r.option_price ?? ''}</Td>
                 <Td>{r.realtor_name ?? ''}</Td>
                 <Td>{r.article_confirm_ymd ?? ''}</Td>
@@ -1512,7 +1514,7 @@ function PresaleArticlesSection({ session }: { session: Session | null }) {
               </tr>
             ))}
             {!loading && rows.length === 0 && (
-              <tr><td colSpan={16} className="px-3 py-4 text-center text-[color:var(--color-muted)]">조회 결과 없음</td></tr>
+              <tr><td colSpan={17} className="px-3 py-4 text-center text-[color:var(--color-muted)]">조회 결과 없음</td></tr>
             )}
           </tbody>
         </table>

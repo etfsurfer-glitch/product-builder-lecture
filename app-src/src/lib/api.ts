@@ -930,6 +930,7 @@ export interface PresaleArticleRow {
   deal_or_warrant_prc: string | null;
   premium_min: number | null;
   premium_max: number | null;
+  premium_actual: number | null;
   option_price: number | null;
   updated_at: string;
 }
