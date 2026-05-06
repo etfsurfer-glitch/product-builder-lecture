@@ -7,9 +7,12 @@ import {
 
 interface Props { session: Session | null; }
 
+// 검증된 Naver realEstateType 코드 (2026-05-07): VL=빌라, YR=연립, DDDGG=다세대,
+// DDDGN=단독, DGN=다가구. VBA 의 A05-A06-A07-C02 는 부정확 (상가/사무실 섞임).
 const BUILDING_TYPES: { label: string; code: string }[] = [
-  { label: '빌라/다세대/연립', code: 'A05-A06-A07-C02' },
-  { label: '단독/다가구',     code: 'C03' },
+  { label: '빌라/다세대/연립', code: 'VL:YR:DDDGG' },
+  { label: '빌라만',          code: 'VL' },
+  { label: '단독/다가구',     code: 'DDDGN:DGN' },
 ];
 
 const TRADE_TYPES: { label: string; code: string }[] = [
