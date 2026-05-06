@@ -1050,7 +1050,7 @@ export function villaAutocomplete(session: Session | null, keyword: string) {
 
 export interface VillaSearchReq {
   cortar_no:        string;
-  real_estate_type?: string;   // default 'A05-A06-A07-C02'
+  real_estate_type?: string;   // default 'VL:YR:DDDGG'
   trade_type?:       string;   // default 'A1:B1:B2'
   since_ymd?:        string;   // 'YYYYMMDD' — 그 이후 등록만
   price_min?:        number;   // 만원 (Naver 그대로)
@@ -1058,6 +1058,9 @@ export interface VillaSearchReq {
   area_min?:         number;   // ㎡
   area_max?:         number;
   tag?:              string;   // '주차가능:방2개이상' 같은 콜론 구분
+  center_lat?:       number;   // 지도 클릭 좌표
+  center_lng?:       number;
+  radius_km?:        number;   // 반경 (km). 0 또는 미지정 = 동 전체
   max_pages?:        number;
   fetch_detail?:     boolean;
   detail_limit?:     number;

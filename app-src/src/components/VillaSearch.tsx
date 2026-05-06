@@ -1,9 +1,20 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { Session } from '@supabase/supabase-js';
+import { MapContainer, TileLayer, Marker, Circle, useMap, useMapEvents } from 'react-leaflet';
+import L from 'leaflet';
+import 'leaflet/dist/leaflet.css';
 import {
   villaAutocomplete, villaSearch, villaArticleDetail,
   type VillaAutocompleteItem, type VillaSearchItem, ApiError,
 } from '../lib/api';
+
+// Leaflet default marker icon URL fix (Vite 빌드 환경에서 깨지는 이슈 회피)
+delete (L.Icon.Default.prototype as unknown as { _getIconUrl?: () => string })._getIconUrl;
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
+  iconUrl:       'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
+  shadowUrl:     'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
+});
 
 interface Props { session: Session | null; }
 
@@ -74,11 +85,29 @@ function AreaSearch({ session }: { session: Session | null }) {
   const [priceMax, setPriceMax]   = useState('');
   const [areaMin, setAreaMin]     = useState('');                   // ㎡
   const [areaMax, setAreaMax]     = useState('');
+  // 지도 + 반경 (cortar 선택 후 활성)
+  const [pickedLat, setPickedLat] = useState<number | null>(null);
+  const [pickedLng, setPickedLng] = useState<number | null>(null);
+  const [radiusKm, setRadiusKm]   = useState<number>(0);            // 0 = 동 전체
 
   const [searchBusy, setSearchBusy] = useState(false);
   const [searchErr, setSearchErr]   = useState('');
   const [items, setItems]           = useState<VillaSearchItem[]>([]);
   const [stats, setStats]           = useState<{ list: number; detail: number; truncated?: boolean; elapsed?: number } | null>(null);
+
+  // chosen 변경 시 지도 중심 reset
+  useEffect(() => {
+    if (chosen) {
+      const lat = parseFloat(chosen.latitude);
+      const lng = parseFloat(chosen.longitude);
+      if (!isNaN(lat) && !isNaN(lng)) {
+        setPickedLat(lat); setPickedLng(lng);
+      }
+      setRadiusKm(0);
+    } else {
+      setPickedLat(null); setPickedLng(null); setRadiusKm(0);
+    }
+  }, [chosen]);
 
   async function onAutocomplete(e: React.FormEvent) {
     e.preventDefault();
@@ -102,6 +131,7 @@ function AreaSearch({ session }: { session: Session | null }) {
     if (!chosen) return;
     setSearchBusy(true); setSearchErr(''); setItems([]); setStats(null);
     try {
+      const useRadius = radiusKm > 0 && pickedLat != null && pickedLng != null;
       const r = await villaSearch(session, {
         cortar_no:        chosen.legalDivisionNumber,
         real_estate_type: bdType,
@@ -111,6 +141,9 @@ function AreaSearch({ session }: { session: Session | null }) {
         price_max:        priceMax ? Number(priceMax) : undefined,
         area_min:         areaMin  ? Number(areaMin)  : undefined,
         area_max:         areaMax  ? Number(areaMax)  : undefined,
+        center_lat:       useRadius ? pickedLat ?? undefined : undefined,
+        center_lng:       useRadius ? pickedLng ?? undefined : undefined,
+        radius_km:        useRadius ? radiusKm : undefined,
         max_pages:        50,
         fetch_detail:     true,
         detail_limit:     200,
@@ -162,7 +195,7 @@ function AreaSearch({ session }: { session: Session | null }) {
         </div>
       )}
 
-      {/* 선택 + 필터 */}
+      {/* 선택 + 지도 + 필터 */}
       {chosen && (
         <div className="bg-[color:var(--color-bg-soft)] border border-[color:var(--color-border)] rounded-lg p-3 space-y-3">
           <div className="text-sm">
@@ -172,6 +205,55 @@ function AreaSearch({ session }: { session: Session | null }) {
             <button onClick={() => { setChosen(null); setItems([]); setStats(null); }}
                     className="ml-2 text-xs text-[color:var(--color-muted)] underline">변경</button>
           </div>
+
+          {/* 지도: 클릭으로 검색 중심점 설정 + 반경 슬라이더 */}
+          {pickedLat != null && pickedLng != null && (
+            <div className="space-y-2">
+              <div className="text-xs text-[color:var(--color-muted)]">
+                지도 클릭 → 검색 중심점 설정.
+                {radiusKm > 0 ? (
+                  <> 반경 <span className="font-semibold text-[color:var(--color-ink)]">{radiusKm}km</span> 안만 detail 호출 (속도↑)</>
+                ) : (
+                  <> 반경 = 동 전체 (slider 조정 시 좁힘)</>
+                )}
+              </div>
+              <div className="h-[280px] border border-[color:var(--color-border)] rounded">
+                <MapContainer center={[pickedLat, pickedLng]} zoom={15}
+                              style={{ height: '100%', width: '100%' }}
+                              scrollWheelZoom>
+                  <TileLayer
+                    attribution='© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+                    url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                  />
+                  <MapClickHandler onClick={(lat, lng) => { setPickedLat(lat); setPickedLng(lng); }} />
+                  <CenterUpdater lat={pickedLat} lng={pickedLng} />
+                  <Marker position={[pickedLat, pickedLng]} />
+                  {radiusKm > 0 && (
+                    <Circle center={[pickedLat, pickedLng]} radius={radiusKm * 1000}
+                            pathOptions={{ color: '#3b82f6', fillOpacity: 0.1 }} />
+                  )}
+                </MapContainer>
+              </div>
+              <div className="flex flex-wrap items-center gap-2 text-xs">
+                <span className="text-[color:var(--color-muted)]">반경:</span>
+                {[0, 0.3, 0.5, 1, 2, 5].map(km => (
+                  <button key={km}
+                          onClick={() => setRadiusKm(km)}
+                          className={
+                            'px-2 py-1 rounded border ' +
+                            (radiusKm === km
+                              ? 'bg-[color:var(--color-brand)] text-white border-[color:var(--color-brand)]'
+                              : 'bg-white border-[color:var(--color-border)] hover:bg-[color:var(--color-bg-soft)]')
+                          }>
+                    {km === 0 ? '동 전체' : `${km}km`}
+                  </button>
+                ))}
+                <span className="text-[color:var(--color-muted)] ml-2 font-mono">
+                  ({pickedLat.toFixed(4)}, {pickedLng.toFixed(4)})
+                </span>
+              </div>
+            </div>
+          )}
 
           <div className="flex flex-wrap gap-3 text-sm items-end">
             <FilterField label="건물유형">
@@ -363,6 +445,26 @@ function VillaRow({ it }: { it: VillaSearchItem }) {
       </Td>
     </tr>
   );
+}
+
+// 지도 클릭 → 좌표 콜백
+function MapClickHandler({ onClick }: { onClick: (lat: number, lng: number) => void }) {
+  useMapEvents({
+    click: (e) => onClick(e.latlng.lat, e.latlng.lng),
+  });
+  return null;
+}
+
+// chosen 변경 시 지도 중심을 새 좌표로 panTo
+function CenterUpdater({ lat, lng }: { lat: number; lng: number }) {
+  const map = useMap();
+  const lastRef = useRef<{ lat: number; lng: number } | null>(null);
+  useEffect(() => {
+    if (lastRef.current && lastRef.current.lat === lat && lastRef.current.lng === lng) return;
+    map.setView([lat, lng], map.getZoom());
+    lastRef.current = { lat, lng };
+  }, [lat, lng, map]);
+  return null;
 }
 
 function FilterField({ label, children }: { label: string; children: React.ReactNode }) {
