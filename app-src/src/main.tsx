@@ -3,11 +3,25 @@ import { createRoot } from 'react-dom/client';
 import App from './App';
 import './index.css';
 import { setUnauthorizedHandler, serverLogout, API_HOSTS, getActiveApiHost } from './lib/api';
-import { signOut, goToLanding } from './lib/auth';
+import { getSupabase, signOut, goToLanding } from './lib/auth';
 import { startHealthPinger, getHealthSnapshot } from './lib/health';
 
-// 토큰 만료(401) 시 자동 로그아웃 + 랜딩 페이지로 이동
+// 토큰 만료(401) 처리:
+//  1) supabase 명시적 refreshSession 시도 — autoRefreshToken=true 가 stale 한 케이스 회복
+//  2) 성공시 logout 안 함 (사용자가 다음 클릭에서 새 access_token 자동 사용)
+//  3) 실패 (refresh_token 도 만료) → 기존 동작: serverLogout + signOut + 랜딩 이동
 setUnauthorizedHandler(async () => {
+  try {
+    const sb = await getSupabase();
+    const { data, error } = await sb.auth.refreshSession();
+    if (!error && data?.session) {
+      console.log('[401] supabase session refreshed silently — logout 안 함');
+      return;
+    }
+    console.log('[401] refresh 실패 → logout', error);
+  } catch (e) {
+    console.log('[401] refresh 시도 예외 → logout', e);
+  }
   try { await serverLogout(null); } catch { /* swallow */ }
   try { await signOut(); } catch { /* swallow */ }
   goToLanding();

@@ -184,7 +184,9 @@ async function request<T>(
   if (!r.ok) {
     if (r.status === 401 && _onUnauthorized && !_unauthorizedTriggered) {
       _unauthorizedTriggered = true;
-      try { await _onUnauthorized(); } catch { /* swallow */ }
+      try { await _onUnauthorized(); }
+      catch { /* swallow */ }
+      finally { _unauthorizedTriggered = false; }
     }
     const msg = (body && typeof body === 'object' && 'detail' in body)
       ? String((body as { detail: unknown }).detail)
@@ -849,7 +851,9 @@ export async function getPortfolio(
     const body = text ? safeJson(text) : null;
     if (r.status === 401 && _onUnauthorized && !_unauthorizedTriggered) {
       _unauthorizedTriggered = true;
-      try { await _onUnauthorized(); } catch { /* swallow */ }
+      try { await _onUnauthorized(); }
+      catch { /* swallow */ }
+      finally { _unauthorizedTriggered = false; }
     }
     const msg = (body && typeof body === 'object' && 'detail' in body)
       ? String((body as { detail: unknown }).detail)
