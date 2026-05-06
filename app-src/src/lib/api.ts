@@ -1052,7 +1052,12 @@ export interface VillaSearchReq {
   cortar_no:        string;
   real_estate_type?: string;   // default 'A05-A06-A07-C02'
   trade_type?:       string;   // default 'A1:B1:B2'
-  since_ymd?:        string;
+  since_ymd?:        string;   // 'YYYYMMDD' — 그 이후 등록만
+  price_min?:        number;   // 만원 (Naver 그대로)
+  price_max?:        number;
+  area_min?:         number;   // ㎡
+  area_max?:         number;
+  tag?:              string;   // '주차가능:방2개이상' 같은 콜론 구분
   max_pages?:        number;
   fetch_detail?:     boolean;
   detail_limit?:     number;
@@ -1107,5 +1112,11 @@ export function villaSearch(session: Session | null, params: VillaSearchReq) {
   }>(
     '/api/villa/search', session,
     { method: 'POST', body: JSON.stringify(params) },
+  );
+}
+
+export function villaArticleDetail(session: Session | null, articleNo: string) {
+  return request<{ ok: boolean; info: VillaSearchItem }>(
+    `/api/villa/article/${encodeURIComponent(articleNo)}`, session,
   );
 }
