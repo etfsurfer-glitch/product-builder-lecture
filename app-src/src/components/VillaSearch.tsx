@@ -81,8 +81,10 @@ function AreaSearch({ session }: { session: Session | null }) {
   const [bdType, setBdType]       = useState(BUILDING_TYPES[0].code);
   const [trade, setTrade]         = useState(TRADE_TYPES[0].code);
   const [sinceYmd, setSinceYmd]   = useState('');                   // YYYYMMDD
-  const [priceMin, setPriceMin]   = useState('');                   // 만원
+  const [priceMin, setPriceMin]   = useState('');                   // 매매/보증금 만원
   const [priceMax, setPriceMax]   = useState('');
+  const [rentMin, setRentMin]     = useState('');                   // 월세 만원
+  const [rentMax, setRentMax]     = useState('');
   const [areaMin, setAreaMin]     = useState('');                   // ㎡
   const [areaMax, setAreaMax]     = useState('');
   // 지도 + 반경 (cortar 선택 후 활성)
@@ -140,6 +142,8 @@ function AreaSearch({ session }: { session: Session | null }) {
         since_ymd:        sinceYmd.trim(),
         price_min:        priceMin ? Number(priceMin) : undefined,
         price_max:        priceMax ? Number(priceMax) : undefined,
+        rent_min:         rentMin  ? Number(rentMin)  : undefined,
+        rent_max:         rentMax  ? Number(rentMax)  : undefined,
         area_min:         areaMin  ? Number(areaMin)  : undefined,
         area_max:         areaMax  ? Number(areaMax)  : undefined,
         center_lat:       useRadius ? pickedLat ?? undefined : undefined,
@@ -287,12 +291,19 @@ function AreaSearch({ session }: { session: Session | null }) {
                      placeholder="YYYYMMDD" maxLength={8}
                      className="w-28 h-8 px-2 rounded border border-[color:var(--color-border)] text-sm" />
             </FilterField>
-            <FilterField label="가격(만원)">
+            <FilterField label="매매/보증금(만원)">
               <input type="number" value={priceMin} onChange={e => setPriceMin(e.target.value)}
                      placeholder="최소" className="w-24 h-8 px-2 rounded border border-[color:var(--color-border)] text-sm" />
               <span className="mx-1 text-[color:var(--color-muted)]">~</span>
               <input type="number" value={priceMax} onChange={e => setPriceMax(e.target.value)}
                      placeholder="최대" className="w-24 h-8 px-2 rounded border border-[color:var(--color-border)] text-sm" />
+            </FilterField>
+            <FilterField label="월세(만원)">
+              <input type="number" value={rentMin} onChange={e => setRentMin(e.target.value)}
+                     placeholder="최소" className="w-20 h-8 px-2 rounded border border-[color:var(--color-border)] text-sm" />
+              <span className="mx-1 text-[color:var(--color-muted)]">~</span>
+              <input type="number" value={rentMax} onChange={e => setRentMax(e.target.value)}
+                     placeholder="최대" className="w-20 h-8 px-2 rounded border border-[color:var(--color-border)] text-sm" />
             </FilterField>
             <FilterField label="면적(㎡)">
               <input type="number" value={areaMin} onChange={e => setAreaMin(e.target.value)}

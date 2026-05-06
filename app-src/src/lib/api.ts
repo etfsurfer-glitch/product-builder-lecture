@@ -1053,8 +1053,10 @@ export interface VillaSearchReq {
   real_estate_type?: string;   // default 'VL:YR:DDDGG'
   trade_type?:       string;   // default 'A1:B1:B2'
   since_ymd?:        string;   // 'YYYYMMDD' — 그 이후 등록만
-  price_min?:        number;   // 만원 (Naver 그대로)
+  price_min?:        number;   // 매매/보증금 만원 (Naver priceMin)
   price_max?:        number;
+  rent_min?:         number;   // 월세 만원 (Naver rentPriceMin)
+  rent_max?:         number;
   area_min?:         number;   // ㎡
   area_max?:         number;
   tag?:              string;   // '주차가능:방2개이상' 같은 콜론 구분
