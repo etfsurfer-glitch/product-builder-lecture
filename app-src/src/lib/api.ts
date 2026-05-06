@@ -1031,3 +1031,81 @@ export function adminPresalePreheatBulkExtract(
     { method: 'POST' },
   );
 }
+
+// ── 빌라/다세대/단독다가구 검색 ─────────────────────────────────────────
+export interface VillaAutocompleteItem {
+  legalDivisionNumber: string;
+  name:                string;
+  latitude:            string;
+  longitude:           string;
+  level:               string;
+}
+
+export function villaAutocomplete(session: Session | null, keyword: string) {
+  return request<{ ok: boolean; count: number; items: VillaAutocompleteItem[] }>(
+    '/api/villa/autocomplete', session,
+    { method: 'POST', body: JSON.stringify({ keyword }) },
+  );
+}
+
+export interface VillaSearchReq {
+  cortar_no:        string;
+  real_estate_type?: string;   // default 'A05-A06-A07-C02'
+  trade_type?:       string;   // default 'A1:B1:B2'
+  since_ymd?:        string;
+  max_pages?:        number;
+  fetch_detail?:     boolean;
+  detail_limit?:     number;
+}
+
+// 응답 매물 — naver_get_villa_article_detail 의 flat dict
+export interface VillaSearchItem {
+  articleNo:                string;
+  articleConfirmYmd?:       string;
+  articleName?:             string;
+  tradeTypeCode?:           string;
+  tradeTypeName?:           string;
+  realEstateTypeCode?:      string;
+  realEstateTypeName?:      string;
+  verificationTypeCode?:    string;
+  floorInfo?:               string;
+  totalFloorCount?:         string | number;
+  correspondingFloorCount?: string | number;
+  area1?:                   number | string;
+  area2?:                   number | string;
+  supplySpace?:             number;
+  exclusiveSpace?:          number;
+  direction?:               string;
+  directionTypeName?:       string;
+  dealOrWarrantPrc?:        number | string;
+  rentPrice?:               number | string;
+  rentPrc?:                 string;
+  warrantPrice?:            number;
+  dealPrice?:               number;
+  realtorName?:             string;
+  cpName?:                  string;
+  cpid?:                    string;
+  cpPcArticleUrl?:          string;
+  latitude?:                string;
+  longitude?:               string;
+  articleFeatureDesc?:      string;
+  sameAddrCnt?:             number;
+  tagList?:                 string[];
+  bldNm?:                   string;
+  // raw flat — 그 외 키도 가능
+  [key: string]: unknown;
+}
+
+export function villaSearch(session: Session | null, params: VillaSearchReq) {
+  return request<{
+    ok:           boolean;
+    list_count:   number;
+    detail_count: number;
+    truncated?:   boolean;
+    items:        VillaSearchItem[];
+    elapsed_sec?: number;
+  }>(
+    '/api/villa/search', session,
+    { method: 'POST', body: JSON.stringify(params) },
+  );
+}

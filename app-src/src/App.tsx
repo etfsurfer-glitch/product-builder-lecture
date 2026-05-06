@@ -4,12 +4,13 @@ import { getCurrentSession, goToLanding, signOut } from './lib/auth';
 import { serverLogout, getMe, IS_TEST_BUILD, API_BASE } from './lib/api';
 import SearchPanel from './components/SearchPanel';
 import ArticleLookup from './components/ArticleLookup';
+import VillaSearch from './components/VillaSearch';
 import Portfolio from './components/Portfolio';
 import DeviceManager from './components/DeviceManager';
 import AdminPage from './components/AdminPage';
 
 type Status = 'loading' | 'needs-login' | 'ready';
-type Tab = 'complex' | 'article' | 'portfolio';
+type Tab = 'complex' | 'article' | 'villa' | 'portfolio';
 
 function TestBanner() {
   if (!IS_TEST_BUILD) return null;
@@ -131,6 +132,9 @@ export default function App() {
           <div className="flex gap-1 -mb-px">
             <TabButton active={tab === 'complex'} onClick={() => setTab('complex')}>단지 검색</TabButton>
             <TabButton active={tab === 'article'} onClick={() => setTab('article')}>매물번호 조회</TabButton>
+            {IS_TEST_BUILD && (
+              <TabButton active={tab === 'villa'} onClick={() => setTab('villa')}>빌라/다세대</TabButton>
+            )}
             <TabButton active={tab === 'portfolio'} onClick={() => setTab('portfolio')}>내 폴더</TabButton>
           </div>
         </div>
@@ -143,6 +147,7 @@ export default function App() {
           <>
             {tab === 'complex' && <SearchPanel session={session} />}
             {tab === 'article' && <ArticleLookup session={session} />}
+            {tab === 'villa' && IS_TEST_BUILD && <VillaSearch session={session} />}
             {tab === 'portfolio' && <Portfolio session={session} />}
           </>
         )}
