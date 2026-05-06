@@ -89,6 +89,7 @@ function AreaSearch({ session }: { session: Session | null }) {
   const [pickedLat, setPickedLat] = useState<number | null>(null);
   const [pickedLng, setPickedLng] = useState<number | null>(null);
   const [radiusKm, setRadiusKm]   = useState<number>(0);            // 0 = 동 전체
+  const [aggressiveHo, setAggressiveHo] = useState<boolean>(false); // 정밀 호수 추출
 
   const [searchBusy, setSearchBusy] = useState(false);
   const [searchErr, setSearchErr]   = useState('');
@@ -146,7 +147,8 @@ function AreaSearch({ session }: { session: Session | null }) {
         radius_km:        useRadius ? radiusKm : undefined,
         max_pages:        50,
         fetch_detail:     true,
-        detail_limit:     200,
+        detail_limit:     aggressiveHo ? 60 : 200,   // 정밀 모드는 60건으로 cap (시간)
+        aggressive_ho:    aggressiveHo,
       });
       setItems(r.items);
       setStats({ list: r.list_count, detail: r.detail_count, truncated: r.truncated, elapsed: r.elapsed_sec });
@@ -250,6 +252,18 @@ function AreaSearch({ session }: { session: Session | null }) {
                 ))}
                 <span className="text-[color:var(--color-muted)] ml-2 font-mono">
                   ({pickedLat.toFixed(4)}, {pickedLng.toFixed(4)})
+                </span>
+              </div>
+              <div className="flex items-center gap-2 text-xs">
+                <label className="flex items-center gap-1 cursor-pointer">
+                  <input type="checkbox" checked={aggressiveHo}
+                         onChange={e => setAggressiveHo(e.target.checked)}
+                         className="cursor-pointer" />
+                  <span className="font-semibold">정밀 호수 추출</span>
+                </label>
+                <span className="text-[color:var(--color-muted)]">
+                  CP 핸들러 + sibling 활용 — 매물당 5~10초 (반경 좁힐수록 권장).
+                  비활성 시 빠르지만 빌라 일부에서 호수 빈칸.
                 </span>
               </div>
             </div>

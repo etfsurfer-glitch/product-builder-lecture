@@ -1064,6 +1064,7 @@ export interface VillaSearchReq {
   max_pages?:        number;
   fetch_detail?:     boolean;
   detail_limit?:     number;
+  aggressive_ho?:    boolean;  // true: CP 핸들러+sibling (정밀, 느림). false: DecB64만
 }
 
 // 응답 매물 — naver_get_villa_article_detail 의 flat dict
