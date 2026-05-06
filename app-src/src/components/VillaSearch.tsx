@@ -382,7 +382,8 @@ function VillaResultTable({ items }: { items: VillaSearchItem[] }) {
             <Th>방/욕실</Th>
             <Th>용도</Th>
             <Th>인증</Th>
-            <Th>가격(만원)</Th>
+            <Th>매매/보증금(만원)</Th>
+            <Th>월세(만원)</Th>
             <Th>특징광고</Th>
             <Th>등록일</Th>
             <Th>매물번호</Th>
@@ -421,11 +422,11 @@ function VillaRow({ it }: { it: VillaSearchItem }) {
   const moveIn = String((it as any).moveInTypeName || (it as any).moveInPossibleYmd || '');
   const feat  = String(it.articleFeatureDesc || '');
 
-  // 가격 표시: 매매=deal, 전세=warrant, 월세='warrant/rent'
-  let priceDisp = '';
-  if (rent > 0)        priceDisp = `${warrant.toLocaleString()}/${rent.toLocaleString()}`;
-  else if (warrant > 0) priceDisp = warrant.toLocaleString();
-  else if (deal > 0)    priceDisp = deal.toLocaleString();
+  // 가격 컬럼 분리 (VBA spec: col 16=매매/보증금, col 17=월세)
+  //  - 매매: dealPrice  /  전세·월세 보증금: warrantPrice  /  월세: rentPrice
+  const dealOrWarrant = deal > 0 ? deal : (warrant > 0 ? warrant : 0);
+  const dealOrWarrantDisp = dealOrWarrant > 0 ? dealOrWarrant.toLocaleString() : '';
+  const rentDisp          = rent > 0          ? rent.toLocaleString()          : '';
 
   const exclusiveDisp = typeof exclusive === 'number' ? exclusive.toFixed(1) : String(exclusive);
   const supplyDisp    = typeof supply    === 'number' ? supply.toFixed(1)    : String(supply);
@@ -445,7 +446,8 @@ function VillaRow({ it }: { it: VillaSearchItem }) {
       <Td>{room && bath ? `${room}/${bath}` : (room || bath || '')}</Td>
       <Td className="max-w-[100px] truncate" title={usage}>{usage}</Td>
       <Td>{ver}</Td>
-      <Td className="whitespace-nowrap">{priceDisp}</Td>
+      <Td className="whitespace-nowrap text-right">{dealOrWarrantDisp}</Td>
+      <Td className="whitespace-nowrap text-right">{rentDisp}</Td>
       <Td className="max-w-[200px] truncate" title={feat}>{feat}</Td>
       <Td className="whitespace-nowrap">{it.articleConfirmYmd || ''}</Td>
       <Td>
