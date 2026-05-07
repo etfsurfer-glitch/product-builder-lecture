@@ -1127,3 +1127,38 @@ export function villaArticleDetail(session: Session | null, articleNo: string) {
     `/api/villa/article/${encodeURIComponent(articleNo)}`, session,
   );
 }
+
+// ── 비동기 빌라 검색 (Cloudflare 100s timeout 회피 + 진행 UI) ──────────────
+export interface VillaSearchProgress {
+  status:       'running' | 'done' | 'error';
+  stage:        'list' | 'detail' | 'done' | 'error';
+  stage_label:  string;
+  page:         number;
+  max_pages:    number;
+  list_count:   number;
+  detail_done:  number;
+  detail_total: number;
+  started_at:   number;
+  elapsed_sec:  number;
+  result:       {
+    ok:            boolean;
+    list_count:    number;
+    detail_count:  number;
+    truncated?:    boolean;
+    items:         VillaSearchItem[];
+  } | null;
+  error:        string | null;
+}
+
+export function villaSearchStart(session: Session | null, params: VillaSearchReq) {
+  return request<{ ok: boolean; job_id: string }>(
+    '/api/villa/search/start', session,
+    { method: 'POST', body: JSON.stringify(params) },
+  );
+}
+
+export function villaSearchStatus(session: Session | null, jobId: string) {
+  return request<VillaSearchProgress>(
+    `/api/villa/search/status/${encodeURIComponent(jobId)}`, session,
+  );
+}

@@ -4,8 +4,9 @@ import { MapContainer, TileLayer, Marker, Circle, useMap, useMapEvents } from 'r
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import {
-  villaAutocomplete, villaSearch, villaArticleDetail,
-  type VillaAutocompleteItem, type VillaSearchItem, ApiError,
+  villaAutocomplete, villaSearchStart, villaSearchStatus, villaArticleDetail,
+  type VillaAutocompleteItem, type VillaSearchItem, type VillaSearchProgress,
+  ApiError,
 } from '../lib/api';
 import { verifKo } from './ExtractResult';
 
@@ -97,6 +98,18 @@ function AreaSearch({ session }: { session: Session | null }) {
   const [searchErr, setSearchErr]   = useState('');
   const [items, setItems]           = useState<VillaSearchItem[]>([]);
   const [stats, setStats]           = useState<{ list: number; detail: number; truncated?: boolean; elapsed?: number } | null>(null);
+  const [progress, setProgress]     = useState<VillaSearchProgress | null>(null);
+  const pollRef = useRef<number | null>(null);
+
+  // unmount 시 polling 정리
+  useEffect(() => {
+    return () => {
+      if (pollRef.current != null) {
+        window.clearInterval(pollRef.current);
+        pollRef.current = null;
+      }
+    };
+  }, []);
 
   // chosen 변경 시 지도 중심 reset
   useEffect(() => {
@@ -132,10 +145,14 @@ function AreaSearch({ session }: { session: Session | null }) {
 
   async function onSearch() {
     if (!chosen) return;
-    setSearchBusy(true); setSearchErr(''); setItems([]); setStats(null);
+    setSearchBusy(true); setSearchErr(''); setItems([]); setStats(null); setProgress(null);
+    if (pollRef.current != null) {
+      window.clearInterval(pollRef.current);
+      pollRef.current = null;
+    }
     try {
       const useRadius = radiusKm > 0 && pickedLat != null && pickedLng != null;
-      const r = await villaSearch(session, {
+      const start = await villaSearchStart(session, {
         cortar_no:        chosen.legalDivisionNumber,
         real_estate_type: bdType,
         trade_type:       trade,
@@ -154,12 +171,47 @@ function AreaSearch({ session }: { session: Session | null }) {
         detail_limit:     60,         // 정밀 호수 모드 — 60건 cap (시간 제한)
         aggressive_ho:    true,       // 항상 정밀 모드
       });
-      setItems(r.items);
-      setStats({ list: r.list_count, detail: r.detail_count, truncated: r.truncated, elapsed: r.elapsed_sec });
-      if (r.items.length === 0) setSearchErr('검색 결과 없음');
+      const jobId = start.job_id;
+
+      pollRef.current = window.setInterval(async () => {
+        try {
+          const st = await villaSearchStatus(session, jobId);
+          setProgress(st);
+          if (st.status === 'done') {
+            if (pollRef.current != null) {
+              window.clearInterval(pollRef.current);
+              pollRef.current = null;
+            }
+            const res = st.result;
+            if (res) {
+              setItems(res.items);
+              setStats({ list: res.list_count, detail: res.detail_count,
+                         truncated: res.truncated, elapsed: st.elapsed_sec });
+              if (res.items.length === 0) setSearchErr('검색 결과 없음');
+            }
+            setSearchBusy(false);
+          } else if (st.status === 'error') {
+            if (pollRef.current != null) {
+              window.clearInterval(pollRef.current);
+              pollRef.current = null;
+            }
+            setSearchErr(st.error || '검색 오류');
+            setSearchBusy(false);
+          }
+        } catch (e) {
+          // 일시적 polling 오류는 다음 tick 에 재시도. 4xx/5xx 면 중단.
+          if (e instanceof ApiError && (e.status === 404 || e.status >= 500)) {
+            if (pollRef.current != null) {
+              window.clearInterval(pollRef.current);
+              pollRef.current = null;
+            }
+            setSearchErr(`${e.status} · ${e.message}`);
+            setSearchBusy(false);
+          }
+        }
+      }, 1000);
     } catch (e) {
       setSearchErr(e instanceof ApiError ? `${e.status} · ${e.message}` : String(e));
-    } finally {
       setSearchBusy(false);
     }
   }
@@ -306,6 +358,9 @@ function AreaSearch({ session }: { session: Session | null }) {
       )}
 
       {searchErr && <div className="text-sm text-red-600">{searchErr}</div>}
+      {progress && progress.status === 'running' && (
+        <VillaProgressBar p={progress} />
+      )}
       {stats && (
         <div className="text-sm text-[color:var(--color-muted)]">
           전체 {stats.list}건 / detail {stats.detail}건
@@ -553,6 +608,46 @@ function FilterField({ label, children }: { label: string; children: React.React
       <span className="text-[color:var(--color-muted)] text-xs">{label}:</span>
       {children}
     </label>
+  );
+}
+
+// ── 진행 상황 표시 (start+poll 기반) ──────────────────────────────────────
+function VillaProgressBar({ p }: { p: VillaSearchProgress }) {
+  // detail 단계에서 백분율 계산 — list 단계는 미정.
+  const inDetail = p.stage === 'detail' && p.detail_total > 0;
+  const pct = inDetail
+    ? Math.min(100, Math.floor((p.detail_done / p.detail_total) * 100))
+    : 0;
+
+  return (
+    <div className="border border-blue-200 bg-blue-50 rounded-lg p-3 space-y-2">
+      <div className="flex items-center gap-2 text-sm">
+        <span className="inline-block w-3 h-3 rounded-full bg-blue-500 animate-pulse" />
+        <span className="font-semibold text-blue-700">{p.stage_label}</span>
+        <span className="ml-auto text-xs text-[color:var(--color-muted)]">
+          경과 {Math.floor(p.elapsed_sec)}초
+        </span>
+      </div>
+
+      {p.stage === 'list' && (
+        <div className="text-xs text-[color:var(--color-muted)]">
+          page {p.page} 진행 중 — 누적 매물 {p.list_count}건
+          <span className="ml-1 inline-block w-2 h-2 rounded-full bg-blue-300 animate-bounce" />
+        </div>
+      )}
+
+      {inDetail && (
+        <>
+          <div className="text-xs text-[color:var(--color-muted)]">
+            매물 상세 조회: {p.detail_done} / {p.detail_total}건 ({pct}%)
+          </div>
+          <div className="w-full h-2 rounded bg-blue-100 overflow-hidden">
+            <div className="h-full bg-blue-500 transition-all"
+                 style={{ width: `${pct}%` }} />
+          </div>
+        </>
+      )}
+    </div>
   );
 }
 
