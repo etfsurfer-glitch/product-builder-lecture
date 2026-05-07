@@ -25,6 +25,13 @@ interface Props { session: Session | null; }
 //   VL=빌라, YR=연립, DDDGG=다세대, DDDGN=단독, DGN=다가구, SMS=사무실, SG=상가
 const REAL_ESTATE_TYPE_ALL = 'VL:YR:DDDGG:DDDGN:DGN:SMS:SG';
 
+// 한국 위경도 → km 근사 (위도 ~111km/°, 경도 ~88.7km/°). server 의 naver_villa_list 와 동일.
+function distanceKm(lat1: number, lng1: number, lat2: number, lng2: number): number {
+  const dy = (lat1 - lat2) * 111.0;
+  const dx = (lng1 - lng2) * 88.7;
+  return Math.sqrt(dx * dx + dy * dy);
+}
+
 const TRADE_TYPES: { label: string; code: string }[] = [
   { label: '전체',     code: 'A1:B1:B2' },
   { label: '매매',     code: 'A1' },
@@ -183,7 +190,22 @@ function AreaSearch({ session }: { session: Session | null }) {
               setItems(res.items);
               setStats({ list: res.list_count, detail: res.detail_count,
                          truncated: res.truncated, elapsed: st.elapsed_sec });
-              if (res.items.length === 0) setSearchErr('검색 결과 없음');
+              if (res.items.length === 0) {
+                // 0건 — 클릭점이 동 중심에서 너무 멀면 그게 원인일 가능성 알려주기
+                const dongLat = chosen ? parseFloat(chosen.latitude) : NaN;
+                const dongLng = chosen ? parseFloat(chosen.longitude) : NaN;
+                const d = (chosen && pickedLat != null && pickedLng != null
+                           && !isNaN(dongLat) && !isNaN(dongLng))
+                  ? distanceKm(dongLat, dongLng, pickedLat, pickedLng) : 0;
+                if (d > radiusKm * 3) {
+                  setSearchErr(
+                    `검색 결과 없음. 클릭점이 ${chosen!.name} 중심에서 ${d.toFixed(2)}km 떨어져 있습니다 (반경의 ${(d/radiusKm).toFixed(0)}배). ` +
+                    `Naver 는 선택한 동 매물만 반환하므로, 클릭점에 더 가까운 동을 다시 선택하세요.`
+                  );
+                } else {
+                  setSearchErr('검색 결과 없음');
+                }
+              }
             }
             setSearchBusy(false);
           } else if (st.status === 'error') {
@@ -264,12 +286,27 @@ function AreaSearch({ session }: { session: Session | null }) {
           </div>
 
           {/* 지도: 클릭으로 검색 중심점 설정 + 반경 슬라이더 */}
-          {pickedLat != null && pickedLng != null && (
+          {pickedLat != null && pickedLng != null && (() => {
+            const dongLat = parseFloat(chosen.latitude);
+            const dongLng = parseFloat(chosen.longitude);
+            const clickDistKm = (!isNaN(dongLat) && !isNaN(dongLng))
+              ? distanceKm(dongLat, dongLng, pickedLat, pickedLng) : 0;
+            // 클릭점이 동 중심에서 반경의 3배 이상 벗어나면 "동 외곽" 경고.
+            // Naver 가 cortarNo 매물만 반환하므로 너무 멀리 가면 0건.
+            const farClick = clickDistKm > radiusKm * 3;
+            return (
             <div className="space-y-2">
               <div className="text-xs text-[color:var(--color-muted)]">
                 지도 클릭 → 검색 중심점 설정. 반경
                 <span className="font-semibold text-[color:var(--color-ink)]"> {radiusKm}km</span> 안만 detail 호출.
               </div>
+              {farClick && (
+                <div className="text-xs text-red-700 bg-red-50 border border-red-200 rounded px-2 py-1.5">
+                  ⚠ 클릭점이 <b>{chosen.name}</b> 중심에서
+                  <b className="mx-1">{clickDistKm.toFixed(2)}km</b> 떨어져 있습니다 (반경 {radiusKm}km 의 {(clickDistKm/radiusKm).toFixed(0)}배).
+                  Naver 는 선택한 동 매물만 반환하므로 결과가 0건일 가능성이 높습니다 — 더 가까운 동을 다시 선택하세요.
+                </div>
+              )}
               <div className="h-[280px] border border-[color:var(--color-border)] rounded">
                 <MapContainer center={[pickedLat, pickedLng]} zoom={15}
                               style={{ height: '100%', width: '100%' }}
@@ -302,9 +339,20 @@ function AreaSearch({ session }: { session: Session | null }) {
                 <span className="text-[color:var(--color-muted)] ml-2 font-mono">
                   ({pickedLat.toFixed(4)}, {pickedLng.toFixed(4)})
                 </span>
+                <span className={
+                  'ml-2 ' +
+                  (clickDistKm <= radiusKm
+                    ? 'text-emerald-700'
+                    : clickDistKm <= radiusKm * 3
+                      ? 'text-amber-700'
+                      : 'text-red-700 font-semibold')
+                }>
+                  동 중심에서 {clickDistKm.toFixed(2)}km
+                </span>
               </div>
             </div>
-          )}
+            );
+          })()}
 
           <div className="flex flex-wrap gap-3 text-sm items-end">
             <FilterField label="거래유형">
