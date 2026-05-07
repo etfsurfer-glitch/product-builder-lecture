@@ -133,7 +133,7 @@ export default function App() {
             <TabButton active={tab === 'complex'} onClick={() => setTab('complex')}>단지 검색</TabButton>
             <TabButton active={tab === 'article'} onClick={() => setTab('article')}>매물번호 조회</TabButton>
             {IS_TEST_BUILD && (
-              <TabButton active={tab === 'villa'} onClick={() => setTab('villa')}>빌라/다세대</TabButton>
+              <TabButton active={tab === 'villa'} onClick={() => setTab('villa')}>빌라/사무실 등</TabButton>
             )}
             <TabButton active={tab === 'portfolio'} onClick={() => setTab('portfolio')}>내 폴더</TabButton>
           </div>
