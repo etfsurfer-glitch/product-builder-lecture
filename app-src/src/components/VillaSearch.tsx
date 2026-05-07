@@ -20,13 +20,10 @@ L.Icon.Default.mergeOptions({
 
 interface Props { session: Session | null; }
 
-// 검증된 Naver realEstateType 코드 (2026-05-07): VL=빌라, YR=연립, DDDGG=다세대,
-// DDDGN=단독, DGN=다가구. VBA 의 A05-A06-A07-C02 는 부정확 (상가/사무실 섞임).
-const BUILDING_TYPES: { label: string; code: string }[] = [
-  { label: '빌라/다세대/연립', code: 'VL:YR:DDDGG' },
-  { label: '빌라만',          code: 'VL' },
-  { label: '단독/다가구',     code: 'DDDGN:DGN' },
-];
+// 건물유형 무관 — Naver 가 등록자 자기표기에 1:1 매핑하는 부정확함을 우회하기 위해
+// 빌라/연립/다세대/단독/다가구 + 사무실 + 상가까지 한 번에 OR 검색.
+//   VL=빌라, YR=연립, DDDGG=다세대, DDDGN=단독, DGN=다가구, SMS=사무실, SG=상가
+const REAL_ESTATE_TYPE_ALL = 'VL:YR:DDDGG:DDDGN:DGN:SMS:SG';
 
 const TRADE_TYPES: { label: string; code: string }[] = [
   { label: '전체',     code: 'A1:B1:B2' },
@@ -80,7 +77,6 @@ function AreaSearch({ session }: { session: Session | null }) {
   const [cands, setCands]         = useState<VillaAutocompleteItem[]>([]);
   const [chosen, setChosen]       = useState<VillaAutocompleteItem | null>(null);
 
-  const [bdType, setBdType]       = useState(BUILDING_TYPES[0].code);
   const [trade, setTrade]         = useState(TRADE_TYPES[0].code);
   const [sinceYmd, setSinceYmd]   = useState('');                   // YYYYMMDD
   const [priceMin, setPriceMin]   = useState('');                   // 매매/보증금 만원
@@ -154,7 +150,7 @@ function AreaSearch({ session }: { session: Session | null }) {
       const useRadius = radiusKm > 0 && pickedLat != null && pickedLng != null;
       const start = await villaSearchStart(session, {
         cortar_no:        chosen.legalDivisionNumber,
-        real_estate_type: bdType,
+        real_estate_type: REAL_ESTATE_TYPE_ALL,
         trade_type:       trade,
         since_ymd:        sinceYmd.trim(),
         price_min:        priceMin ? Number(priceMin) : undefined,
@@ -264,7 +260,7 @@ function AreaSearch({ session }: { session: Session | null }) {
           </div>
 
           <div className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded px-2 py-1.5">
-            (빌라/다세대 등의 조회시간은 오래 걸립니다. 범위를 구체화 할수록 빠르게 조회됩니다.)
+            (빌라/다세대/연립/단독/다가구 + 사무실/상가 통합 검색 — 건물유형 구분 없이 한 번에 조회. 시간이 오래 걸리니 범위를 구체화 할수록 빠릅니다.)
           </div>
 
           {/* 지도: 클릭으로 검색 중심점 설정 + 반경 슬라이더 */}
@@ -311,12 +307,6 @@ function AreaSearch({ session }: { session: Session | null }) {
           )}
 
           <div className="flex flex-wrap gap-3 text-sm items-end">
-            <FilterField label="건물유형">
-              <select value={bdType} onChange={e => setBdType(e.target.value)}
-                      className="h-8 px-2 rounded border border-[color:var(--color-border)] text-sm">
-                {BUILDING_TYPES.map(b => <option key={b.code} value={b.code}>{b.label}</option>)}
-              </select>
-            </FilterField>
             <FilterField label="거래유형">
               <select value={trade} onChange={e => setTrade(e.target.value)}
                       className="h-8 px-2 rounded border border-[color:var(--color-border)] text-sm">
