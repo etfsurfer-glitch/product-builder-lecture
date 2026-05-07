@@ -1079,6 +1079,7 @@ export interface VillaSearchItem {
   realEstateTypeCode?:      string;
   realEstateTypeName?:      string;
   verificationTypeCode?:    string;
+  verificationTypeName?:    string;
   floorInfo?:               string;
   totalFloorCount?:         string | number;
   correspondingFloorCount?: string | number;

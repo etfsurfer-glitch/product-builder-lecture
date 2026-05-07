@@ -7,6 +7,7 @@ import {
   villaAutocomplete, villaSearch, villaArticleDetail,
   type VillaAutocompleteItem, type VillaSearchItem, ApiError,
 } from '../lib/api';
+import { verifKo } from './ExtractResult';
 
 // Leaflet default marker icon URL fix (Vite 빌드 환경에서 깨지는 이슈 회피)
 delete (L.Icon.Default.prototype as unknown as { _getIconUrl?: () => string })._getIconUrl;
@@ -90,8 +91,7 @@ function AreaSearch({ session }: { session: Session | null }) {
   // 지도 + 반경 (cortar 선택 후 활성)
   const [pickedLat, setPickedLat] = useState<number | null>(null);
   const [pickedLng, setPickedLng] = useState<number | null>(null);
-  const [radiusKm, setRadiusKm]   = useState<number>(0);            // 0 = 동 전체
-  const [aggressiveHo, setAggressiveHo] = useState<boolean>(false); // 정밀 호수 추출
+  const [radiusKm, setRadiusKm]   = useState<number>(0.2);          // 기본 0.2km
 
   const [searchBusy, setSearchBusy] = useState(false);
   const [searchErr, setSearchErr]   = useState('');
@@ -106,9 +106,9 @@ function AreaSearch({ session }: { session: Session | null }) {
       if (!isNaN(lat) && !isNaN(lng)) {
         setPickedLat(lat); setPickedLng(lng);
       }
-      setRadiusKm(0);
+      setRadiusKm(0.2);
     } else {
-      setPickedLat(null); setPickedLng(null); setRadiusKm(0);
+      setPickedLat(null); setPickedLng(null); setRadiusKm(0.2);
     }
   }, [chosen]);
 
@@ -151,8 +151,8 @@ function AreaSearch({ session }: { session: Session | null }) {
         radius_km:        useRadius ? radiusKm : undefined,
         max_pages:        50,
         fetch_detail:     true,
-        detail_limit:     aggressiveHo ? 60 : 200,   // 정밀 모드는 60건으로 cap (시간)
-        aggressive_ho:    aggressiveHo,
+        detail_limit:     60,         // 정밀 호수 모드 — 60건 cap (시간 제한)
+        aggressive_ho:    true,       // 항상 정밀 모드
       });
       setItems(r.items);
       setStats({ list: r.list_count, detail: r.detail_count, truncated: r.truncated, elapsed: r.elapsed_sec });
@@ -207,21 +207,20 @@ function AreaSearch({ session }: { session: Session | null }) {
           <div className="text-sm">
             <span className="text-[color:var(--color-muted)] mr-2">선택됨:</span>
             <span className="font-semibold">{chosen.name}</span>
-            <span className="ml-2 font-mono text-xs text-[color:var(--color-muted)]">cortarNo={chosen.legalDivisionNumber}</span>
             <button onClick={() => { setChosen(null); setItems([]); setStats(null); }}
                     className="ml-2 text-xs text-[color:var(--color-muted)] underline">변경</button>
+          </div>
+
+          <div className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded px-2 py-1.5">
+            (빌라/다세대 등의 조회시간은 오래 걸립니다. 범위를 구체화 할수록 빠르게 조회됩니다.)
           </div>
 
           {/* 지도: 클릭으로 검색 중심점 설정 + 반경 슬라이더 */}
           {pickedLat != null && pickedLng != null && (
             <div className="space-y-2">
               <div className="text-xs text-[color:var(--color-muted)]">
-                지도 클릭 → 검색 중심점 설정.
-                {radiusKm > 0 ? (
-                  <> 반경 <span className="font-semibold text-[color:var(--color-ink)]">{radiusKm}km</span> 안만 detail 호출 (속도↑)</>
-                ) : (
-                  <> 반경 = 동 전체 (slider 조정 시 좁힘)</>
-                )}
+                지도 클릭 → 검색 중심점 설정. 반경
+                <span className="font-semibold text-[color:var(--color-ink)]"> {radiusKm}km</span> 안만 detail 호출.
               </div>
               <div className="h-[280px] border border-[color:var(--color-border)] rounded">
                 <MapContainer center={[pickedLat, pickedLng]} zoom={15}
@@ -234,15 +233,13 @@ function AreaSearch({ session }: { session: Session | null }) {
                   <MapClickHandler onClick={(lat, lng) => { setPickedLat(lat); setPickedLng(lng); }} />
                   <CenterUpdater lat={pickedLat} lng={pickedLng} />
                   <Marker position={[pickedLat, pickedLng]} />
-                  {radiusKm > 0 && (
-                    <Circle center={[pickedLat, pickedLng]} radius={radiusKm * 1000}
-                            pathOptions={{ color: '#3b82f6', fillOpacity: 0.1 }} />
-                  )}
+                  <Circle center={[pickedLat, pickedLng]} radius={radiusKm * 1000}
+                          pathOptions={{ color: '#3b82f6', fillOpacity: 0.1 }} />
                 </MapContainer>
               </div>
               <div className="flex flex-wrap items-center gap-2 text-xs">
                 <span className="text-[color:var(--color-muted)]">반경:</span>
-                {[0, 0.3, 0.5, 1, 2, 5].map(km => (
+                {[0.1, 0.2, 0.3].map(km => (
                   <button key={km}
                           onClick={() => setRadiusKm(km)}
                           className={
@@ -251,23 +248,11 @@ function AreaSearch({ session }: { session: Session | null }) {
                               ? 'bg-[color:var(--color-brand)] text-white border-[color:var(--color-brand)]'
                               : 'bg-white border-[color:var(--color-border)] hover:bg-[color:var(--color-bg-soft)]')
                           }>
-                    {km === 0 ? '동 전체' : `${km}km`}
+                    {`${km}km`}
                   </button>
                 ))}
                 <span className="text-[color:var(--color-muted)] ml-2 font-mono">
                   ({pickedLat.toFixed(4)}, {pickedLng.toFixed(4)})
-                </span>
-              </div>
-              <div className="flex items-center gap-2 text-xs">
-                <label className="flex items-center gap-1 cursor-pointer">
-                  <input type="checkbox" checked={aggressiveHo}
-                         onChange={e => setAggressiveHo(e.target.checked)}
-                         className="cursor-pointer" />
-                  <span className="font-semibold">정밀 호수 추출</span>
-                </label>
-                <span className="text-[color:var(--color-muted)]">
-                  CP 핸들러 + sibling 활용 — 매물당 5~10초 (반경 좁힐수록 권장).
-                  비활성 시 빠르지만 빌라 일부에서 호수 빈칸.
                 </span>
               </div>
             </div>
@@ -329,7 +314,9 @@ function AreaSearch({ session }: { session: Session | null }) {
         </div>
       )}
 
-      {items.length > 0 && <VillaResultTable items={items} />}
+      {items.length > 0 && (
+        <VillaResultTable items={items} exportName={chosen?.name || ''} />
+      )}
     </div>
   );
 }
@@ -371,46 +358,33 @@ function ArticleByNo({ session }: { session: Session | null }) {
         </button>
       </form>
       {err && <div className="text-sm text-red-600">{err}</div>}
-      {info && <VillaResultTable items={[info]} />}
+      {info && <VillaResultTable items={[info]} exportName={`art-${info.articleNo || ''}`} />}
     </div>
   );
 }
 
 // ── 결과 표 (빌라용 컬럼 — VBA ParseJson호수 기반) ─────────────────────────
-// 빌라는 방향/주소(시도 prefix)/프리미엄 컬럼 없음. 매물번호/입주시기 위치 변경.
-function VillaResultTable({ items }: { items: VillaSearchItem[] }) {
-  return (
-    <div className="overflow-x-auto border border-[color:var(--color-border)] rounded-lg">
-      <table className="min-w-full text-xs">
-        <thead className="bg-[color:var(--color-bg-soft)]">
-          <tr>
-            <Th>거래</Th>
-            <Th>매물명/건물명</Th>
-            <Th>동/타입</Th>
-            <Th>호수</Th>
-            <Th>층(현/최고)</Th>
-            <Th>면적(전용/공급㎡)</Th>
-            <Th>방/욕실</Th>
-            <Th>용도</Th>
-            <Th>인증</Th>
-            <Th>매매/보증금(만원)</Th>
-            <Th>월세(만원)</Th>
-            <Th>특징광고</Th>
-            <Th>등록일</Th>
-            <Th>매물번호</Th>
-            <Th>입주시기</Th>
-            <Th>중개사</Th>
-          </tr>
-        </thead>
-        <tbody>
-          {items.map(it => <VillaRow key={it.articleNo} it={it} />)}
-        </tbody>
-      </table>
-    </div>
-  );
-}
+// 빌라는 방향/주소(시도 prefix)/프리미엄 컬럼 없음. 매물번호 컬럼 제거됨.
+const VILLA_COLUMNS = [
+  '거래',
+  '매물명/건물명',
+  '동/타입',
+  '호수',
+  '층(현/최고)',
+  '면적(전용/공급㎡)',
+  '방/욕실',
+  '용도',
+  '인증',
+  '매매/보증금(만원)',
+  '월세(만원)',
+  '특징광고',
+  '등록일',
+  '입주시기',
+  '중개사',
+  '전화',
+] as const;
 
-function VillaRow({ it }: { it: VillaSearchItem }) {
+function buildVillaRowValues(it: VillaSearchItem): string[] {
   const name = String((it.articleName as string) || (it.bldNm as string) || '');
   const dong = String((it.buildingName as string) || (it as any).dongNm || '');
   const ptp  = String((it.ptpName as string) || '');
@@ -422,54 +396,133 @@ function VillaRow({ it }: { it: VillaSearchItem }) {
   const room  = (it.roomCount as any) ?? '';
   const bath  = (it.bathroomCount as any) ?? '';
   const usage = String((it as any).usageTypeName || (it as any).mainPurpsCdNm || '');
-  const ver   = String(it.verificationTypeCode || '');
+  const verRaw = String(it.verificationTypeName || it.verificationTypeCode || '');
+  const ver   = verifKo(verRaw) || verRaw;
   const deal  = Number(it.dealPrice || 0);
   const warrant = Number(it.warrantPrice || 0);
   const rent  = Number(it.rentPrice || it.rentPrc || 0);
   const tradeName = String(it.tradeTypeName || '');
-  const cpUrl = it.cpPcArticleUrl as string | undefined;
   const realtor = String(it.realtorName || '');
   const tel   = String((it as any).representativeTelNo || (it as any).cellPhoneNo || '');
   const moveIn = String((it as any).moveInTypeName || (it as any).moveInPossibleYmd || '');
   const feat  = String(it.articleFeatureDesc || '');
 
-  // 가격 컬럼 분리 (VBA spec: col 16=매매/보증금, col 17=월세)
-  //  - 매매: dealPrice  /  전세·월세 보증금: warrantPrice  /  월세: rentPrice
   const dealOrWarrant = deal > 0 ? deal : (warrant > 0 ? warrant : 0);
-  const dealOrWarrantDisp = dealOrWarrant > 0 ? dealOrWarrant.toLocaleString() : '';
-  const rentDisp          = rent > 0          ? rent.toLocaleString()          : '';
 
   const exclusiveDisp = typeof exclusive === 'number' ? exclusive.toFixed(1) : String(exclusive);
   const supplyDisp    = typeof supply    === 'number' ? supply.toFixed(1)    : String(supply);
 
+  const dongCell = ptp ? `${dong} / ${ptp}` : dong;
+  const floorCell = (cf || tf) ? `${cf}/${tf}` : '';
+  const areaCell = supplyDisp ? `${exclusiveDisp} / ${supplyDisp}` : exclusiveDisp;
+  const roomBath = room && bath ? `${room}/${bath}` : (room || bath || '');
+
+  return [
+    tradeName,
+    name,
+    dongCell,
+    ho,
+    floorCell,
+    areaCell,
+    String(roomBath),
+    usage,
+    ver,
+    dealOrWarrant > 0 ? String(dealOrWarrant) : '',
+    rent > 0 ? String(rent) : '',
+    feat,
+    String(it.articleConfirmYmd || ''),
+    moveIn,
+    realtor,
+    tel,
+  ];
+}
+
+function csvEscape(s: string): string {
+  if (s == null) return '';
+  if (/[",\n\r]/.test(s)) return '"' + s.replace(/"/g, '""') + '"';
+  return s;
+}
+
+function downloadVillaCsv(items: VillaSearchItem[], baseName: string) {
+  const header = VILLA_COLUMNS.join(',');
+  const lines = items.map(it =>
+    buildVillaRowValues(it).map(csvEscape).join(',')
+  );
+  // UTF-8 BOM (﻿) — Excel 한글 깨짐 방지
+  const body = '﻿' + header + '\n' + lines.join('\n');
+  const blob = new Blob([body], { type: 'text/csv;charset=utf-8' });
+  const url  = URL.createObjectURL(blob);
+  const ts = new Date().toISOString().replace(/[-:]/g, '').replace(/\..+/, '').replace('T', '_');
+  const safe = (baseName || 'villa').replace(/[\\/:*?"<>|]/g, '_');
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `villa_${safe}_${ts}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+function VillaResultTable({ items, exportName }:
+  { items: VillaSearchItem[]; exportName: string }) {
+  return (
+    <div className="space-y-2">
+      <div className="flex items-center justify-between">
+        <div className="text-xs text-[color:var(--color-muted)]">{items.length}건</div>
+        <button
+          onClick={() => downloadVillaCsv(items, exportName)}
+          className="h-8 px-3 rounded bg-emerald-600 text-white text-xs font-semibold hover:bg-emerald-700"
+        >
+          📊 엑셀(CSV) 다운로드
+        </button>
+      </div>
+      <div className="overflow-x-auto border border-[color:var(--color-border)] rounded-lg">
+        <table className="min-w-full text-xs">
+          <thead className="bg-[color:var(--color-bg-soft)]">
+            <tr>
+              {VILLA_COLUMNS.map(c => <Th key={c}>{c}</Th>)}
+            </tr>
+          </thead>
+          <tbody>
+            {items.map(it => <VillaRow key={it.articleNo} it={it} />)}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+function VillaRow({ it }: { it: VillaSearchItem }) {
+  const vals = buildVillaRowValues(it);
+  const cpUrl = it.cpPcArticleUrl as string | undefined;
+  // 컬럼별 인덱스: 0=거래, 1=매물명, 2=동/타입, 3=호수, 4=층, 5=면적, 6=방/욕실,
+  //               7=용도, 8=인증, 9=매매/보증금, 10=월세, 11=특징, 12=등록일,
+  //               13=입주시기, 14=중개사, 15=전화
+  const dealOrWarrantDisp = vals[9] ? Number(vals[9]).toLocaleString() : '';
+  const rentDisp          = vals[10] ? Number(vals[10]).toLocaleString() : '';
+
   return (
     <tr className="border-t border-[color:var(--color-border)] hover:bg-[color:var(--color-bg-soft)]">
-      <Td>{tradeName}</Td>
-      <Td className="max-w-[180px] truncate" title={name}>{name}</Td>
-      <Td className="max-w-[100px] truncate" title={`${dong} / ${ptp}`}>
-        {dong}{ptp && <span className="text-[color:var(--color-muted)]"> / {ptp}</span>}
+      <Td>{vals[0]}</Td>
+      <Td className="max-w-[180px] truncate" title={vals[1]}>
+        {cpUrl
+          ? <a href={cpUrl} target="_blank" rel="noopener noreferrer" className="text-blue-600 underline">{vals[1]}</a>
+          : vals[1]}
       </Td>
-      <Td>{ho}</Td>
-      <Td>{cf || tf ? `${cf}/${tf}` : ''}</Td>
-      <Td className="whitespace-nowrap">
-        {exclusiveDisp || ''}{supplyDisp ? ` / ${supplyDisp}` : ''}
-      </Td>
-      <Td>{room && bath ? `${room}/${bath}` : (room || bath || '')}</Td>
-      <Td className="max-w-[100px] truncate" title={usage}>{usage}</Td>
-      <Td>{ver}</Td>
+      <Td className="max-w-[120px] truncate" title={vals[2]}>{vals[2]}</Td>
+      <Td>{vals[3]}</Td>
+      <Td>{vals[4]}</Td>
+      <Td className="whitespace-nowrap">{vals[5]}</Td>
+      <Td>{vals[6]}</Td>
+      <Td className="max-w-[100px] truncate" title={vals[7]}>{vals[7]}</Td>
+      <Td>{vals[8]}</Td>
       <Td className="whitespace-nowrap text-right">{dealOrWarrantDisp}</Td>
       <Td className="whitespace-nowrap text-right">{rentDisp}</Td>
-      <Td className="max-w-[200px] truncate" title={feat}>{feat}</Td>
-      <Td className="whitespace-nowrap">{it.articleConfirmYmd || ''}</Td>
-      <Td>
-        {cpUrl
-          ? <a href={cpUrl} target="_blank" rel="noopener noreferrer" className="text-blue-600 underline">{it.articleNo}</a>
-          : it.articleNo}
-      </Td>
-      <Td className="max-w-[100px] truncate" title={moveIn}>{moveIn}</Td>
-      <Td className="max-w-[150px] truncate" title={`${realtor} ${tel}`}>
-        {realtor}{tel && <div className="text-xs text-[color:var(--color-muted)]">{tel}</div>}
-      </Td>
+      <Td className="max-w-[200px] truncate" title={vals[11]}>{vals[11]}</Td>
+      <Td className="whitespace-nowrap">{vals[12]}</Td>
+      <Td className="max-w-[100px] truncate" title={vals[13]}>{vals[13]}</Td>
+      <Td className="max-w-[120px] truncate" title={vals[14]}>{vals[14]}</Td>
+      <Td className="max-w-[120px] truncate text-xs text-[color:var(--color-muted)]" title={vals[15]}>{vals[15]}</Td>
     </tr>
   );
 }
