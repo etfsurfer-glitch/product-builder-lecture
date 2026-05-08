@@ -12,14 +12,14 @@ export const API_HOSTS: readonly string[] = BACKUP_API ? [PRIMARY_API, BACKUP_AP
 export const API_BASE = PRIMARY_API;
 export const IS_TEST_BUILD = import.meta.env.VITE_IS_TEST_BUILD === '1';
 
-// 관리자 전용 KR 라우팅 (Phase 2 — iwinv 검증 단계)
-// 해당 email 사용자만 api-kr.runto.online 우선. KR 다운 시 자동 A/B 폴백.
+// KR 우선 라우팅 (Phase 2.1 — 모든 로그인 사용자)
+// 로그인된 모든 사용자: api-kr.runto.online 1순위. KR 5xx/network-error 시 A/B 자동 폴백.
+// 비로그인 (fetchPublicConfig 등) 은 기존 fetchWithFailover (A/B) 그대로.
 const KR_API = (import.meta.env.VITE_API_BASE_KR as string | undefined) ?? 'https://api-kr.runto.online';
-const ADMIN_EMAILS_FOR_KR = new Set(['in8259@naver.com']);
 
-function isAdminForKR(session: Session | null): boolean {
-  const email = session?.user?.email?.toLowerCase();
-  return !!(email && ADMIN_EMAILS_FOR_KR.has(email));
+function shouldUseKR(session: Session | null): boolean {
+  // 로그인된 모든 사용자 → KR 우선
+  return !!session?.access_token;
 }
 
 // ── 멀티 호스트 페일오버 ──────────────────────────────────────────────────────
@@ -151,13 +151,13 @@ async function fetchWithFailover(path: string, init: RequestInit = {}): Promise<
 // 진단용 — 현재 어느 호스트가 active 인지. App.tsx 등에서 표시 가능.
 export function getActiveApiHost(): string { return API_HOSTS[getStickyIdx()]; }
 
-// admin 만 KR 우선 — KR 죽으면 자동 A/B 폴백
+// 로그인 사용자는 KR 우선 — KR 죽으면 자동 A/B 폴백
 async function fetchWithKRPreference(
   session: Session | null,
   path: string,
   init: RequestInit = {},
 ): Promise<Response> {
-  if (isAdminForKR(session)) {
+  if (shouldUseKR(session)) {
     const ctrl  = new AbortController();
     const timer = setTimeout(
       () => ctrl.abort(new DOMException('hard-timeout', 'AbortError')),
