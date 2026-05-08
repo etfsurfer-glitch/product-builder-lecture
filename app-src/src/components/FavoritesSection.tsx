@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import type { FavoriteItem } from '../lib/api';
 
 interface Props {
@@ -25,6 +25,16 @@ export default function FavoritesSection({
   const [expanded, setExpanded] = useState(true);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [collapsedFolders, setCollapsedFolders] = useState<Set<string>>(new Set());
+  // 사용자 실수 클릭 방지 — 첫 진입 시 모든 폴더 접힌 상태로 init.
+  // 한 번만 (initialized flag) 적용. 이후 사용자 토글은 자유.
+  const [foldersInitialized, setFoldersInitialized] = useState(false);
+  useEffect(() => {
+    if (!foldersInitialized && favorites.length > 0) {
+      const allKeys = Array.from(groupByFolder(favorites).keys());
+      setCollapsedFolders(new Set(allKeys));
+      setFoldersInitialized(true);
+    }
+  }, [favorites.length, foldersInitialized]);
 
   function toggleFolder(folder: string) {
     setCollapsedFolders(prev => {
