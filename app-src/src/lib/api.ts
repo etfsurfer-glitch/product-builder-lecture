@@ -12,6 +12,16 @@ export const API_HOSTS: readonly string[] = BACKUP_API ? [PRIMARY_API, BACKUP_AP
 export const API_BASE = PRIMARY_API;
 export const IS_TEST_BUILD = import.meta.env.VITE_IS_TEST_BUILD === '1';
 
+// 관리자 전용 KR 라우팅 (Phase 2 — iwinv 검증 단계)
+// 해당 email 사용자만 api-kr.runto.online 우선. KR 다운 시 자동 A/B 폴백.
+const KR_API = (import.meta.env.VITE_API_BASE_KR as string | undefined) ?? 'https://api-kr.runto.online';
+const ADMIN_EMAILS_FOR_KR = new Set(['in8259@naver.com']);
+
+function isAdminForKR(session: Session | null): boolean {
+  const email = session?.user?.email?.toLowerCase();
+  return !!(email && ADMIN_EMAILS_FOR_KR.has(email));
+}
+
 // ── 멀티 호스트 페일오버 ──────────────────────────────────────────────────────
 // 동작: 백그라운드 health pinger 가 호스트 alive/dead 상태를 추적 (lib/health.ts).
 //   요청 전 dead 호스트는 후순위로 미루고, 살아있는 호스트만 우선 시도. per-request
@@ -141,6 +151,33 @@ async function fetchWithFailover(path: string, init: RequestInit = {}): Promise<
 // 진단용 — 현재 어느 호스트가 active 인지. App.tsx 등에서 표시 가능.
 export function getActiveApiHost(): string { return API_HOSTS[getStickyIdx()]; }
 
+// admin 만 KR 우선 — KR 죽으면 자동 A/B 폴백
+async function fetchWithKRPreference(
+  session: Session | null,
+  path: string,
+  init: RequestInit = {},
+): Promise<Response> {
+  if (isAdminForKR(session)) {
+    const ctrl  = new AbortController();
+    const timer = setTimeout(
+      () => ctrl.abort(new DOMException('hard-timeout', 'AbortError')),
+      HARD_CAP_MS,
+    );
+    try {
+      const sig = init.signal ? combineSignals(ctrl.signal, init.signal) : ctrl.signal;
+      const res = await fetch(`${KR_API}${path}`, { ...init, signal: sig });
+      clearTimeout(timer);
+      // KR origin-down 시만 fallback (5xx tunnel error). 정상 4xx/200 는 KR 결과 그대로 반환.
+      if (!ORIGIN_DOWN_STATUS.has(res.status)) return res;
+    } catch {
+      clearTimeout(timer);
+      // network error → fallback to A/B
+      if (init.signal?.aborted) throw new Error('aborted');
+    }
+  }
+  return fetchWithFailover(path, init);
+}
+
 export interface PublicConfig {
   turnstile_site_key: string;
   turnstile_required: boolean;
@@ -178,7 +215,7 @@ async function request<T>(
   };
   if (session?.access_token) headers.Authorization = `Bearer ${session.access_token}`;
 
-  const r = await fetchWithFailover(path, { ...init, headers, credentials: 'include' });
+  const r = await fetchWithKRPreference(session, path, { ...init, headers, credentials: 'include' });
   const text = await r.text();
   const body = text ? safeJson(text) : null;
   if (!r.ok) {
