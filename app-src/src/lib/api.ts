@@ -2,25 +2,24 @@
 import type { Session } from '@supabase/supabase-js';
 import { isHostAlive } from './health';
 
-// VITE_API_BASE_BACKUP 가 빌드 시 주입되면 멀티 호스트 페일오버 활성.
-// 비어 있으면 단일 호스트 (현재 운영) 동작 유지.
-const PRIMARY_API = import.meta.env.VITE_API_BASE ?? 'https://api.runto.online';
-const BACKUP_API  = (import.meta.env.VITE_API_BASE_BACKUP as string | undefined) || '';
-export const API_HOSTS: readonly string[] = BACKUP_API ? [PRIMARY_API, BACKUP_API] : [PRIMARY_API];
+// 멀티 호스트 페일오버 (Phase 2.2 — KR 통합).
+// 우선순위:
+//   index 0: KR (api-kr.runto.online) — 한국 IDC, NordVPN 없는 직접 호출
+//   index 1: A  (api.runto.online)    — Mac Mini A, NordVPN 경유
+//   index 2: B  (api-b.runto.online)  — Mac Mini B, NordVPN 경유
+// 비어 있는 entry 는 자동 제외. 빌드 시 VITE_API_BASE_KR/_/_BACKUP 으로 override 가능.
+const KR_API     = (import.meta.env.VITE_API_BASE_KR     as string | undefined) ?? 'https://api-kr.runto.online';
+const PRIMARY_API = (import.meta.env.VITE_API_BASE        as string | undefined) ?? 'https://api.runto.online';
+const BACKUP_API  = (import.meta.env.VITE_API_BASE_BACKUP as string | undefined) ?? 'https://api-b.runto.online';
 
-// 호환용 — App.tsx 가 표시 hostname 추출에 사용. 항상 primary 를 노출.
-export const API_BASE = PRIMARY_API;
+export const API_HOSTS: readonly string[] = [KR_API, PRIMARY_API, BACKUP_API].filter(Boolean) as string[];
+
+// 표시용 라벨 — AdminPage 의 강제 host 선택 버튼에 사용
+export const API_HOST_LABELS: readonly string[] = ['KR', 'A', 'B'].slice(0, API_HOSTS.length);
+
+// 호환용 — App.tsx 가 표시 hostname 추출에 사용
+export const API_BASE = API_HOSTS[0];
 export const IS_TEST_BUILD = import.meta.env.VITE_IS_TEST_BUILD === '1';
-
-// KR 우선 라우팅 (Phase 2.1 — 모든 로그인 사용자)
-// 로그인된 모든 사용자: api-kr.runto.online 1순위. KR 5xx/network-error 시 A/B 자동 폴백.
-// 비로그인 (fetchPublicConfig 등) 은 기존 fetchWithFailover (A/B) 그대로.
-const KR_API = (import.meta.env.VITE_API_BASE_KR as string | undefined) ?? 'https://api-kr.runto.online';
-
-function shouldUseKR(session: Session | null): boolean {
-  // 로그인된 모든 사용자 → KR 우선
-  return !!session?.access_token;
-}
 
 // ── 멀티 호스트 페일오버 ──────────────────────────────────────────────────────
 // 동작: 백그라운드 health pinger 가 호스트 alive/dead 상태를 추적 (lib/health.ts).
@@ -151,33 +150,6 @@ async function fetchWithFailover(path: string, init: RequestInit = {}): Promise<
 // 진단용 — 현재 어느 호스트가 active 인지. App.tsx 등에서 표시 가능.
 export function getActiveApiHost(): string { return API_HOSTS[getStickyIdx()]; }
 
-// 로그인 사용자는 KR 우선 — KR 죽으면 자동 A/B 폴백
-async function fetchWithKRPreference(
-  session: Session | null,
-  path: string,
-  init: RequestInit = {},
-): Promise<Response> {
-  if (shouldUseKR(session)) {
-    const ctrl  = new AbortController();
-    const timer = setTimeout(
-      () => ctrl.abort(new DOMException('hard-timeout', 'AbortError')),
-      HARD_CAP_MS,
-    );
-    try {
-      const sig = init.signal ? combineSignals(ctrl.signal, init.signal) : ctrl.signal;
-      const res = await fetch(`${KR_API}${path}`, { ...init, signal: sig });
-      clearTimeout(timer);
-      // KR origin-down 시만 fallback (5xx tunnel error). 정상 4xx/200 는 KR 결과 그대로 반환.
-      if (!ORIGIN_DOWN_STATUS.has(res.status)) return res;
-    } catch {
-      clearTimeout(timer);
-      // network error → fallback to A/B
-      if (init.signal?.aborted) throw new Error('aborted');
-    }
-  }
-  return fetchWithFailover(path, init);
-}
-
 export interface PublicConfig {
   turnstile_site_key: string;
   turnstile_required: boolean;
@@ -215,7 +187,7 @@ async function request<T>(
   };
   if (session?.access_token) headers.Authorization = `Bearer ${session.access_token}`;
 
-  const r = await fetchWithKRPreference(session, path, { ...init, headers, credentials: 'include' });
+  const r = await fetchWithFailover(path, { ...init, headers, credentials: 'include' });
   const text = await r.text();
   const body = text ? safeJson(text) : null;
   if (!r.ok) {

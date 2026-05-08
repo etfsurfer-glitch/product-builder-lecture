@@ -6,7 +6,7 @@ import {
   adminSetDeviceLimit, adminDeleteDevice, adminCreateUser,
   adminFetchLogs, adminResetAllDevices, adminSetPassword, adminSetSubscription,
   adminDashboardMulti, adminProxyRotateForHost, adminDeleteUser,
-  getAdminForceHostIdx, setAdminForceHostIdx, API_HOSTS,
+  getAdminForceHostIdx, setAdminForceHostIdx, API_HOSTS, API_HOST_LABELS,
   adminPresaleSummary, adminPresaleArticles, adminPresaleLog, adminPresalePopular,
   adminPresaleResetNow, adminPresalePreheatBulkExtract,
   type BulkExtractJob,
@@ -81,18 +81,21 @@ export default function AdminPage({ session, onBack }: Props) {
                         : 'bg-white hover:bg-[color:var(--color-bg-soft)]'}`}>
                 자동
               </button>
-              <button onClick={() => changeForceHost(0)}
-                      className={`px-3 py-1.5 text-xs font-bold transition border-l border-[color:var(--color-border-strong)] ${forceHost === 0
-                        ? 'bg-emerald-600 text-white'
-                        : 'bg-white text-emerald-700 hover:bg-emerald-50'}`}>
-                🅰️ A
-              </button>
-              <button onClick={() => changeForceHost(1)}
-                      className={`px-3 py-1.5 text-xs font-bold transition border-l border-[color:var(--color-border-strong)] ${forceHost === 1
-                        ? 'bg-blue-600 text-white'
-                        : 'bg-white text-blue-700 hover:bg-blue-50'}`}>
-                🅱️ B
-              </button>
+              {API_HOST_LABELS.map((label, idx) => {
+                const colorMap: Record<string, { active: string; idle: string }> = {
+                  KR: { active: 'bg-rose-600 text-white',     idle: 'bg-white text-rose-700 hover:bg-rose-50' },
+                  A:  { active: 'bg-emerald-600 text-white',  idle: 'bg-white text-emerald-700 hover:bg-emerald-50' },
+                  B:  { active: 'bg-blue-600 text-white',     idle: 'bg-white text-blue-700 hover:bg-blue-50' },
+                };
+                const colors = colorMap[label] || { active: 'bg-gray-600 text-white', idle: 'bg-white' };
+                const flag = label === 'KR' ? '🇰🇷' : label === 'A' ? '🅰️' : label === 'B' ? '🅱️' : '';
+                return (
+                  <button key={label} onClick={() => changeForceHost(idx)}
+                          className={`px-3 py-1.5 text-xs font-bold transition border-l border-[color:var(--color-border-strong)] ${forceHost === idx ? colors.active : colors.idle}`}>
+                    {flag} {label}
+                  </button>
+                );
+              })}
             </div>
           </div>
         )}
@@ -188,12 +191,17 @@ function DashHostCard({
 }) {
   const [rotating, setRotating] = useState(false);
   const hostShort = result.host.replace(/^https?:\/\//, '');
-  const hostLabel = hostShort.includes('api-b')
-    ? <span className="text-blue-700">🅱️ B</span>
-    : hostShort.startsWith('api.')
-      ? <span className="text-emerald-700">🅰️ A</span>
-      : <span>{hostShort}</span>;
-  const hostShortName = hostShort.includes('api-b') ? 'B' : hostShort.startsWith('api.') ? 'A' : hostShort;
+  const hostLabel = hostShort.includes('api-kr')
+    ? <span className="text-rose-700">🇰🇷 KR</span>
+    : hostShort.includes('api-b')
+      ? <span className="text-blue-700">🅱️ B</span>
+      : hostShort.startsWith('api.')
+        ? <span className="text-emerald-700">🅰️ A</span>
+        : <span>{hostShort}</span>;
+  const hostShortName = hostShort.includes('api-kr') ? 'KR'
+    : hostShort.includes('api-b') ? 'B'
+    : hostShort.startsWith('api.') ? 'A'
+    : hostShort;
 
   async function rotate() {
     if (!confirm(`${hostShortName} 서버의 VPN 을 즉시 회전할까요?`)) return;
@@ -224,37 +232,55 @@ function DashHostCard({
   const vpn = data.vpn;
   const now = data.now;
 
+  const isDirect = vpn.mode === 'direct';
+
   return (
     <div className="space-y-3">
       <div className="text-sm font-semibold flex items-center justify-between gap-2 flex-wrap">
         <div className="flex items-center gap-2">
           {hostLabel} <code className="text-xs text-[color:var(--color-muted)]">{hostShort}</code>
         </div>
-        <button onClick={rotate} disabled={rotating}
-                className="h-7 px-2.5 rounded-lg bg-[color:var(--color-brand)] text-white text-[11px] font-semibold disabled:bg-[#b5aeea]">
-          {rotating ? '회전 중...' : `🔄 ${hostShortName} 회전`}
-        </button>
+        {!isDirect && (
+          <button onClick={rotate} disabled={rotating}
+                  className="h-7 px-2.5 rounded-lg bg-[color:var(--color-brand)] text-white text-[11px] font-semibold disabled:bg-[#b5aeea]">
+            {rotating ? '회전 중...' : `🔄 ${hostShortName} 회전`}
+          </button>
+        )}
       </div>
       <div className="text-xs text-[color:var(--color-muted)]">
         시간 {fmtTime(now)} · uptime {fmtUptime(data.server.uptime_sec)} · pid {data.server.pid}
       </div>
 
-      <Card title="🌐 VPN">
-        <KV k="모드" v={vpn.mode} />
-        <KV k="연결 상태" v={vpn.connected
-          ? <span className="text-green-700 font-semibold">연결됨</span>
-          : <span className="text-red-700 font-semibold">끊김</span>} />
-        <KV k="현재 서버" v={vpn.current_conf || vpn.server || '-'} />
-        <KV k="외부 IP" v={vpn.external_ip
-          ? <code className="text-xs">{vpn.external_ip}</code>
-          : '-'} />
-        <KV k="서버 풀" v={`${vpn.confs?.length ?? 0}개 (${(vpn.confs || []).join(', ')})`} />
-        <KV k="마지막 회전" v={vpn.last_rotate ? fmtTimeAgo(now - vpn.last_rotate) : '-'} />
-        <KV k="다음 정기 회전" v={vpn.next_rotate_at
-          ? `${fmtTime(vpn.next_rotate_at)} (${fmtTimeAgo(vpn.next_rotate_at - now, true)})`
-          : '비활성'} />
-        <KV k="회전 간격" v={vpn.rotate_interval_sec > 0 ? `${Math.round(vpn.rotate_interval_sec/60)}분` : '비활성'} />
-        <KV k="최근 실패" v={`${vpn.recent_failures}/${vpn.fail_threshold} (초과 시 자동 회전)`} />
+      <Card title={isDirect ? "🌐 네트워크 (직접 호출)" : "🌐 VPN"}>
+        <KV k="모드" v={isDirect
+          ? <span className="text-emerald-700 font-semibold">direct (NordVPN 미사용)</span>
+          : vpn.mode} />
+        {!isDirect && (
+          <>
+            <KV k="연결 상태" v={vpn.connected
+              ? <span className="text-green-700 font-semibold">연결됨</span>
+              : <span className="text-red-700 font-semibold">끊김</span>} />
+            <KV k="현재 서버" v={vpn.current_conf || vpn.server || '-'} />
+            <KV k="외부 IP" v={vpn.external_ip
+              ? <code className="text-xs">{vpn.external_ip}</code>
+              : '-'} />
+            <KV k="서버 풀" v={`${vpn.confs?.length ?? 0}개 (${(vpn.confs || []).join(', ')})`} />
+            <KV k="마지막 회전" v={vpn.last_rotate ? fmtTimeAgo(now - vpn.last_rotate) : '-'} />
+            <KV k="다음 정기 회전" v={vpn.next_rotate_at
+              ? `${fmtTime(vpn.next_rotate_at)} (${fmtTimeAgo(vpn.next_rotate_at - now, true)})`
+              : '비활성'} />
+            <KV k="회전 간격" v={vpn.rotate_interval_sec > 0 ? `${Math.round(vpn.rotate_interval_sec/60)}분` : '비활성'} />
+            <KV k="최근 실패" v={`${vpn.recent_failures}/${vpn.fail_threshold} (초과 시 자동 회전)`} />
+          </>
+        )}
+        {isDirect && (
+          <>
+            <KV k="외부 IP" v={vpn.external_ip
+              ? <code className="text-xs">{vpn.external_ip}</code>
+              : <span className="text-[color:var(--color-muted)]">한국 IDC 직접</span>} />
+            <KV k="안내" v={<span className="text-xs text-[color:var(--color-muted)]">NordVPN 없이 한국 IP 로 직접 Naver 호출. outbound IP 라운드로빈 활성 시 다중 IP 분산.</span>} />
+          </>
+        )}
       </Card>
 
       <Card title="🔑 인증 크레덴셜">
