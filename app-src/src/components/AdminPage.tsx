@@ -193,13 +193,10 @@ function DashHostCard({
   const hostShort = result.host.replace(/^https?:\/\//, '');
   const hostLabel = hostShort.includes('api-kr')
     ? <span className="text-rose-700">🇰🇷 KR</span>
-    : hostShort.includes('api-b')
-      ? <span className="text-blue-700">🅱️ B</span>
-      : hostShort.startsWith('api.')
-        ? <span className="text-emerald-700">🅰️ A</span>
-        : <span>{hostShort}</span>;
+    : hostShort.startsWith('api.')
+      ? <span className="text-emerald-700">🅰️ A</span>
+      : <span>{hostShort}</span>;
   const hostShortName = hostShort.includes('api-kr') ? 'KR'
-    : hostShort.includes('api-b') ? 'B'
     : hostShort.startsWith('api.') ? 'A'
     : hostShort;
 

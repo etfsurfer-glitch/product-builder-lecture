@@ -2,20 +2,18 @@
 import type { Session } from '@supabase/supabase-js';
 import { isHostAlive } from './health';
 
-// 멀티 호스트 페일오버 (Phase 2.2 — KR 통합).
+// 멀티 호스트 페일오버 (KR + A — B 노드 폐기 2026-05-09).
 // 우선순위:
 //   index 0: KR (api-kr.runto.online) — 한국 IDC, NordVPN 없는 직접 호출
-//   index 1: A  (api.runto.online)    — Mac Mini A, NordVPN 경유
-//   index 2: B  (api-b.runto.online)  — Mac Mini B, NordVPN 경유
-// 비어 있는 entry 는 자동 제외. 빌드 시 VITE_API_BASE_KR/_/_BACKUP 으로 override 가능.
+//   index 1: A  (api.runto.online)    — Mac Mini A, NordVPN 경유 (폴백)
+// 비어 있는 entry 는 자동 제외. 빌드 시 VITE_API_BASE_KR/_ 으로 override 가능.
 const KR_API     = (import.meta.env.VITE_API_BASE_KR     as string | undefined) ?? 'https://api-kr.runto.online';
 const PRIMARY_API = (import.meta.env.VITE_API_BASE        as string | undefined) ?? 'https://api.runto.online';
-const BACKUP_API  = (import.meta.env.VITE_API_BASE_BACKUP as string | undefined) ?? 'https://api-b.runto.online';
 
-export const API_HOSTS: readonly string[] = [KR_API, PRIMARY_API, BACKUP_API].filter(Boolean) as string[];
+export const API_HOSTS: readonly string[] = [KR_API, PRIMARY_API].filter(Boolean) as string[];
 
 // 표시용 라벨 — AdminPage 의 강제 host 선택 버튼에 사용
-export const API_HOST_LABELS: readonly string[] = ['KR', 'A', 'B'].slice(0, API_HOSTS.length);
+export const API_HOST_LABELS: readonly string[] = ['KR', 'A'].slice(0, API_HOSTS.length);
 
 // 호환용 — App.tsx 가 표시 hostname 추출에 사용
 export const API_BASE = API_HOSTS[0];
