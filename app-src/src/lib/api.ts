@@ -305,6 +305,15 @@ export function getExtractStatus(
   );
 }
 
+// 추출 협조적 취소 (Phase 2). 즉시 응답, 실제 abort 는 ~5~30s.
+export function extractCancel(session: Session | null, jobId: string) {
+  return request<{ ok: boolean; job_id: string; msg: string }>(
+    `/api/extract/${jobId}/cancel`,
+    session,
+    { method: 'POST' },
+  );
+}
+
 export function getHealth() {
   return request<{ ok: boolean; bearer: boolean; cookie: boolean }>(
     '/health',

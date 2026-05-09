@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { extractCancel } from '../lib/api';
 import type { Session } from '@supabase/supabase-js';
 import {
   startExtract, getExtractStatus,
@@ -376,6 +377,28 @@ export default function ExtractResult({ session, complex, keyword = '', onBack }
   const [portfolioMsg, setPortfolioMsg] = useState<{ kind: 'ok' | 'err'; text: string } | null>(null);
   const fsaSupported = isFsaSupported();
   const pollRef = useRef<number | null>(null);
+  const jobIdRef = useRef<string | null>(null);
+  const stateRef = useRef<string>('');
+
+  // Phase 2: job 변화 시 ref 갱신 (페이지 이탈 cleanup 에서 사용)
+  useEffect(() => {
+    if (job) {
+      jobIdRef.current = job.id;
+      stateRef.current = job.state;
+    }
+  }, [job]);
+
+  // Phase 2: 컴포넌트 unmount 시 running/pending 이면 자동 cancel
+  useEffect(() => {
+    return () => {
+      const jid = jobIdRef.current;
+      const st  = stateRef.current;
+      if (jid && (st === 'running' || st === 'pending')) {
+        extractCancel(session, jid).catch(() => {});
+      }
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // 주소 기반 간결화 (예: "대전광역시 서구 둔산동" → "서구 둔산동")
   const exportName = (() => {
