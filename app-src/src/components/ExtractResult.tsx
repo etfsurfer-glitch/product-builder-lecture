@@ -377,6 +377,7 @@ export default function ExtractResult({ session, complex, keyword = '', onBack }
   const [portfolioMsg, setPortfolioMsg] = useState<{ kind: 'ok' | 'err'; text: string } | null>(null);
   const fsaSupported = isFsaSupported();
   const pollRef = useRef<number | null>(null);
+  const [cancelling, setCancelling] = useState(false);
   const jobIdRef = useRef<string | null>(null);
   const stateRef = useRef<string>('');
 
@@ -399,6 +400,21 @@ export default function ExtractResult({ session, complex, keyword = '', onBack }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Phase 2 step 2: 명시적 [취소] 버튼 핸들러
+  async function handleCancel() {
+    const jid = jobIdRef.current;
+    if (!jid || cancelling) return;
+    if (!window.confirm('추출을 취소하시겠습니까?')) return;
+    setCancelling(true);
+    try {
+      await extractCancel(session, jid);
+    } catch (e) {
+      console.log('[extractCancel] error (이미 종료/없음 가능):', e);
+    } finally {
+      onBack();
+    }
+  }
 
   // 주소 기반 간결화 (예: "대전광역시 서구 둔산동" → "서구 둔산동")
   const exportName = (() => {
@@ -663,9 +679,18 @@ export default function ExtractResult({ session, complex, keyword = '', onBack }
 
       {running && (
         <div className="mb-6 p-5 rounded-xl bg-[color:var(--color-bg-soft)] border border-[color:var(--color-border)]">
-          <div className="flex items-center justify-between mb-3">
-            <div className="font-semibold">{job?.msg || '준비 중...'}</div>
-            <div className="font-mono text-sm">{pct}%</div>
+          <div className="flex items-center justify-between mb-3 gap-3">
+            <div className="font-semibold flex-1 min-w-0 truncate">{job?.msg || '준비 중...'}</div>
+            <div className="flex items-center gap-2 shrink-0">
+              <div className="font-mono text-sm">{pct}%</div>
+              <button
+                onClick={handleCancel}
+                disabled={cancelling}
+                className="px-3 py-1 rounded-lg bg-red-100 text-red-700 hover:bg-red-200 text-xs font-semibold disabled:opacity-50"
+              >
+                {cancelling ? '취소 중...' : '✕ 취소'}
+              </button>
+            </div>
           </div>
           <div className="h-2 rounded-full bg-[color:var(--color-border)] overflow-hidden">
             <div
