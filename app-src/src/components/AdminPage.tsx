@@ -2,17 +2,42 @@ import { useEffect, useState } from 'react';
 import type { Session } from '@supabase/supabase-js';
 import BulkExtractResult from './BulkExtractResult';
 import {
-  adminListUsers, adminGetUserDevices,
-  adminSetDeviceLimit, adminDeleteDevice, adminCreateUser,
-  adminFetchLogs, adminResetAllDevices, adminSetPassword, adminSetSubscription,
-  adminDashboardMulti, adminProxyRotateForHost, adminDeleteUser,
-  getAdminForceHostIdx, setAdminForceHostIdx, API_HOSTS, API_HOST_LABELS,
-  adminPresaleSummary, adminPresaleArticles, adminPresaleLog, adminPresalePopular,
-  adminPresaleResetNow, adminPresalePreheatBulkExtract,
+  adminListUsers,
+  adminGetUserDevices,
+  adminSetDeviceLimit,
+  adminDeleteDevice,
+  adminCreateUser,
+  adminFetchLogs,
+  adminResetAllDevices,
+  adminSetPassword,
+  adminSetSubscription,
+  adminDashboardMulti,
+  adminProxyRotateForHost,
+  adminDeleteUser,
+  getAdminForceHostIdx,
+  setAdminForceHostIdx,
+  API_HOSTS,
+  API_HOST_LABELS,
+  adminPresaleSummary,
+  adminPresaleArticles,
+  adminPresaleLog,
+  adminPresalePopular,
+  adminPresaleResetNow,
+  adminPresalePreheatBulkExtract,
   type BulkExtractJob,
-  type AdminUserRow, type DeviceRow, type DeviceLimits,
-  type AdminLogKind, type DashboardWithHost, ApiError,
-  type PresaleComplexSummary, type PresaleArticleRow, type PresaleExtractLog, type PresalePopularRow,
+  type AdminUserRow,
+  type DeviceRow,
+  type DeviceLimits,
+  type AdminLogKind,
+  type DashboardWithHost,
+  ApiError,
+  type PresaleComplexSummary,
+  type PresaleArticleRow,
+  type PresaleExtractLog,
+  type PresalePopularRow,
+  adminHealthFullMulti,
+  type HealthFullPerHost,
+  type HealthCheck
 } from '../lib/api';
 
 type AdminUserFull = AdminUserRow & {
@@ -26,7 +51,7 @@ interface Props {
   onBack:  () => void;
 }
 
-type Tab = 'dash' | 'users' | 'logs' | 'create' | 'presale';
+type Tab = 'dash' | 'users' | 'logs' | 'create' | 'presale' | 'health';
 
 function uaShort(ua: string): string {
   if (!ua) return '';
@@ -102,7 +127,7 @@ export default function AdminPage({ session, onBack }: Props) {
       </div>
 
       <div className="mb-4 border-b border-[color:var(--color-border)] flex gap-1 overflow-x-auto">
-        {([['dash','대시보드'],['users','계정관리'],['logs','로그'],['create','신규 등록'],['presale','분양권 캐시']] as [Tab,string][]).map(([k,label]) => (
+        {([['dash','대시보드'],['users','계정관리'],['logs','로그'],['create','신규 등록'],['presale','분양권 캐시'],['health','시스템 점검']] as [Tab,string][]).map(([k,label]) => (
           <button key={k} onClick={() => setTab(k)}
                   className={
                     'px-4 py-2.5 text-sm font-semibold border-b-2 -mb-px transition ' +
@@ -120,6 +145,7 @@ export default function AdminPage({ session, onBack }: Props) {
       {tab === 'logs'    && <LogsTab    session={session} />}
       {tab === 'create'  && <CreateTab  session={session} />}
       {tab === 'presale' && <PresaleTab session={session} />}
+      {tab === 'health'  && <HealthTab  session={session} />}
     </div>
   );
 }
@@ -1594,3 +1620,130 @@ function PresaleArticlesSection({ session }: { session: Session | null }) {
     </div>
   );
 }
+
+// ──────────────────────────────────────────────────────────────────────────
+// HealthTab — 시스템 점검 (Phase 5b)
+// ──────────────────────────────────────────────────────────────────────────
+const CHECK_LABELS: Record<string, string> = {
+  self_health:    '자체 health',
+  peer_health:    '상대 host health',
+  bearer_entries: 'Naver Bearer',
+  block_window:   '차단 누적 (30분)',
+};
+const CHECK_SCOPE: Record<string, '🏠' | '🌐'> = {
+  self_health:    '🏠',
+  peer_health:    '🌐',
+  bearer_entries: '🏠',
+  block_window:   '🏠',
+};
+
+function hostShortName(host: string): string {
+  if (host.includes('api-kr')) return '🇰🇷 KR';
+  if (host.startsWith('https://api.')) return '🅰️ A';
+  return host;
+}
+
+function HealthTab({ session }: { session: Session | null }) {
+  const [results, setResults]   = useState<HealthFullPerHost[]>([]);
+  const [loading,  setLoading]  = useState(false);
+  const [cooldown, setCooldown] = useState(0);
+  const [error,    setError]    = useState<string | null>(null);
+
+  // cooldown 카운트다운
+  useEffect(() => {
+    if (cooldown <= 0) return;
+    const t = window.setTimeout(() => setCooldown(c => c - 1), 1000);
+    return () => window.clearTimeout(t);
+  }, [cooldown]);
+
+  // 첫 진입 시 자동 1회
+  useEffect(() => {
+    runCheck();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  async function runCheck() {
+    if (cooldown > 0 || loading) return;
+    setLoading(true);
+    setError(null);
+    try {
+      const data = await adminHealthFullMulti(session);
+      setResults(data);
+      setCooldown(5);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  return (
+    <div>
+      <div className="mb-4 flex items-center gap-3 flex-wrap">
+        <button
+          onClick={runCheck}
+          disabled={loading || cooldown > 0}
+          className="px-4 py-2 rounded-lg bg-[color:var(--color-brand)] text-white font-semibold text-sm disabled:opacity-50 hover:bg-[color:var(--color-brand-dark)]"
+        >
+          {loading ? '⏳ 점검 중...' : cooldown > 0 ? `${cooldown}s 후 재시도` : '🔄 전체 점검'}
+        </button>
+        <span className="text-xs text-[color:var(--color-muted)]">
+          🏠 = 로컬 only · 🌐 = 외부 호출 (서버 rate limit 5초/회)
+        </span>
+      </div>
+
+      {error && (
+        <div className="mb-4 p-3 rounded-lg bg-red-50 border border-red-200 text-red-800 text-sm">{error}</div>
+      )}
+
+      <div className="grid gap-4 md:grid-cols-2">
+        {results.map(({ host, data, error: hostErr }) => (
+          <div key={host} className="rounded-xl border border-[color:var(--color-border)] bg-white p-4">
+            <div className="mb-3 pb-2 border-b border-[color:var(--color-border)]">
+              <div className="font-semibold">{hostShortName(host)}</div>
+              <div className="text-xs text-[color:var(--color-muted)] truncate">{host}</div>
+            </div>
+            {hostErr && (
+              <div className="p-2 rounded bg-red-50 text-red-700 text-xs">{hostErr}</div>
+            )}
+            {data && (
+              <>
+                <div className="space-y-2">
+                  {data.checks.map(c => (
+                    <CheckRow key={c.id} check={c} />
+                  ))}
+                </div>
+                <div className="mt-3 text-xs text-[color:var(--color-muted)] text-right">
+                  elapsed {data.elapsed_ms}ms · host_id={data.host_id}
+                </div>
+              </>
+            )}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function CheckRow({ check }: { check: HealthCheck }) {
+  const colorMap: Record<string, { icon: string; bg: string; text: string }> = {
+    ok:       { icon: '✅', bg: 'bg-emerald-50', text: 'text-emerald-800' },
+    warn:     { icon: '⚠️', bg: 'bg-amber-50',   text: 'text-amber-800'   },
+    critical: { icon: '🚨', bg: 'bg-red-50',     text: 'text-red-800'     },
+  };
+  const c = colorMap[check.status] || colorMap.ok;
+  const label = CHECK_LABELS[check.id] || check.id;
+  const scope = CHECK_SCOPE[check.id] || '🏠';
+  return (
+    <div className={`p-2 rounded-lg ${c.bg} ${c.text} text-sm flex items-start gap-2`}>
+      <span className="shrink-0">{c.icon}</span>
+      <div className="flex-1 min-w-0">
+        <div className="font-semibold flex items-center gap-1">
+          {label} <span className="text-xs opacity-60">{scope}</span>
+        </div>
+        <div className="text-xs break-words">{check.msg}</div>
+      </div>
+    </div>
+  );
+}
+

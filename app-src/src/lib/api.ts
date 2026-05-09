@@ -584,6 +584,64 @@ export async function adminDashboardMulti(
   );
 }
 
+// ── 시스템 점검 (admin) — Phase 5b ────────────────────────────────────────
+export interface HealthCheck {
+  id:     string;
+  status: 'ok' | 'warn' | 'critical';
+  value:  number | string | null;
+  msg:    string;
+}
+
+export interface HealthFullResponse {
+  host_id:    string;
+  checks:     HealthCheck[];
+  elapsed_ms: number;
+}
+
+export interface HealthFullPerHost {
+  host:  string;
+  data:  HealthFullResponse | null;
+  error: string | null;
+}
+
+async function adminHealthFullForHost(
+  session: Session | null,
+  host:    string,
+): Promise<HealthFullResponse> {
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+  if (session?.access_token) headers.Authorization = `Bearer ${session.access_token}`;
+  const r = await fetch(`${host}/api/admin/health/full`, { headers, credentials: 'include' });
+  const text = await r.text();
+  if (!r.ok) {
+    const body = text ? safeJson(text) : null;
+    const msg = (body && typeof body === 'object' && 'detail' in body)
+      ? String((body as { detail: unknown }).detail)
+      : text || `HTTP ${r.status}`;
+    throw new ApiError(r.status, msg);
+  }
+  return JSON.parse(text);
+}
+
+export async function adminHealthFullMulti(
+  session: Session | null,
+): Promise<HealthFullPerHost[]> {
+  return Promise.all(
+    API_HOSTS.map(async (host) => {
+      try {
+        const data = await adminHealthFullForHost(session, host);
+        return { host, data, error: null };
+      } catch (e) {
+        return {
+          host,
+          data: null,
+          error: e instanceof ApiError ? `${e.status} · ${e.message}` : String(e),
+        };
+      }
+    }),
+  );
+}
+
+
 export function adminProxyRotate(session: Session | null) {
   return request<{ ok: boolean; status: unknown }>(
     '/api/admin/proxy/rotate', session, { method: 'POST' },
