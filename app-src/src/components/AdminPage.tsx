@@ -72,7 +72,7 @@ function fmtDate(s: string | null | undefined): string {
   if (!s) return '';
   const d = new Date(s);
   if (Number.isNaN(d.getTime())) return s;
-  return d.toLocaleString('ko-KR', { year: '2-digit', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' });
+  return d.toLocaleString('ko-KR', { year: '2-digit', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Seoul' });
 }
 
 export default function AdminPage({ session, onBack }: Props) {
@@ -358,7 +358,7 @@ function KV({ k, v }: { k: string; v: React.ReactNode }) {
 function fmtTime(epochSec: number): string {
   const d = new Date(epochSec * 1000);
   if (Number.isNaN(d.getTime())) return '-';
-  return d.toLocaleString('ko-KR', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit' });
+  return d.toLocaleString('ko-KR', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit', timeZone: 'Asia/Seoul' });
 }
 
 function fmtUptime(sec: number): string {
