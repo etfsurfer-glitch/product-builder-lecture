@@ -304,8 +304,8 @@ function loadDeps() {
 // API 변수: 페이지 로드 시 한 번 random + login 직전 매번 갱신 (login + device/verify 같은 host 통일).
 // app-src 의 fetchWithFailover 가 이후 sticky idx 보고 같은 host 유지.
 const LOGIN_HOSTS = [
-  'https://api.runto.online',     // idx 0 = A (DNS → nfind-api)
-  'https://api-b.runto.online',   // idx 1 = B (nfind-api-b)
+  'https://api-kr.runto.online',  // idx 0 = KR (한국 IDC, primary)
+  'https://api.runto.online',     // idx 1 = A  (Mac Mini, backup)
 ];
 let API = LOGIN_HOSTS[Math.floor(Math.random() * LOGIN_HOSTS.length)];
 console.log('[nfind] page-default host:', API);
@@ -615,11 +615,12 @@ $('#login-form').addEventListener('submit', async e => {
       const j = await r.json().catch(() => ({}));
       if (j && j.server_id) {
         try {
-          if (j.server_id === 'b') {
+          if (j.server_id === 'a') {
+            // PWA api.ts: API_HOSTS=[KR, A] 이므로 A 는 idx 1
             localStorage.setItem('runto_api_host_idx', '1');
             localStorage.setItem('runto_api_host_idx_exp', String(Date.now() + 30 * 60 * 1000));
           } else {
-            // server_id === 'a' → idx 0 (default), 이전 idx 1 sticky 가 있으면 비움
+            // server_id === 'kr' → idx 0 (default), 이전 A sticky 가 있으면 비움
             localStorage.removeItem('runto_api_host_idx');
             localStorage.removeItem('runto_api_host_idx_exp');
           }
