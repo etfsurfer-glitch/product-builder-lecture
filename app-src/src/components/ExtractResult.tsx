@@ -26,15 +26,16 @@ export interface Col {
   w?: number;    // 권장 폭(px)
   wrap?: boolean; // 긴 텍스트 줄바꿈 허용
   frozen?: boolean; // true 면 왼쪽 고정 (가로 스크롤 시 붙어있음)
+  hidden?: boolean; // true 면 UI 에 표시 안 함 (row data 는 유지 — 내부용)
 }
 
 // 거래 ~ 층까지 왼쪽 고정, 그 뒤에 방향 이동 + 나머지는 가로 스크롤.
 export const COLUMNS: Col[] = [
   { label: '거래',        key: '매물거래구분명',   w: 56,  frozen: true },
-  { label: '단지명',      key: '단지명',          w: 130, frozen: true },
+  { label: '단지명',      key: '단지명',          w: 130, frozen: true, hidden: true },
   { label: '동',          key: '건물동명',         w: 50,  frozen: true },
   { label: '호수',        key: '건물호명',         w: 60,  frozen: true },
-  { label: '층',          key: '해당층수',         w: 56,  frozen: true },
+  { label: '층',          key: '해당층수',         w: 56 },
   { label: '방향',        key: '방향구분명',       w: 56 },
   { label: '매물등록일',  key: '등록년월일',       w: 92 },
   { label: '인증종류',    key: '인증종류',         w: 72 },
@@ -71,9 +72,9 @@ export function isLastFrozen(cols: Col[], i: number): boolean {
 
 // 모바일용 컬럼 축소 — frozen 2개로 줄이고 폭 약 65% 축소
 export function toMobileCols(cols: Col[]): Col[] {
-  return cols.map((c, i) => ({
+  return cols.map((c) => ({
     ...c,
-    frozen: i < 2,   // 거래, 단지명 만 고정
+    frozen: c.frozen,   // base 의 frozen 그대로 보존 (단지명 hidden 후 거래/동/호수)
     w: Math.max(36, Math.round((c.w ?? 60) * 0.65)),
   }));
 }
@@ -561,7 +562,8 @@ export default function ExtractResult({ session, complex, keyword = '', onBack }
 
   const isMobile = useIsMobile();
   const displayCols = useMemo(() => {
-    const base = groupMode ? COLUMNS_GROUPED : COLUMNS;
+    const baseRaw = groupMode ? COLUMNS_GROUPED : COLUMNS;
+    const base = baseRaw.filter(c => !c.hidden);
     return isMobile ? toMobileCols(base) : base;
   }, [groupMode, isMobile]);
 
