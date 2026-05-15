@@ -41,6 +41,15 @@ export function getAdminForceHostIdx(): number {
   } catch { /* 무시 */ }
   return -1;
 }
+// 점검 보고서 P2 fix — 로그아웃 시 호출. 공용 PC 에서 다음 사용자로 sticky/강제 호스트 누수 방지.
+export function clearAdminAndStickyStorage() {
+  try {
+    localStorage.removeItem(STICKY_IDX_KEY);
+    localStorage.removeItem(STICKY_EXP_KEY);
+    localStorage.removeItem(ADMIN_FORCE_KEY);
+  } catch { /* 무시 */ }
+}
+
 export function setAdminForceHostIdx(idx: number) {
   try {
     if (idx < 0 || idx >= API_HOSTS.length) {

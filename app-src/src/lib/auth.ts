@@ -29,6 +29,11 @@ export async function getCurrentSession(): Promise<Session | null> {
 }
 
 export async function signOut() {
+  // 점검 보고서 P2 fix — sticky/강제 호스트 storage cleanup (공용 PC 다음 사용자 영향 방지)
+  try {
+    const { clearAdminAndStickyStorage } = await import('./api');
+    clearAdminAndStickyStorage();
+  } catch { /* swallow */ }
   const sb = await getSupabase();
   await sb.auth.signOut();
 }
