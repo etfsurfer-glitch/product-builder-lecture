@@ -1629,16 +1629,26 @@ function PresaleArticlesSection({ session }: { session: Session | null }) {
 // HealthTab — 시스템 점검 (Phase 5b)
 // ──────────────────────────────────────────────────────────────────────────
 const CHECK_LABELS: Record<string, string> = {
-  self_health:    '자체 health',
-  peer_health:    '상대 host health',
-  bearer_entries: 'Naver Bearer',
-  block_window:   '차단 누적 (30분)',
+  self_health:     '자체 health',
+  peer_health:     '상대 host health',
+  bearer_entries:  'Naver Bearer',
+  block_window:    '차단 누적 (30분)',
+  kb_token:        'KB OAuth 토큰',
+  supabase:        'Supabase select',
+  server_id_dist:  'auth_events 24h KR 비중',
+  jobmanager:      'Job 큐 active',
+  vpn:             'VPN/Proxy',
 };
 const CHECK_SCOPE: Record<string, '🏠' | '🌐'> = {
-  self_health:    '🏠',
-  peer_health:    '🌐',
-  bearer_entries: '🏠',
-  block_window:   '🏠',
+  self_health:     '🏠',
+  peer_health:     '🌐',
+  bearer_entries:  '🏠',
+  block_window:    '🏠',
+  kb_token:        '🏠',
+  supabase:        '🌐',
+  server_id_dist:  '🌐',
+  jobmanager:      '🏠',
+  vpn:             '🏠',
 };
 
 function hostShortName(host: string): string {
