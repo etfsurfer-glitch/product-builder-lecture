@@ -444,7 +444,14 @@ export interface DeviceLimits {
   subscription?: 'free' | 'pro' | '';
 }
 
-export interface MeInfo { user_id: string; email: string; is_admin: boolean; }
+export interface MeInfo {
+  user_id:           string;
+  email:             string;
+  is_admin:          boolean;
+  // 만료 알림 팝업용 (2026-05-17) — 미가입자/비프로는 null
+  subscription?:     'pro' | 'free' | null;
+  subscription_end?: string | null;  // YYYY-MM-DD
+}
 
 export function getMe(session: Session | null) {
   return request<{ ok: boolean } & MeInfo>('/api/me', session);

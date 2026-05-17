@@ -8,9 +8,27 @@ import VillaSearch from './components/VillaSearch';
 import Portfolio from './components/Portfolio';
 import DeviceManager from './components/DeviceManager';
 import AdminPage from './components/AdminPage';
+import SubscriptionExpiryModal from './components/SubscriptionExpiryModal';
 
 type Status = 'loading' | 'needs-login' | 'ready';
 type Tab = 'complex' | 'article' | 'villa' | 'portfolio';
+
+// ── 구독 만료 알림 헬퍼 (서울 TZ 기준) ───────────────────────────────────────
+function todayInSeoul(): string {
+  return new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Seoul' }).format(new Date());
+}
+
+function daysUntil(endDate: string): number {
+  // YYYY-MM-DD → 서울 자정 기준 일수 차이. 양수=남음, 0=오늘 마지막, 음수=만료 후.
+  const today  = todayInSeoul();
+  const todayMs = new Date(today + 'T00:00:00+09:00').getTime();
+  const endMs   = new Date(endDate + 'T00:00:00+09:00').getTime();
+  return Math.floor((endMs - todayMs) / 86400000);
+}
+
+function expiryWarnKey(userId: string): string {
+  return `nfind_sub_expiry_warned_${userId}_${todayInSeoul()}`;
+}
 
 function TestBanner() {
   if (!IS_TEST_BUILD) return null;
@@ -30,6 +48,7 @@ export default function App() {
   const [showDevices, setShowDevices] = useState(false);
   const [showAdmin, setShowAdmin] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [expiryDaysLeft, setExpiryDaysLeft] = useState<number | null>(null);
 
   useEffect(() => {
     (async () => {
@@ -38,10 +57,21 @@ export default function App() {
         if (!s) { setStatus('needs-login'); return; }
         setSession(s);
         setStatus('ready');
-        // admin 여부는 서버 판정값을 신뢰 (UI 게이트용)
+        // admin 여부 + 구독 상태 (만료 알림용) — 서버 판정값 신뢰
         try {
           const me = await getMe(s);
           setIsAdmin(!!me.is_admin);
+
+          // 구독 만료 알림: pro + 3일 이내 (음수=만료 후 포함). 하루 1회 throttle.
+          if (me.subscription === 'pro' && me.subscription_end) {
+            const days = daysUntil(me.subscription_end);
+            if (days <= 3) {
+              const key = expiryWarnKey(me.user_id);
+              if (!localStorage.getItem(key)) {
+                setExpiryDaysLeft(days);
+              }
+            }
+          }
         } catch { /* 실패해도 일반 사용자 */ }
       } catch (e) {
         setError(e instanceof Error ? e.message : String(e));
@@ -153,6 +183,19 @@ export default function App() {
 
       {showDevices && (
         <DeviceManager session={session} onClose={() => setShowDevices(false)} />
+      )}
+
+      {expiryDaysLeft !== null && (
+        <SubscriptionExpiryModal
+          daysLeft={expiryDaysLeft}
+          onClose={() => {
+            const uid = session?.user?.id;
+            if (uid) {
+              try { localStorage.setItem(expiryWarnKey(uid), '1'); } catch { /* private mode */ }
+            }
+            setExpiryDaysLeft(null);
+          }}
+        />
       )}
     </div>
   );
