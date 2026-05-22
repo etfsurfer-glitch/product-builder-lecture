@@ -212,9 +212,13 @@ export default function BulkExtractResult({ session, jobs, onBack }: Props) {
             : p));
           return;
         }
-        if (r.job.state === 'error') {
+        if (r.job.state === 'error' || r.job.state === 'blocked' || r.job.state === 'cancelled') {
+          // 'blocked' 차단 게이트 자동 abort. 사용자 안내 모달은 api.ts 가 자동 노출.
+          const errMsg = r.job.error === 'block_gate'
+            ? (r.job.msg || '부동산광고시스템(타사) 오류발생 잠시 후 재시도 해주세요.')
+            : (r.job.error || r.job.msg || '실패');
           setStates(prev => prev.map(p => p.complex_no === s.complex_no
-            ? { ...p, status: 'error', err: r.job.error || '실패', msg: '실패' }
+            ? { ...p, status: 'error', err: errMsg, msg: '실패' }
             : p));
           return;
         }

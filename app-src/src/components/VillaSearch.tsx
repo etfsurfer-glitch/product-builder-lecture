@@ -208,12 +208,15 @@ function AreaSearch({ session }: { session: Session | null }) {
               }
             }
             setSearchBusy(false);
-          } else if (st.status === 'error') {
+          } else if (st.status === 'error' || st.status === 'blocked') {
+            // 'blocked' 차단 게이트 자동 abort — 모달은 api.ts setBlockGateHandler 가 자동 노출
             if (pollRef.current != null) {
               window.clearInterval(pollRef.current);
               pollRef.current = null;
             }
-            setSearchErr(st.error || '검색 오류');
+            setSearchErr(st.error === 'block_gate'
+              ? (st.stage_label || '부동산광고시스템(타사) 오류발생 잠시 후 재시도 해주세요.')
+              : (st.error || '검색 오류'));
             setSearchBusy(false);
           }
         } catch (e) {

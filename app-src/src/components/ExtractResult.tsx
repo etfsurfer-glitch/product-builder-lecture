@@ -614,8 +614,11 @@ export default function ExtractResult({ session, complex, keyword = '', onBack }
         return;
       }
       setJob(r.job);
-      if (r.job.state === 'error') {
-        setErr(r.job.error || '추출 실패');
+      if (r.job.state === 'error' || r.job.state === 'blocked' || r.job.state === 'cancelled') {
+        // 'blocked' 는 차단 게이트 자동 abort. 모달은 api.ts setBlockGateHandler 가 자동 노출.
+        setErr(r.job.error === 'block_gate'
+          ? (r.job.msg || '부동산광고시스템(타사) 오류발생 잠시 후 재시도 해주세요.')
+          : (r.job.error || r.job.msg || '추출 실패'));
         setLoaded(true);
         return;
       }

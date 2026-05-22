@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import type { Session } from '@supabase/supabase-js';
 import { getCurrentSession, goToLanding, signOut } from './lib/auth';
-import { serverLogout, getMe, IS_TEST_BUILD, API_BASE } from './lib/api';
+import { serverLogout, getMe, IS_TEST_BUILD, API_BASE,
+         setBlockGateHandler, type BlockGateInfo } from './lib/api';
 import SearchPanel from './components/SearchPanel';
 import ArticleLookup from './components/ArticleLookup';
 import VillaSearch from './components/VillaSearch';
@@ -9,6 +10,7 @@ import Portfolio from './components/Portfolio';
 import DeviceManager from './components/DeviceManager';
 import AdminPage from './components/AdminPage';
 import SubscriptionExpiryModal from './components/SubscriptionExpiryModal';
+import BlockGateModal from './components/BlockGateModal';
 
 type Status = 'loading' | 'needs-login' | 'ready';
 type Tab = 'complex' | 'article' | 'villa' | 'portfolio';
@@ -49,6 +51,12 @@ export default function App() {
   const [showAdmin, setShowAdmin] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
   const [expiryDaysLeft, setExpiryDaysLeft] = useState<number | null>(null);
+  const [blockGate, setBlockGate] = useState<BlockGateInfo | null>(null);
+
+  // 차단 게이트 핸들러 등록 — api.ts 가 503 block_gate / blocked state 감지 시 호출
+  useEffect(() => {
+    setBlockGateHandler((info) => setBlockGate(info));
+  }, []);
 
   useEffect(() => {
     (async () => {
@@ -195,6 +203,14 @@ export default function App() {
             }
             setExpiryDaysLeft(null);
           }}
+        />
+      )}
+
+      {blockGate && (
+        <BlockGateModal
+          message={blockGate.message}
+          retryAfter={blockGate.retry_after}
+          onClose={() => setBlockGate(null)}
         />
       )}
     </div>

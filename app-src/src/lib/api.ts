@@ -172,7 +172,12 @@ export async function fetchPublicConfig(): Promise<PublicConfig> {
 
 export class ApiError extends Error {
   status: number;
-  constructor(status: number, message: string) { super(message); this.status = status; }
+  body?: unknown;     // raw 본문 (block_gate 등 구조화된 에러 디테일 보존)
+  constructor(status: number, message: string, body?: unknown) {
+    super(message);
+    this.status = status;
+    this.body = body;
+  }
 }
 
 // 401 핸들러 — main.tsx 에서 등록. 토큰 만료 시 자동 로그아웃 + 랜딩 이동.
@@ -181,6 +186,58 @@ let _onUnauthorized: (() => void | Promise<void>) | null = null;
 let _unauthorizedTriggered = false;
 export function setUnauthorizedHandler(fn: () => void | Promise<void>) {
   _onUnauthorized = fn;
+}
+
+// ── 차단 게이트 핸들러 — App.tsx 에서 등록. 서버 측 block_gate 발동 시 모달 표시. ─
+// 503 + detail.error=='block_gate' 또는 job/villa 폴링 응답의 state=='blocked' 검출 시 트리거.
+// 5초 dedup 으로 다발 호출에 모달이 여러번 뜨지 않게 가드.
+export interface BlockGateInfo {
+  message:      string;
+  retry_after?: number;
+}
+let _onBlockGate: ((info: BlockGateInfo) => void) | null = null;
+let _blockGateTriggered = false;
+let _blockGateTimer: number | null = null;
+const _BLOCK_GATE_DEDUP_MS = 5000;
+const _BLOCK_GATE_DEFAULT_MSG = '부동산광고시스템(타사) 오류발생 잠시 후 재시도 해주세요.';
+
+export function setBlockGateHandler(fn: (info: BlockGateInfo) => void) {
+  _onBlockGate = fn;
+}
+
+function _triggerBlockGate(message: string, retryAfter?: number) {
+  if (!_onBlockGate || _blockGateTriggered) return;
+  _blockGateTriggered = true;
+  if (_blockGateTimer != null) window.clearTimeout(_blockGateTimer);
+  _blockGateTimer = window.setTimeout(() => { _blockGateTriggered = false; }, _BLOCK_GATE_DEDUP_MS);
+  try { _onBlockGate({ message, retry_after: retryAfter }); }
+  catch { /* swallow */ }
+}
+
+function _maybeTriggerBlockGate(body: unknown): boolean {
+  if (!body || typeof body !== 'object') return false;
+  // (a) 503 응답: { detail: { error, message, retry_after } }
+  const detail = (body as { detail?: unknown }).detail;
+  if (detail && typeof detail === 'object'
+      && (detail as { error?: string }).error === 'block_gate') {
+    const d = detail as { message?: string; retry_after?: number };
+    _triggerBlockGate(String(d.message ?? _BLOCK_GATE_DEFAULT_MSG),
+                      typeof d.retry_after === 'number' ? d.retry_after : undefined);
+    return true;
+  }
+  // (b) extract 폴링: { ok: true, job: { state: 'blocked', msg, error: 'block_gate' } }
+  const job = (body as { job?: { state?: string; msg?: string; error?: string } }).job;
+  if (job && job.state === 'blocked') {
+    _triggerBlockGate(String(job.msg ?? _BLOCK_GATE_DEFAULT_MSG));
+    return true;
+  }
+  // (c) villa 폴링: { status: 'blocked', stage_label, error: 'block_gate', ... }
+  const vs = body as { status?: string; stage_label?: string; error?: string };
+  if (vs.status === 'blocked' && vs.error === 'block_gate') {
+    _triggerBlockGate(String(vs.stage_label ?? _BLOCK_GATE_DEFAULT_MSG));
+    return true;
+  }
+  return false;
 }
 
 async function request<T>(
@@ -204,11 +261,24 @@ async function request<T>(
       catch { /* swallow */ }
       finally { _unauthorizedTriggered = false; }
     }
-    const msg = (body && typeof body === 'object' && 'detail' in body)
-      ? String((body as { detail: unknown }).detail)
-      : text || `HTTP ${r.status}`;
-    throw new ApiError(r.status, msg);
+    // 503 + block_gate 코드면 모달 트리거 (catch 한 쪽에서 따로 처리 안 해도 자동 노출)
+    if (r.status === 503) _maybeTriggerBlockGate(body);
+    // detail 이 객체일 수도 있으므로 message 추출 — string 일 땐 그대로, dict 면 message 필드 우선
+    let msg: string;
+    if (body && typeof body === 'object' && 'detail' in body) {
+      const d = (body as { detail: unknown }).detail;
+      if (typeof d === 'object' && d !== null && 'message' in d) {
+        msg = String((d as { message: unknown }).message);
+      } else {
+        msg = String(d);
+      }
+    } else {
+      msg = text || `HTTP ${r.status}`;
+    }
+    throw new ApiError(r.status, msg, body);
   }
+  // 정상 응답 — extract/villa 폴링 결과의 blocked state 도 모달 트리거
+  _maybeTriggerBlockGate(body);
   return body as T;
 }
 function safeJson(s: string): unknown { try { return JSON.parse(s); } catch { return s; } }
@@ -292,7 +362,7 @@ export async function serverLogout(session: Session | null): Promise<void> {
 export interface JobStatus {
   id: string;
   kind: string;
-  state: 'pending' | 'running' | 'done' | 'error';
+  state: 'pending' | 'running' | 'done' | 'error' | 'cancelled' | 'blocked';
   pct: number;
   msg: string;
   error?: string;
@@ -1220,8 +1290,8 @@ export function villaArticleDetail(session: Session | null, articleNo: string) {
 
 // ── 비동기 빌라 검색 (Cloudflare 100s timeout 회피 + 진행 UI) ──────────────
 export interface VillaSearchProgress {
-  status:       'running' | 'done' | 'error';
-  stage:        'list' | 'detail' | 'done' | 'error';
+  status:       'running' | 'done' | 'error' | 'blocked';
+  stage:        'list' | 'detail' | 'done' | 'error' | 'blocked';
   stage_label:  string;
   page:         number;
   max_pages:    number;
