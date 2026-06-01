@@ -1465,8 +1465,35 @@ function PresaleArticlesSection({ session }: { session: Session | null }) {
   const [limit, setLimit] = useState(500);
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState('');
+  // 추출이력 단지 목록 (드랍박스 소스)
+  const [complexes, setComplexes] = useState<PresaleComplexSummary[]>([]);
+  const [complexesLoading, setComplexesLoading] = useState(false);
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      setComplexesLoading(true);
+      try {
+        const r = await adminPresaleSummary(session);
+        if (!alive) return;
+        if (r.ok) {
+          // 중복 cno 제거 + 단지명 오름차순
+          const seen = new Set<string>();
+          const uniq: PresaleComplexSummary[] = [];
+          for (const c of r.complexes) {
+            if (seen.has(c.naver_complex_no)) continue;
+            seen.add(c.naver_complex_no);
+            uniq.push(c);
+          }
+          uniq.sort((a, b) => (a.complex_name ?? '').localeCompare(b.complex_name ?? '', 'ko'));
+          setComplexes(uniq);
+        }
+      } catch { /* dropdown 실패 시 무시 (수동 입력 fallback) */ }
+      finally { if (alive) setComplexesLoading(false); }
+    })();
+    return () => { alive = false; };
+  }, [session]);
   const load = async () => {
-    if (!cno.trim()) { setErr('단지번호를 입력하세요'); return; }
+    if (!cno.trim()) { setErr('단지번호를 선택하세요'); return; }
     setLoading(true);
     setErr('');
     try {
@@ -1479,6 +1506,40 @@ function PresaleArticlesSection({ session }: { session: Session | null }) {
     } finally {
       setLoading(false);
     }
+  };
+  const exportExcel = () => {
+    if (rows.length === 0) return;
+    const headers = ['매물번호','타입','거래','동','층','호수','매매','전세','월세','가격(원본)',
+                     '프미 min','프미 max','프미 actual','옵션','중개사','확인일','업데이트'];
+    const esc = (v: unknown): string => {
+      const s = v === null || v === undefined ? '' : String(v);
+      return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    };
+    const trs = rows.map(r => {
+      const cells = [
+        r.article_no, presaleCodeLabel(r.presale_code), r.trade_type_code ?? '',
+        r.building_name ?? '', r.floor_info ?? '', r.unit_no ?? '',
+        r.price_deal ?? '', r.price_warrant ?? '', r.price_rent ?? '',
+        r.deal_or_warrant_prc ?? '', r.premium_min ?? '', r.premium_max ?? '',
+        r.premium_actual ?? '', r.option_price ?? '', r.realtor_name ?? '',
+        r.article_confirm_ymd ?? '', fmtDate(r.updated_at),
+      ];
+      return `<tr>${cells.map(c => `<td>${esc(c)}</td>`).join('')}</tr>`;
+    }).join('');
+    const html =
+      '<html xmlns:o="urn:schemas-microsoft-com:office:office" ' +
+      'xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">' +
+      '<head><meta charset="UTF-8"></head><body><table border="1">' +
+      `<thead><tr>${headers.map(h => `<th>${esc(h)}</th>`).join('')}</tr></thead>` +
+      `<tbody>${trs}</tbody></table></body></html>`;
+    const blob = new Blob(['﻿', html], { type: 'application/vnd.ms-excel;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const ts = new Date().toISOString().slice(0, 19).replace(/[:T]/g, '').slice(0, 13);
+    const fname = `presale_${cno.trim()}_${(cname ?? '').replace(/[\\/:*?"<>|\s]/g, '_')}_${ts}.xls`;
+    const a = document.createElement('a');
+    a.href = url; a.download = fname;
+    document.body.appendChild(a); a.click();
+    setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(url); }, 0);
   };
   // Favorites preheat 패널용 state (분양권 캐시 section 안에 표시)
   const [preheatBusy, setPreheatBusy] = useState(false);
@@ -1535,9 +1596,19 @@ function PresaleArticlesSection({ session }: { session: Session | null }) {
       </div>
 
       <div className="mb-2 flex flex-wrap items-center gap-2">
-        <input value={cno} onChange={e => setCno(e.target.value)}
-               placeholder="단지번호 (필수)"
-               className="w-44 h-8 px-2 rounded border border-[color:var(--color-border-strong)] text-sm" />
+        <select value={cno} onChange={e => setCno(e.target.value)}
+                className="h-8 px-2 rounded border border-[color:var(--color-border-strong)] text-sm min-w-[18rem] max-w-[28rem]">
+          <option value="">
+            {complexesLoading ? '단지 목록 로딩 중...'
+              : complexes.length === 0 ? '추출이력 단지 없음'
+              : `단지 선택 (${complexes.length}개)`}
+          </option>
+          {complexes.map(c => (
+            <option key={c.naver_complex_no} value={c.naver_complex_no}>
+              {(c.complex_name ?? '(이름없음)')} · #{c.naver_complex_no}
+            </option>
+          ))}
+        </select>
         <select value={code} onChange={e => setCode(e.target.value)}
                 className="h-8 px-2 rounded border border-[color:var(--color-border-strong)] text-sm">
           <option value="">전체</option>
@@ -1553,6 +1624,10 @@ function PresaleArticlesSection({ session }: { session: Session | null }) {
         <button onClick={load}
                 className="h-8 px-3 rounded-lg bg-[color:var(--color-brand)] text-white text-xs font-semibold">
           조회
+        </button>
+        <button onClick={exportExcel} disabled={rows.length === 0}
+                className="h-8 px-3 rounded-lg bg-emerald-600 text-white text-xs font-semibold disabled:opacity-40">
+          📥 엑셀 내보내기
         </button>
         <span className="text-sm text-[color:var(--color-muted)] ml-2">
           {loading ? '로딩 중...' : `${rows.length} 건`}
