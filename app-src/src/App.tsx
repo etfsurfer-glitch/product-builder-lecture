@@ -2,7 +2,8 @@ import { useEffect, useState } from 'react';
 import type { Session } from '@supabase/supabase-js';
 import { getCurrentSession, goToLanding, signOut } from './lib/auth';
 import { serverLogout, getMe, IS_TEST_BUILD, API_BASE,
-         setBlockGateHandler, type BlockGateInfo } from './lib/api';
+         setBlockGateHandler, setSubscriptionRequiredHandler,
+         type BlockGateInfo } from './lib/api';
 import SearchPanel from './components/SearchPanel';
 import ArticleLookup from './components/ArticleLookup';
 import VillaSearch from './components/VillaSearch';
@@ -10,6 +11,7 @@ import Portfolio from './components/Portfolio';
 import DeviceManager from './components/DeviceManager';
 import AdminPage from './components/AdminPage';
 import SubscriptionExpiryModal from './components/SubscriptionExpiryModal';
+import SubscriptionRequiredModal from './components/SubscriptionRequiredModal';
 import BlockGateModal from './components/BlockGateModal';
 
 type Status = 'loading' | 'needs-login' | 'ready';
@@ -52,10 +54,13 @@ export default function App() {
   const [isAdmin, setIsAdmin] = useState(false);
   const [expiryDaysLeft, setExpiryDaysLeft] = useState<number | null>(null);
   const [blockGate, setBlockGate] = useState<BlockGateInfo | null>(null);
+  const [needsPro, setNeedsPro] = useState(false);
 
   // 차단 게이트 핸들러 등록 — api.ts 가 503 block_gate / blocked state 감지 시 호출
   useEffect(() => {
     setBlockGateHandler((info) => setBlockGate(info));
+    // 구독 게이트 — 서버가 403 subscription_required 응답 시 호출
+    setSubscriptionRequiredHandler(() => setNeedsPro(true));
   }, []);
 
   useEffect(() => {
@@ -69,6 +74,11 @@ export default function App() {
         try {
           const me = await getMe(s);
           setIsAdmin(!!me.is_admin);
+
+          // free 사용자는 모든 기능 차단 — 즉시 프로 등록 안내 모달 노출 (관리자 제외)
+          if (!me.is_admin && me.subscription === 'free') {
+            setNeedsPro(true);
+          }
 
           // 구독 만료 알림: pro + 3일 이내 (음수=만료 후 포함). 하루 1회 throttle.
           if (me.subscription === 'pro' && me.subscription_end) {
@@ -213,6 +223,8 @@ export default function App() {
           onClose={() => setBlockGate(null)}
         />
       )}
+
+      {needsPro && <SubscriptionRequiredModal session={session} />}
     </div>
   );
 }

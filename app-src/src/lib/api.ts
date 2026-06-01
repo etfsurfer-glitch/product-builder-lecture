@@ -205,6 +205,34 @@ export function setBlockGateHandler(fn: (info: BlockGateInfo) => void) {
   _onBlockGate = fn;
 }
 
+// ── 구독 게이트 핸들러 — App.tsx 에서 등록.
+// 서버가 free 사용자에 대해 403 + detail.code='subscription_required' 로 응답할 때 트리거.
+// 3초 dedup 으로 다발 호출 시 모달이 여러번 뜨지 않게 가드.
+let _onSubscriptionRequired: (() => void) | null = null;
+let _subRequiredTriggered = false;
+let _subRequiredTimer: number | null = null;
+const _SUB_REQUIRED_DEDUP_MS = 3000;
+export function setSubscriptionRequiredHandler(fn: () => void) {
+  _onSubscriptionRequired = fn;
+}
+function _triggerSubscriptionRequired() {
+  if (!_onSubscriptionRequired || _subRequiredTriggered) return;
+  _subRequiredTriggered = true;
+  if (_subRequiredTimer != null) window.clearTimeout(_subRequiredTimer);
+  _subRequiredTimer = window.setTimeout(() => { _subRequiredTriggered = false; }, _SUB_REQUIRED_DEDUP_MS);
+  try { _onSubscriptionRequired(); } catch { /* swallow */ }
+}
+function _maybeTriggerSubscriptionRequired(status: number, body: unknown): boolean {
+  if (status !== 403 || !body || typeof body !== 'object') return false;
+  const detail = (body as { detail?: unknown }).detail;
+  if (detail && typeof detail === 'object'
+      && (detail as { code?: string }).code === 'subscription_required') {
+    _triggerSubscriptionRequired();
+    return true;
+  }
+  return false;
+}
+
 function _triggerBlockGate(message: string, retryAfter?: number) {
   if (!_onBlockGate || _blockGateTriggered) return;
   _blockGateTriggered = true;
@@ -263,6 +291,8 @@ async function request<T>(
     }
     // 503 + block_gate 코드면 모달 트리거 (catch 한 쪽에서 따로 처리 안 해도 자동 노출)
     if (r.status === 503) _maybeTriggerBlockGate(body);
+    // 403 + subscription_required 코드면 프로 등록 안내 모달 트리거
+    _maybeTriggerSubscriptionRequired(r.status, body);
     // detail 이 객체일 수도 있으므로 message 추출 — string 일 땐 그대로, dict 면 message 필드 우선
     let msg: string;
     if (body && typeof body === 'object' && 'detail' in body) {
@@ -1015,6 +1045,7 @@ export async function getPortfolio(
       catch { /* swallow */ }
       finally { _unauthorizedTriggered = false; }
     }
+    _maybeTriggerSubscriptionRequired(r.status, body);
     const msg = (body && typeof body === 'object' && 'detail' in body)
       ? String((body as { detail: unknown }).detail)
       : text || `HTTP ${r.status}`;
