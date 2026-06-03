@@ -268,10 +268,32 @@ function _maybeTriggerBlockGate(body: unknown): boolean {
   return false;
 }
 
+// hostUrl 이 주어지면 페일오버를 우회하고 그 호스트로만 fetch.
+// job_id 기반 sticky polling 에 사용 (in-memory JOBS 가 host 별로 분리되어 있어서
+// 다른 host 로 폴링이 떨어지면 즉시 404).
+async function _fetchAtHost(
+  hostUrl: string,
+  path: string,
+  init: RequestInit,
+): Promise<Response> {
+  const ctrl  = new AbortController();
+  const timer = setTimeout(
+    () => ctrl.abort(new DOMException('hard-timeout', 'AbortError')),
+    180_000,
+  );
+  try {
+    const sig = init.signal ? combineSignals(ctrl.signal, init.signal) : ctrl.signal;
+    return await fetch(`${hostUrl}${path}`, { ...init, signal: sig });
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 async function request<T>(
   path: string,
   session: Session | null,
   init: RequestInit = {},
+  opts: { hostUrl?: string } = {},
 ): Promise<T> {
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
@@ -279,7 +301,9 @@ async function request<T>(
   };
   if (session?.access_token) headers.Authorization = `Bearer ${session.access_token}`;
 
-  const r = await fetchWithFailover(path, { ...init, headers, credentials: 'include' });
+  const r = opts.hostUrl
+    ? await _fetchAtHost(opts.hostUrl, path, { ...init, headers, credentials: 'include' })
+    : await fetchWithFailover(path, { ...init, headers, credentials: 'include' });
   const text = await r.text();
   const body = text ? safeJson(text) : null;
   if (!r.ok) {
@@ -368,16 +392,56 @@ export function presaleSearch(
   );
 }
 
-export function startExtract(
+// ── job_id 별 host sticky (in-memory JOBS sharing 안 됨 대응) ───────────────
+// 추출 시작 host_id ('kr'/'a' 등) 를 sessionStorage 에 저장 → 폴링/취소를 같은 host 로.
+// host 가 진짜 죽으면 sticky 해제 후 fetchWithFailover 폴백 (옛 동작 복원).
+const JOB_HOST_KEY = 'runto_job_host';   // value: { [jobId]: hostId }
+
+function _readJobHostMap(): Record<string, string> {
+  try {
+    const raw = sessionStorage.getItem(JOB_HOST_KEY);
+    if (!raw) return {};
+    const o = JSON.parse(raw);
+    return (o && typeof o === 'object') ? o as Record<string, string> : {};
+  } catch { return {}; }
+}
+function _writeJobHostMap(m: Record<string, string>) {
+  try { sessionStorage.setItem(JOB_HOST_KEY, JSON.stringify(m)); } catch { /* private mode */ }
+}
+export function setJobHost(jobId: string, hostId: string) {
+  if (!jobId || !hostId) return;
+  const m = _readJobHostMap();
+  m[jobId] = hostId.toLowerCase();
+  _writeJobHostMap(m);
+}
+export function clearJobHost(jobId: string) {
+  const m = _readJobHostMap();
+  if (jobId in m) { delete m[jobId]; _writeJobHostMap(m); }
+}
+function hostUrlById(hostId: string | undefined): string | undefined {
+  if (!hostId) return undefined;
+  const want = hostId.toLowerCase();
+  for (let i = 0; i < API_HOST_LABELS.length; i++) {
+    if (API_HOST_LABELS[i].toLowerCase() === want) return API_HOSTS[i];
+  }
+  return undefined;
+}
+function jobHostUrl(jobId: string): string | undefined {
+  return hostUrlById(_readJobHostMap()[jobId]);
+}
+
+export async function startExtract(
   session: Session | null,
   complex: ComplexItem,
   keyword: string = '',
 ) {
-  return request<{ ok: boolean; job_id: string }>(
+  const res = await request<{ ok: boolean; job_id: string; host_id?: string }>(
     '/api/extract',
     session,
     { method: 'POST', body: JSON.stringify({ kb_complex: complex, keyword }) },
   );
+  if (res.job_id && res.host_id) setJobHost(res.job_id, res.host_id);
+  return res;
 }
 
 export async function serverLogout(session: Session | null): Promise<void> {
@@ -402,25 +466,48 @@ export interface JobStatus {
   updated_at: number;
 }
 
-export function getExtractStatus(
+export async function getExtractStatus(
   session: Session | null,
   jobId: string,
   includeResult = false,
 ) {
   const qs = includeResult ? '?include_result=true' : '';
-  return request<{ ok: boolean; job: JobStatus }>(
-    `/api/extract/${jobId}${qs}`,
-    session,
-  );
+  const hostUrl = jobHostUrl(jobId);
+  try {
+    return await request<{ ok: boolean; job: JobStatus }>(
+      `/api/extract/${jobId}${qs}`,
+      session,
+      {},
+      { hostUrl },
+    );
+  } catch (e) {
+    // sticky host 가 진짜 죽었거나 모르는 job_id 면 페일오버로 폴백.
+    // 단, 404 (job 없음) 는 fallback 시도해도 다른 host 에 있을 리 없으므로 그대로 throw.
+    if (hostUrl && !(e instanceof ApiError && e.status === 404)) {
+      return await request<{ ok: boolean; job: JobStatus }>(
+        `/api/extract/${jobId}${qs}`, session,
+      );
+    }
+    throw e;
+  }
 }
 
 // 추출 협조적 취소 (Phase 2). 즉시 응답, 실제 abort 는 ~5~30s.
-export function extractCancel(session: Session | null, jobId: string) {
-  return request<{ ok: boolean; job_id: string; msg: string }>(
-    `/api/extract/${jobId}/cancel`,
-    session,
-    { method: 'POST' },
-  );
+export async function extractCancel(session: Session | null, jobId: string) {
+  const hostUrl = jobHostUrl(jobId);
+  try {
+    return await request<{ ok: boolean; job_id: string; msg: string }>(
+      `/api/extract/${jobId}/cancel`, session,
+      { method: 'POST' }, { hostUrl },
+    );
+  } catch (e) {
+    if (hostUrl && !(e instanceof ApiError && e.status === 404)) {
+      return await request<{ ok: boolean; job_id: string; msg: string }>(
+        `/api/extract/${jobId}/cancel`, session, { method: 'POST' },
+      );
+    }
+    throw e;
+  }
 }
 
 export function getHealth() {
