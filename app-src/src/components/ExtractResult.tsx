@@ -417,7 +417,7 @@ export default function ExtractResult({ session, complex, keyword = '', onBack }
     }
   }
 
-  // 주소 기반 간결화 (예: "대전광역시 서구 둔산동" → "서구 둔산동")
+  // 주소 기반 간결화 (예: "대전광역시 서구 둔산동" → "서구 둔산동") — 서버 export_name 으로 전달
   const exportName = (() => {
     const cn   = complex.name || '매물';
     const addr = complex.addr_full || complex.addr || '';
@@ -426,6 +426,26 @@ export default function ExtractResult({ session, complex, keyword = '', onBack }
     const short = parts.length >= 3 ? parts.slice(1, 3).join(' ') : addr;
     return `${cn}_${short}`.trim();
   })();
+
+  // FSA 폴더 구조용 — `{시도}{단지명}` 폴더 + `{단지명}_{날짜시간}.xlsx`
+  const fsaSafe = (s: string) => s.replace(/[\\/:*?"<>|\r\n]/g, '_').trim();
+  const fsaFolderName = (() => {
+    const cn   = complex.name || '매물';
+    const addr = complex.addr_full || complex.addr || '';
+    const sido = addr.split(/\s+/)[0] || '';
+    return fsaSafe(sido + cn);
+  })();
+  const fsaTimestamp = (() => {
+    // Asia/Seoul 기준 YYYY-MM-DD_HHmm (UTC+8 디바이스 -1h 표시 방지)
+    const parts = new Intl.DateTimeFormat('sv-SE', {
+      timeZone: 'Asia/Seoul',
+      year: 'numeric', month: '2-digit', day: '2-digit',
+      hour: '2-digit', minute: '2-digit', hour12: false,
+    }).formatToParts(new Date());
+    const get = (t: string) => parts.find(p => p.type === t)?.value || '';
+    return `${get('year')}-${get('month')}-${get('day')}_${get('hour')}${get('minute')}`;
+  })();
+  const fsaFileName = `${fsaSafe(complex.name || '매물')}_${fsaTimestamp}.xlsx`;
 
   async function download(kind: 'xlsx' | 'csv' | 'zip') {
     if (!job || !rows.length) return;
@@ -450,9 +470,9 @@ export default function ExtractResult({ session, complex, keyword = '', onBack }
       if (!root) { setExporting(''); return; }
       const body = { job_id: job.id, group_on: groupMode, export_name: exportName };
       const xl = await exportExcelBytes(session, body);
-      // 매물엑셀파일/{export_name}/{원본 서버 파일명}.xlsx
-      await writeFileToPath(root, ['매물엑셀파일', exportName], xl.filename, xl.bytes);
-      alert(`✓ 저장 완료\n${root.name}/매물엑셀파일/${exportName}/${xl.filename}`);
+      // {시도}{단지명}/{단지명}_{YYYY-MM-DD_HHmm}.xlsx (서버 발급 파일명 무시)
+      await writeFileToPath(root, [fsaFolderName], fsaFileName, xl.bytes);
+      alert(`✓ 저장 완료\n${root.name}/${fsaFolderName}/${fsaFileName}`);
     } catch (e) {
       alert(e instanceof ApiError
         ? `${e.status} · ${e.message}`
@@ -769,7 +789,7 @@ export default function ExtractResult({ session, complex, keyword = '', onBack }
                   onClick={saveToNfindFolder}
                   disabled={!!exporting}
                   className="h-9 px-3 rounded-lg text-sm font-semibold border border-[color:var(--color-brand)] bg-[color:var(--color-brand-soft)] text-[color:var(--color-brand)] hover:brightness-95 disabled:opacity-50"
-                  title="Excel + CSV 를 Nfind/매물엑셀파일/단지명/ 에 직접 저장 (첫 1회 폴더 선택 필요)"
+                  title="Nfind/{시도}{단지명}/{단지명}_{날짜시간}.xlsx 에 직접 저장 (첫 1회 폴더 선택 필요)"
                 >
                   {exporting === 'fsa' ? '저장 중...' : '📁 Nfind 폴더에 저장'}
                 </button>

@@ -77,17 +77,47 @@ export default function BulkExtractResult({ session, jobs, onBack }: Props) {
   }
 
   async function saveToNfindFolder() {
-    const doneIds = states.filter(s => s.status === 'done' && s.job_id).map(s => s.job_id!);
-    if (!doneIds.length) { alert('완료된 추출 결과가 없습니다'); return; }
-    const exportName = buildExportName();
+    const doneJobs = states.filter(s => s.status === 'done' && s.job_id);
+    if (!doneJobs.length) { alert('완료된 추출 결과가 없습니다'); return; }
     setExporting('fsa');
     try {
       const root = await getOrPickNfindRoot();
       if (!root) { setExporting(''); return; }
-      const body = { job_ids: doneIds, group_on: groupMode, export_name: exportName };
-      const xl = await exportExcelBytes(session, body);
-      await writeFileToPath(root, ['매물엑셀파일', exportName], xl.filename, xl.bytes);
-      alert(`✓ 저장 완료\n${root.name}/매물엑셀파일/${exportName}/${xl.filename}`);
+
+      const fsaSafe = (s: string) => s.replace(/[\\/:*?"<>|\r\n]/g, '_').trim();
+      const parts = new Intl.DateTimeFormat('sv-SE', {
+        timeZone: 'Asia/Seoul',
+        year: 'numeric', month: '2-digit', day: '2-digit',
+        hour: '2-digit', minute: '2-digit', hour12: false,
+      }).formatToParts(new Date());
+      const get = (t: string) => parts.find(p => p.type === t)?.value || '';
+      const ts = `${get('year')}-${get('month')}-${get('day')}_${get('hour')}${get('minute')}`;
+
+      // 단지별 1파일씩 분리 저장 — `{시도}{단지명}/{단지명}_{날짜}.xlsx`
+      const oks: string[] = []; const fails: string[] = [];
+      for (const s of doneJobs) {
+        const cn   = s.name || '매물';
+        const addr = s.addr_full || '';
+        const sido = addr.split(/\s+/)[0] || '';
+        const folder = fsaSafe(sido + cn);
+        const fname  = `${fsaSafe(cn)}_${ts}.xlsx`;
+        try {
+          const xl = await exportExcelBytes(session, {
+            job_id: s.job_id!, group_on: groupMode, export_name: cn,
+          });
+          await writeFileToPath(root, [folder], fname, xl.bytes);
+          oks.push(`${folder}/${fname}`);
+        } catch (e) {
+          fails.push(`${cn}: ${e instanceof ApiError ? e.message : String(e)}`);
+        }
+      }
+      alert(
+        `✓ 저장 완료 (${oks.length}/${doneJobs.length})\n` +
+        `루트: ${root.name}\n` +
+        (oks.slice(0, 5).join('\n')) +
+        (oks.length > 5 ? `\n... 외 ${oks.length - 5}개` : '') +
+        (fails.length ? `\n\n실패 ${fails.length}건:\n${fails.slice(0, 3).join('\n')}` : '')
+      );
     } catch (e) {
       alert(e instanceof ApiError
         ? `${e.status} · ${e.message}`
@@ -380,7 +410,7 @@ export default function BulkExtractResult({ session, jobs, onBack }: Props) {
               {fsaSupported && (
                 <button onClick={saveToNfindFolder} disabled={!!exporting || doneCnt === 0}
                         className="h-9 px-3 rounded-lg text-sm font-semibold border border-[color:var(--color-brand)] bg-[color:var(--color-brand-soft)] text-[color:var(--color-brand)] hover:brightness-95 disabled:opacity-50"
-                        title="Nfind/매물엑셀파일/단지명/ 에 직접 저장">
+                        title="Nfind/{시도}{단지명}/{단지명}_{날짜시간}.xlsx 에 단지별로 분리 저장">
                   {exporting === 'fsa' ? '저장 중...' : '📁 Nfind 폴더에 저장'}
                 </button>
               )}
