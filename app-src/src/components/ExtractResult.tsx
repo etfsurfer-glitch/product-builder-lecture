@@ -776,23 +776,50 @@ export default function ExtractResult({ session, complex, keyword = '', onBack }
                 {groupMode ? '묶기 해제' : '동일매물 묶기'}
               </button>
               <div className="w-px h-6 bg-[color:var(--color-border)]" />
-              <button
-                onClick={saveToPortfolio}
-                disabled={savingPortfolio || !rows.length}
-                className="h-9 px-3 rounded-lg text-sm font-semibold border border-[color:var(--color-brand)] bg-[color:var(--color-brand)] text-white hover:bg-[color:var(--color-brand-dark)] disabled:opacity-50"
-                title="현재 검색 결과를 내 폴더에 저장 (6개월 보관, 단지별 시점 비교 가능)"
-              >
-                {savingPortfolio ? '저장 중...' : '💾 내 폴더에 저장'}
-              </button>
-              {fsaSupported && (
+              <div className="relative group">
                 <button
-                  onClick={saveToNfindFolder}
-                  disabled={!!exporting}
-                  className="h-9 px-3 rounded-lg text-sm font-semibold border border-[color:var(--color-brand)] bg-[color:var(--color-brand-soft)] text-[color:var(--color-brand)] hover:brightness-95 disabled:opacity-50"
-                  title="Nfind/{시도}{단지명}/{단지명}_{날짜시간}.xlsx 에 직접 저장 (첫 1회 폴더 선택 필요)"
+                  onClick={saveToPortfolio}
+                  disabled={savingPortfolio || !rows.length}
+                  className="h-9 px-3 rounded-lg text-sm font-semibold border border-[color:var(--color-brand)] bg-[color:var(--color-brand)] text-white hover:bg-[color:var(--color-brand-dark)] disabled:opacity-50"
                 >
-                  {exporting === 'fsa' ? '저장 중...' : '📁 Nfind 폴더에 저장'}
+                  {savingPortfolio ? '저장 중...' : '💾 내 폴더에 저장'}
                 </button>
+                <div className="absolute left-1/2 -translate-x-1/2 top-full mt-2 z-30 w-72
+                                px-3 py-2 rounded-lg bg-gray-900 text-white text-xs leading-relaxed
+                                shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible
+                                transition pointer-events-none">
+                  <div className="font-semibold mb-1">☁️ 클라우드 저장 (Nfind 서버)</div>
+                  <div className="text-gray-200">
+                    현재 검색 결과를 Nfind 서버에 보관합니다.
+                    <br />• 6개월 보관 — 시점별 비교 가능
+                    <br />• 다른 기기·브라우저에서도 접근
+                    <br />• PWA 의 '내 폴더' 탭에서 열람
+                  </div>
+                </div>
+              </div>
+              {fsaSupported && (
+                <div className="relative group">
+                  <button
+                    onClick={saveToNfindFolder}
+                    disabled={!!exporting}
+                    className="h-9 px-3 rounded-lg text-sm font-semibold border border-[color:var(--color-brand)] bg-[color:var(--color-brand-soft)] text-[color:var(--color-brand)] hover:brightness-95 disabled:opacity-50"
+                  >
+                    {exporting === 'fsa' ? '저장 중...' : '📁 Nfind 폴더에 저장'}
+                  </button>
+                  <div className="absolute left-1/2 -translate-x-1/2 top-full mt-2 z-30 w-72
+                                  px-3 py-2 rounded-lg bg-gray-900 text-white text-xs leading-relaxed
+                                  shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible
+                                  transition pointer-events-none">
+                    <div className="font-semibold mb-1">💻 이 컴퓨터의 Nfind 폴더에 저장</div>
+                    <div className="text-gray-200">
+                      엑셀 파일을 자동으로 단지별 폴더에 분류 저장합니다.
+                      <br />• 경로 — <span className="font-mono">문서/Nfind/{'{시도}{단지명}'}/{'{단지명}_{날짜시간}'}.xlsx</span>
+                      <br />• 첫 1회 폴더 선택 후 영구 기억
+                      <br />• 같은 단지 재추출 시 자동으로 같은 폴더에 누적
+                      <br />• Chrome / Edge 에서만 지원
+                    </div>
+                  </div>
+                </div>
               )}
               <button
                 onClick={() => download('xlsx')}
@@ -809,14 +836,6 @@ export default function ExtractResult({ session, complex, keyword = '', onBack }
                 title="CSV 파일 다운로드 (UTF-8 BOM, Excel 한글 호환)"
               >
                 {exporting === 'csv' ? '생성 중...' : '📄 CSV'}
-              </button>
-              <button
-                onClick={() => download('zip')}
-                disabled={!!exporting}
-                className="h-9 px-3 rounded-lg text-sm font-semibold border border-[color:var(--color-border)] bg-white hover:bg-[color:var(--color-bg-soft)] disabled:opacity-50"
-                title="Excel+CSV 를 ZIP 으로 묶음 (매물엑셀파일/단지명/ 폴더 구조 포함)"
-              >
-                {exporting === 'zip' ? '생성 중...' : '📦 ZIP (폴더구조)'}
               </button>
             </div>
           </div>

@@ -408,11 +408,25 @@ export default function BulkExtractResult({ session, jobs, onBack }: Props) {
               </button>
               <div className="w-px h-6 bg-[color:var(--color-border)]" />
               {fsaSupported && (
-                <button onClick={saveToNfindFolder} disabled={!!exporting || doneCnt === 0}
-                        className="h-9 px-3 rounded-lg text-sm font-semibold border border-[color:var(--color-brand)] bg-[color:var(--color-brand-soft)] text-[color:var(--color-brand)] hover:brightness-95 disabled:opacity-50"
-                        title="Nfind/{시도}{단지명}/{단지명}_{날짜시간}.xlsx 에 단지별로 분리 저장">
-                  {exporting === 'fsa' ? '저장 중...' : '📁 Nfind 폴더에 저장'}
-                </button>
+                <div className="relative group">
+                  <button onClick={saveToNfindFolder} disabled={!!exporting || doneCnt === 0}
+                          className="h-9 px-3 rounded-lg text-sm font-semibold border border-[color:var(--color-brand)] bg-[color:var(--color-brand-soft)] text-[color:var(--color-brand)] hover:brightness-95 disabled:opacity-50">
+                    {exporting === 'fsa' ? '저장 중...' : '📁 Nfind 폴더에 저장'}
+                  </button>
+                  <div className="absolute left-1/2 -translate-x-1/2 top-full mt-2 z-30 w-72
+                                  px-3 py-2 rounded-lg bg-gray-900 text-white text-xs leading-relaxed
+                                  shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible
+                                  transition pointer-events-none">
+                    <div className="font-semibold mb-1">💻 이 컴퓨터의 Nfind 폴더에 저장</div>
+                    <div className="text-gray-200">
+                      완료된 단지를 각각의 폴더에 분리 저장합니다.
+                      <br />• 경로 — <span className="font-mono">문서/Nfind/{'{시도}{단지명}'}/{'{단지명}_{날짜시간}'}.xlsx</span>
+                      <br />• 단지 N개 → 폴더 N개 자동 생성
+                      <br />• 첫 1회 폴더 선택 후 영구 기억
+                      <br />• Chrome / Edge 에서만 지원
+                    </div>
+                  </div>
+                </div>
               )}
               <button onClick={() => download('xlsx')} disabled={!!exporting || doneCnt === 0}
                       className="h-9 px-3 rounded-lg text-sm font-semibold border border-[color:var(--color-border)] bg-white hover:bg-[color:var(--color-bg-soft)] disabled:opacity-50"
@@ -423,11 +437,6 @@ export default function BulkExtractResult({ session, jobs, onBack }: Props) {
                       className="h-9 px-3 rounded-lg text-sm font-semibold border border-[color:var(--color-border)] bg-white hover:bg-[color:var(--color-bg-soft)] disabled:opacity-50"
                       title="CSV (UTF-8 BOM)">
                 {exporting === 'csv' ? '생성 중...' : '📄 CSV'}
-              </button>
-              <button onClick={() => download('zip')} disabled={!!exporting || doneCnt === 0}
-                      className="h-9 px-3 rounded-lg text-sm font-semibold border border-[color:var(--color-border)] bg-white hover:bg-[color:var(--color-bg-soft)] disabled:opacity-50"
-                      title="Excel+CSV 를 ZIP (매물엑셀파일/단지명/ 폴더 구조)">
-                {exporting === 'zip' ? '생성 중...' : '📦 ZIP (폴더구조)'}
               </button>
             </div>
           </div>
