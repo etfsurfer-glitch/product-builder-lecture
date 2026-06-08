@@ -5,7 +5,7 @@ import {
   exportExcelBytes,
   type BulkExtractJob, ApiError,
 } from '../lib/api';
-import { isFsaSupported, getOrPickNfindRoot, writeFileToPath } from '../lib/fsaccess';
+import { isFsaSupported, getOrPickNfindRoot, writeFileToPath, forgetNfindRoot, isFsaNotFoundError } from '../lib/fsaccess';
 import {
   COLUMNS, COLUMNS_GROUPED, TRADE_BG_EXPORT, cellValue, groupRows,
   frozenOffset, isLastFrozen, toMobileCols, useIsMobile,
@@ -95,6 +95,7 @@ export default function BulkExtractResult({ session, jobs, onBack }: Props) {
 
       // 단지별 1파일씩 분리 저장 — `{시도}{단지명}/{단지명}_{날짜}.xlsx`
       const oks: string[] = []; const fails: string[] = [];
+      let sawNotFound = false;
       for (const s of doneJobs) {
         const cn   = s.name || '매물';
         const addr = s.addr_full || '';
@@ -108,20 +109,32 @@ export default function BulkExtractResult({ session, jobs, onBack }: Props) {
           await writeFileToPath(root, [folder], fname, xl.bytes);
           oks.push(`${folder}/${fname}`);
         } catch (e) {
+          if (isFsaNotFoundError(e)) sawNotFound = true;
           fails.push(`${cn}: ${e instanceof ApiError ? e.message : String(e)}`);
         }
       }
-      alert(
-        `✓ 저장 완료 (${oks.length}/${doneJobs.length})\n` +
-        `루트: ${root.name}\n` +
-        (oks.slice(0, 5).join('\n')) +
-        (oks.length > 5 ? `\n... 외 ${oks.length - 5}개` : '') +
-        (fails.length ? `\n\n실패 ${fails.length}건:\n${fails.slice(0, 3).join('\n')}` : '')
-      );
+      // 모든 (또는 대다수) 실패가 폴더 없음이면 stale handle — IDB 폐기 + 안내
+      if (oks.length === 0 && sawNotFound) {
+        await forgetNfindRoot();
+        alert('저장 폴더를 찾을 수 없습니다. 이전에 선택한 폴더가 삭제·이동되었을 수 있어요.\n버튼을 다시 누르시면 새 폴더 선택 창이 뜹니다.');
+      } else {
+        alert(
+          `✓ 저장 완료 (${oks.length}/${doneJobs.length})\n` +
+          `루트: ${root.name}\n` +
+          (oks.slice(0, 5).join('\n')) +
+          (oks.length > 5 ? `\n... 외 ${oks.length - 5}개` : '') +
+          (fails.length ? `\n\n실패 ${fails.length}건:\n${fails.slice(0, 3).join('\n')}` : '')
+        );
+      }
     } catch (e) {
-      alert(e instanceof ApiError
-        ? `${e.status} · ${e.message}`
-        : `저장 실패: ${e instanceof Error ? e.message : String(e)}`);
+      if (isFsaNotFoundError(e)) {
+        await forgetNfindRoot();
+        alert('저장 폴더를 찾을 수 없습니다. 이전에 선택한 폴더가 삭제·이동되었을 수 있어요.\n버튼을 다시 누르시면 새 폴더 선택 창이 뜹니다.');
+      } else {
+        alert(e instanceof ApiError
+          ? `${e.status} · ${e.message}`
+          : `저장 실패: ${e instanceof Error ? e.message : String(e)}`);
+      }
     } finally {
       setExporting('');
     }

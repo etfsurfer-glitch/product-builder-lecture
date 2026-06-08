@@ -68,6 +68,7 @@ interface DirHandleExt {
   requestPermission?: (o: { mode: 'read' | 'readwrite' }) => Promise<PermStatus>;
   getDirectoryHandle: (name: string, opts?: { create?: boolean }) => Promise<DirHandleExt>;
   getFileHandle:      (name: string, opts?: { create?: boolean }) => Promise<FileHandleExt>;
+  values?:            () => AsyncIterableIterator<unknown>;
 }
 interface FileHandleExt {
   createWritable: () => Promise<FileSystemWritableFileStream>;
@@ -83,6 +84,29 @@ async function ensurePermission(handle: DirHandleExt): Promise<boolean> {
   } catch { return false; }
 }
 
+// 저장된 handle 이 가리키는 실제 디렉터리가 살아있는지 probe.
+// IDB 에 권한은 그대로 남아있지만 OS 측에서 폴더가 삭제/이동/이름변경 된 경우 NotFoundError.
+async function probeAlive(handle: DirHandleExt): Promise<boolean> {
+  try {
+    if (typeof handle.values === 'function') {
+      const iter = handle.values();
+      // 0개여도 next() 자체가 NotFoundError 던지지 않으면 살아있음
+      await iter.next();
+    } else {
+      // values() 미지원 환경(구버전) — fallback: 작은 디렉터리 create 시도
+      await handle.getDirectoryHandle('.nfind-probe', { create: true });
+    }
+    return true;
+  } catch { return false; }
+}
+
+export function isFsaNotFoundError(e: unknown): boolean {
+  if (!e || typeof e !== 'object') return false;
+  const name = (e as { name?: string }).name || '';
+  const msg  = (e as { message?: string }).message || '';
+  return name === 'NotFoundError' || /could not be found/i.test(msg);
+}
+
 // ── 루트 핸들 취득 ──────────────────────────────────────────────────────────
 export async function getOrPickNfindRoot(opts?: { forceRepick?: boolean }): Promise<DirHandleExt | null> {
   if (!isFsaSupported()) return null;
@@ -90,8 +114,10 @@ export async function getOrPickNfindRoot(opts?: { forceRepick?: boolean }): Prom
   if (!opts?.forceRepick) {
     const saved = await idbGet<DirHandleExt>(KEY_ROOT);
     if (saved) {
-      if (await ensurePermission(saved)) return saved;
-      // 권한 거부 → 폴더 재선택 유도
+      const ok = await ensurePermission(saved);
+      if (ok && await probeAlive(saved)) return saved;
+      // 권한 거부 / 폴더 사라짐 → stale handle 폐기 후 재선택 유도
+      await idbDel(KEY_ROOT);
     }
   }
   try {

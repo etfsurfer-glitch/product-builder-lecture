@@ -8,7 +8,7 @@ import {
   savePortfolio,
   type ComplexItem, type JobStatus, ApiError,
 } from '../lib/api';
-import { isFsaSupported, getOrPickNfindRoot, writeFileToPath } from '../lib/fsaccess';
+import { isFsaSupported, getOrPickNfindRoot, writeFileToPath, forgetNfindRoot, isFsaNotFoundError } from '../lib/fsaccess';
 
 interface Props {
   session: Session | null;
@@ -474,9 +474,14 @@ export default function ExtractResult({ session, complex, keyword = '', onBack }
       await writeFileToPath(root, [fsaFolderName], fsaFileName, xl.bytes);
       alert(`✓ 저장 완료\n${root.name}/${fsaFolderName}/${fsaFileName}`);
     } catch (e) {
-      alert(e instanceof ApiError
-        ? `${e.status} · ${e.message}`
-        : `저장 실패: ${e instanceof Error ? e.message : String(e)}`);
+      if (isFsaNotFoundError(e)) {
+        await forgetNfindRoot();
+        alert('저장 폴더를 찾을 수 없습니다. 이전에 선택한 폴더가 삭제·이동되었을 수 있어요.\n버튼을 다시 누르시면 새 폴더 선택 창이 뜹니다.');
+      } else {
+        alert(e instanceof ApiError
+          ? `${e.status} · ${e.message}`
+          : `저장 실패: ${e instanceof Error ? e.message : String(e)}`);
+      }
     } finally {
       setExporting('');
     }
