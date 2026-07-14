@@ -108,6 +108,8 @@ export default function JisanSearch({ session }: Props) {
       const start = await apiPost(session, '/api/jisan/search/start', {
         cortar_no: chosen.legalDivisionNumber,
         trade_type: trade,
+        addr: keyword.trim(),   // 지번/건물 필터 — 입력에 지번 있으면 그 건물만
+
         center_lat: useRadius ? pickedLat : undefined,
         center_lng: useRadius ? pickedLng : undefined,
         radius_km:  useRadius ? radiusKm : undefined,
@@ -144,7 +146,7 @@ export default function JisanSearch({ session }: Props) {
     <div className="space-y-4">
       <form onSubmit={onAutocomplete} className="flex flex-wrap gap-2 items-stretch">
         <input type="text" value={keyword} onChange={e => setKeyword(e.target.value)}
-               placeholder="법정동 입력 (예: 남양주 다산동)"
+               placeholder="주소·지번 입력 (예: 남양주 다산동 또는 다산동 6143)"
                className="flex-1 min-w-[200px] h-10 px-3 rounded-lg border border-[color:var(--color-border)] text-sm"
                disabled={autoBusy} />
         <button type="submit" disabled={autoBusy || !keyword.trim()}
@@ -177,6 +179,7 @@ export default function JisanSearch({ session }: Props) {
           </div>
           <div className="text-xs text-sky-700 bg-sky-50 border border-sky-200 rounded px-2 py-1.5">
             지식산업센터(아파트형공장) 전용 검색 — KB 부동산 기반. 호수는 KB 등기주소(예: <b>제5층 제에프536호</b>) 원문 그대로.
+            <br /><b>지번</b>까지 입력하면(예: 다산동 6143) 그 지번 건물 매물만 나옵니다.
           </div>
 
           {pickedLat != null && pickedLng != null && (
