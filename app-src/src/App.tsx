@@ -7,6 +7,7 @@ import { serverLogout, getMe, IS_TEST_BUILD, API_BASE,
 import SearchPanel from './components/SearchPanel';
 import ArticleLookup from './components/ArticleLookup';
 import VillaSearch from './components/VillaSearch';
+import JisanSearch from './components/JisanSearch';
 import Portfolio from './components/Portfolio';
 import DeviceManager from './components/DeviceManager';
 import AdminPage from './components/AdminPage';
@@ -15,7 +16,7 @@ import SubscriptionRequiredModal from './components/SubscriptionRequiredModal';
 import BlockGateModal from './components/BlockGateModal';
 
 type Status = 'loading' | 'needs-login' | 'ready';
-type Tab = 'complex' | 'article' | 'villa' | 'portfolio';
+type Tab = 'complex' | 'article' | 'villa' | 'jisan' | 'portfolio';
 
 // ── 구독 만료 알림 헬퍼 (서울 TZ 기준) ───────────────────────────────────────
 function todayInSeoul(): string {
@@ -181,6 +182,7 @@ export default function App() {
             <TabButton active={tab === 'complex'} onClick={() => setTab('complex')}>단지 검색</TabButton>
             <TabButton active={tab === 'article'} onClick={() => setTab('article')}>매물번호 조회</TabButton>
             <TabButton active={tab === 'villa'} onClick={() => setTab('villa')}>빌라/사무실 등</TabButton>
+            <TabButton active={tab === 'jisan'} onClick={() => setTab('jisan')}>지식산업센터</TabButton>
             <TabButton active={tab === 'portfolio'} onClick={() => setTab('portfolio')}>내 폴더</TabButton>
           </div>
         </div>
@@ -194,6 +196,7 @@ export default function App() {
             {tab === 'complex' && <SearchPanel session={session} />}
             {tab === 'article' && <ArticleLookup session={session} />}
             {tab === 'villa' && <VillaSearch session={session} />}
+            {tab === 'jisan' && <JisanSearch session={session} />}
             {tab === 'portfolio' && <Portfolio session={session} />}
           </>
         )}
