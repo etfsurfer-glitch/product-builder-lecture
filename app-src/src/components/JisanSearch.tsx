@@ -375,16 +375,47 @@ function JisanDetailCard({ info, ho, hoRaw, articleNo }:
 }
 
 // ── 결과표 (유입·매물번호 컬럼 없음) ─────────────────────────────────────────
-const COLUMNS = ['거래', '단지/건물', '호수', '층', '전용(㎡)', '공급(㎡)', '매매/보증금(만원)', '월세(만원)'] as const;
+const COLUMNS = ['거래', '건물/지번', '호수', '층', '전용', '공급', '방향', '욕실',
+  '매매/보증금(만원)', '월세(만원)', '준공', '입주', '특징', '등록일', '중개사', '전화'] as const;
+
+function _s(v: unknown): string { return v == null || v === '' ? '' : String(v); }
+function _n(v: unknown): number { const n = Number(v); return isFinite(n) && n > 0 ? n : 0; }
+function _area(v: unknown): string { const m = _n(v); return m > 0 ? `${m}㎡·${(m / 3.3058).toFixed(1)}평` : ''; }
+function _ymd(v: unknown): string {
+  const s = _s(v).replace(/\D/g, '');
+  if (s === 'NOW') return '즉시';
+  if (s.length === 8) return `${s.slice(0, 4)}.${s.slice(4, 6)}.${s.slice(6, 8)}`;
+  if (s.length >= 6) return `${s.slice(0, 4)}.${s.slice(4, 6)}`;
+  return _s(v) === 'NOW' ? '즉시' : _s(v);
+}
 
 function rowVals(it: JisanItem): string[] {
-  const num = (v: unknown) => (v == null || v === '' ? '' : String(v));
-  const deal = Number(it.매매가 || 0), warrant = Number(it.월세보증금 || 0), rent = Number(it.월세가 || 0);
+  const trade = _s(it['매물거래구분명']) || _s(it.매물거래명);
+  const bldg  = _s(it.건물명) || _s(it.단지명) || _s(it.매물종별명);
+  const bun   = _s(it.상세번지내용);
+  const flr   = _s(it.해당층수);
+  const tot   = _s(it['총층수']) || _s(it['총지상층수']);
+  const floorCell = flr ? (tot ? `${flr}/${tot}` : flr) : (tot ? `-/${tot}` : '');
+  const deal = _n(it.매매가), warrant = _n(it.월세보증금), rent = _n(it.월세가);
   const dw = deal > 0 ? deal : (warrant > 0 ? warrant : 0);
+  const moveIn = _s(it['입주가능일내용']);
   return [
-    String(it.매물거래명 || ''), String(it.건물명 || it.단지명 || it.매물종별명 || ''), String(it.호수 || ''),
-    num(it.해당층수), num(it.전용면적), num(it.공급면적),
-    dw > 0 ? String(dw) : '', rent > 0 ? String(rent) : '',
+    trade,
+    bldg + (bun ? ` ${bun}` : ''),
+    _s(it.호수),
+    floorCell,
+    _area(it.전용면적),
+    _area(it.공급면적),
+    _s(it['방향구분명']),
+    _s(it['욕실수']),
+    dw > 0 ? String(dw) : '',
+    rent > 0 ? String(rent) : '',
+    _ymd(it['사용승인일']),
+    moveIn === 'NOW' ? '즉시' : _ymd(moveIn),
+    _s(it['특징광고내용']),
+    _s(it['등록년월일']) || _s(it['매물확인년월일']),
+    _s(it['중개업소명']),
+    _s(it['중개업소전화번호']),
   ];
 }
 function csvEscape(s: string): string { return /[",\n\r]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; }
@@ -414,16 +445,26 @@ function ResultTable({ items, exportName }: { items: JisanItem[]; exportName: st
           <tbody>
             {items.map((it, i) => {
               const v = rowVals(it);
-              const dw = v[6] ? Number(v[6]).toLocaleString() : '';
-              const rent = v[7] ? Number(v[7]).toLocaleString() : '';
+              const dw = v[8] ? Number(v[8]).toLocaleString() : '';
+              const rent = v[9] ? Number(v[9]).toLocaleString() : '';
               return (
                 <tr key={String(it.매물일련번호) || i} className="border-t border-[color:var(--color-border)] hover:bg-[color:var(--color-bg-soft)]">
                   <Td>{v[0]}</Td>
-                  <Td className="max-w-[180px] truncate" title={`${v[1]} ${it.상세번지내용 || ''}`}>{v[1]}</Td>
+                  <Td className="max-w-[190px] truncate" title={v[1]}>{v[1]}</Td>
                   <Td className="font-semibold whitespace-nowrap">{v[2]}</Td>
-                  <Td>{v[3]}</Td><Td>{v[4]}</Td><Td>{v[5]}</Td>
+                  <Td className="whitespace-nowrap">{v[3]}</Td>
+                  <Td className="whitespace-nowrap">{v[4]}</Td>
+                  <Td className="whitespace-nowrap">{v[5]}</Td>
+                  <Td>{v[6]}</Td>
+                  <Td className="text-center">{v[7]}</Td>
                   <Td className="text-right whitespace-nowrap">{dw}</Td>
                   <Td className="text-right whitespace-nowrap">{rent}</Td>
+                  <Td className="whitespace-nowrap">{v[10]}</Td>
+                  <Td className="whitespace-nowrap">{v[11]}</Td>
+                  <Td className="max-w-[200px] truncate" title={v[12]}>{v[12]}</Td>
+                  <Td className="whitespace-nowrap">{v[13]}</Td>
+                  <Td className="max-w-[140px] truncate" title={v[14]}>{v[14]}</Td>
+                  <Td className="whitespace-nowrap text-[color:var(--color-muted)]">{v[15]}</Td>
                 </tr>
               );
             })}
