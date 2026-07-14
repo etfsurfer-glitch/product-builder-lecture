@@ -260,23 +260,116 @@ function ArticleByNaverNo({ session }: { session: Session | null }) {
         네이버에 올라온 지산 매물의 번호로 호수를 조회합니다 (neonet 경로). 호수는 영숫자 원문(예: <b>sb-112</b>).
       </div>
       {err && <div className="text-sm text-red-600">{err}</div>}
-      {res && res.ho && (
-        <div className="border border-[color:var(--color-border)] rounded-lg p-4 space-y-2">
-          <div className="flex items-baseline gap-3">
-            <span className="text-xs text-[color:var(--color-muted)]">호수</span>
-            <span className="text-2xl font-bold text-[color:var(--color-brand)]">{res.ho}</span>
+      {res && res.ho && <JisanDetailCard info={info} ho={res.ho} hoRaw={res.ho_raw} articleNo={no.trim()} />}
+    </div>
+  );
+}
+
+// 만원 단위 → '억/만' 표기
+function fmtMan(n: number): string {
+  if (!n || n <= 0) return '';
+  if (n >= 10000) {
+    const eok = Math.floor(n / 10000), man = n % 10000;
+    return man > 0 ? `${eok}억 ${man.toLocaleString()}만` : `${eok}억`;
+  }
+  return `${n.toLocaleString()}만`;
+}
+
+function JisanDetailCard({ info, ho, hoRaw, articleNo }:
+  { info: Record<string, unknown>; ho: string; hoRaw: string; articleNo: string }) {
+  const g = (k: string) => (info[k] != null && info[k] !== '' ? String(info[k]) : '');
+  const n = (k: string) => { const x = Number(info[k]); return isFinite(x) ? x : 0; };
+
+  const bldg  = g('buildingName') || g('bldNm') || g('articleName');
+  const rtype = g('realEstateTypeName') || '지식산업센터';
+  const trade = g('tradeTypeName');
+  const deal  = n('price_deal') || n('dealPrice');
+  const warrant = n('warrantPrice');
+  const rent  = n('rentPrice') || n('rentPrc');
+  let priceStr = '';
+  if (trade === '매매') priceStr = fmtMan(deal || warrant);
+  else if (trade === '전세') priceStr = fmtMan(warrant);
+  else if (rent > 0) priceStr = `보증 ${fmtMan(warrant)} / 월 ${fmtMan(rent)}`;
+  else priceStr = fmtMan(warrant || deal);
+
+  const excl = g('exclusiveSpace') || g('area2');
+  const sply = g('supplySpace') || g('area1');
+  const areaStr = excl ? `전용 ${excl}㎡${sply ? ` / 공급 ${sply}㎡` : ''}` : '';
+  const floor = g('floorInfo') || (g('correspondingFloorCount') ? `${g('correspondingFloorCount')}/${g('totalFloorCount')}` : '');
+  const dir   = g('directionTypeName');
+  const aprv  = g('useAprDay') || g('buildingUseAprvYmd');
+  const parking = g('parkingPossibleYN') === 'Y' ? `가능${n('parkingCount') ? ` (${n('parkingCount')}대)` : ''}` : (g('parkingCount') ? `${g('parkingCount')}대` : '');
+  const elvt  = g('elvtInfo') || (n('totalElvtCnt') ? `${n('totalElvtCnt')}대` : '');
+  const moveIn = g('moveInTypeName') || g('moveInPossibleYmd');
+  const realtor = g('realtorName') || g('representativeName');
+  const tel   = g('representativeTelNo') || g('cellPhoneNo');
+  const verif = g('verificationTypeName');
+  const addr  = g('exposureAddress') || g('address');
+  const feat  = g('articleFeatureDesc') || g('articleFeatureDescription');
+  const tags  = Array.isArray(info['tagList']) ? (info['tagList'] as string[]) : [];
+  const cpUrl = g('cpPcArticleUrl');
+
+  const rows = ([
+    ['거래', trade && priceStr ? `${trade}  ${priceStr}` : (trade || priceStr)],
+    ['면적', areaStr],
+    ['층', floor],
+    ['방향', dir],
+    ['사용승인', aprv],
+    ['주차', parking],
+    ['승강기', elvt],
+    ['입주', moveIn],
+    ['확인유형', verif],
+    ['주소', addr],
+  ] as [string, string][]).filter(([, v]) => v);
+
+  return (
+    <div className="border border-[color:var(--color-border)] rounded-xl p-5 space-y-4">
+      <div className="flex items-start justify-between gap-3 flex-wrap">
+        <div>
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="text-lg font-bold">{bldg || '지식산업센터'}</span>
+            <span className="text-xs px-2 py-0.5 rounded bg-sky-100 text-sky-700 font-semibold">{rtype}</span>
           </div>
-          {res.ho_raw && res.ho_raw !== res.ho && (
-            <div className="text-sm"><span className="text-[color:var(--color-muted)] mr-2">원문</span>{res.ho_raw}</div>
-          )}
-          <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm pt-1">
-            {([['층', 'floorInfo'], ['전용면적', 'exclusiveArea'], ['주소', 'address_text'], ['거래', 'tradeTypeName']] as const)
-              .map(([label, key]) => info[key] ? (
-                <div key={label}><span className="text-[color:var(--color-muted)] mr-2 text-xs">{label}</span>{String(info[key])}</div>
-              ) : null)}
-          </div>
+          <div className="text-xs text-[color:var(--color-muted)] mt-0.5">네이버 매물번호 {articleNo}</div>
+        </div>
+        <div className="text-right">
+          <div className="text-xs text-[color:var(--color-muted)]">호수</div>
+          <div className="text-3xl font-extrabold text-[color:var(--color-brand)] leading-tight">{ho}</div>
+          {hoRaw && hoRaw !== ho && <div className="text-xs text-[color:var(--color-muted)]">{hoRaw}</div>}
+        </div>
+      </div>
+
+      {tags.length > 0 && (
+        <div className="flex flex-wrap gap-1">
+          {tags.map((t, i) => <span key={i} className="text-xs px-2 py-0.5 rounded-full bg-[color:var(--color-bg-soft)] border border-[color:var(--color-border)]">{t}</span>)}
         </div>
       )}
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-1.5 text-sm">
+        {rows.map(([label, v]) => (
+          <div key={label} className="flex gap-2">
+            <span className="text-[color:var(--color-muted)] text-xs w-16 shrink-0 pt-0.5">{label}</span>
+            <span className="flex-1">{v}</span>
+          </div>
+        ))}
+      </div>
+
+      {feat && (
+        <div className="text-sm bg-[color:var(--color-bg-soft)] rounded-lg px-3 py-2">
+          <span className="text-xs text-[color:var(--color-muted)] mr-2">특징</span>{feat}
+        </div>
+      )}
+
+      <div className="flex items-center justify-between gap-3 flex-wrap pt-1 border-t border-[color:var(--color-border)]">
+        <div className="text-sm">
+          {realtor && <span className="font-semibold">{realtor}</span>}
+          {tel && <span className="ml-2 text-[color:var(--color-muted)]">{tel}</span>}
+        </div>
+        {cpUrl && (
+          <a href={cpUrl} target="_blank" rel="noopener noreferrer"
+             className="text-xs text-blue-600 underline">원문(neonet) 보기 →</a>
+        )}
+      </div>
     </div>
   );
 }
