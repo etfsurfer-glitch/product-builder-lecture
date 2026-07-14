@@ -124,7 +124,7 @@ function AreaSearch({ session }: { session: Session | null }) {
         cortar_no: chosen.legalDivisionNumber,
         trade_type: trade,
         addr: keyword.trim(),   // 지번/건물 필터 — 입력에 지번 있으면 그 건물만
-        max_pages: 40, fetch_ho: true, ho_limit: 300,
+        max_pages: 60, fetch_ho: true, ho_limit: 3000,
       });
       const jobId = start.job_id;
       pollRef.current = window.setInterval(async () => {
