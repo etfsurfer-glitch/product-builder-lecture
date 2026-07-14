@@ -240,7 +240,7 @@ export default function JisanSearch({ session }: Props) {
   );
 }
 
-const COLUMNS = ['거래', '단지/건물', '호수', '층', '전용(㎡)', '공급(㎡)', '매매/보증금(만원)', '월세(만원)', '유입', '매물번호'] as const;
+const COLUMNS = ['거래', '단지/건물', '호수', '층', '전용(㎡)', '공급(㎡)', '매매/보증금(만원)', '월세(만원)', '매물번호(KB)'] as const;
 
 function rowVals(it: JisanItem): string[] {
   const num = (v: unknown) => (v == null || v === '' ? '' : String(v));
@@ -250,7 +250,7 @@ function rowVals(it: JisanItem): string[] {
     String(it.매물거래명 || ''), String(it.단지명 || it.매물종별명 || ''), String(it.호수 || ''),
     num(it.해당층수), num(it.전용면적), num(it.공급면적),
     dw > 0 ? String(dw) : '', rent > 0 ? String(rent) : '',
-    String(it._매물유입명 || ''), String(it.매물일련번호 || ''),
+    String(it.매물일련번호 || ''),
   ];
 }
 function csvEscape(s: string): string { return /[",\n\r]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; }
@@ -290,8 +290,11 @@ function ResultTable({ items, exportName }: { items: JisanItem[]; exportName: st
                   <Td>{v[3]}</Td><Td>{v[4]}</Td><Td>{v[5]}</Td>
                   <Td className="text-right whitespace-nowrap">{dw}</Td>
                   <Td className="text-right whitespace-nowrap">{rent}</Td>
-                  <Td className="max-w-[90px] truncate" title={v[8]}>{v[8]}</Td>
-                  <Td className="text-[color:var(--color-muted)]">{v[9]}</Td>
+                  <Td className="text-[color:var(--color-muted)] whitespace-nowrap">
+                    {it.매물일련번호
+                      ? <a href={`https://kbland.kr/p/${it.매물일련번호}`} target="_blank" rel="noopener noreferrer" className="text-blue-600 underline">{v[8]}</a>
+                      : v[8]}
+                  </Td>
                 </tr>
               );
             })}
