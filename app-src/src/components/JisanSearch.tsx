@@ -1,5 +1,5 @@
 // JisanSearch.tsx — 지식산업센터(지산) 검색 탭 (2026-07 신설, 빌라 탭과 별개)
-// KB-native 지역/지번 검색 (propList/stutCdFilter + bascInfo 호수) + 네이버 매물번호 호수 조회(neonet).
+// 지역/지번·건물명 검색 + 네이버 매물번호 호수 조회.
 // 지도는 '확인용' — 검색 결과(지번) 위치를 표시. 클릭 검색/반경 없음.
 import { useEffect, useRef, useState } from 'react';
 import type { Session } from '@supabase/supabase-js';
@@ -166,8 +166,8 @@ function AreaSearch({ session }: { session: Session | null }) {
         </button>
       </form>
       <div className="text-xs text-sky-700 bg-sky-50 border border-sky-200 rounded px-2 py-1.5">
-        지식산업센터 전용 (KB 부동산). 동 뒤에 <b>지번</b>(예: 다산동 6143) 또는 <b>건물명</b>(예: 다산동 현대테라타워)을 넣으면 그 건물 매물만 나옵니다.
-        호수는 KB 등기주소(예: <b>제5층 제에프536호</b>) 원문. 지도는 위치 <b>확인용</b>입니다.
+        지식산업센터 전용 검색. 동 뒤에 <b>지번</b>(예: 다산동 6143) 또는 <b>건물명</b>(예: 다산동 현대테라타워)을 넣으면 그 건물 매물만 나옵니다.
+        호수는 등기주소(예: <b>제5층 제에프536호</b>) 원문. 지도는 위치 <b>확인용</b>입니다.
       </div>
       {autoErr && <div className="text-sm text-red-600">{autoErr}</div>}
 
