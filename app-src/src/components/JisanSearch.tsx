@@ -239,7 +239,7 @@ function ArticleByNaverNo({ session }: { session: Session | null }) {
     try {
       const r = await apiPost(session, '/api/jisan/article', { article_no: v });
       setRes({ ho: r.ho || '', ho_raw: r.ho_raw || '', ho_source: r.ho_source || '', info: r.info || {} });
-      if (!r.ho) setErr('호수를 찾지 못했습니다 (neonet 미등록 매물이거나 지산이 아님)');
+      if (!r.ho) setErr('호수를 찾지 못했습니다 (호수 정보가 없는 매물이거나 지산이 아님)');
     } catch (e) { setErr(String(e)); } finally { setBusy(false); }
   }
 
@@ -257,7 +257,7 @@ function ArticleByNaverNo({ session }: { session: Session | null }) {
         </button>
       </form>
       <div className="text-xs text-sky-700 bg-sky-50 border border-sky-200 rounded px-2 py-1.5">
-        네이버에 올라온 지산 매물의 번호로 호수를 조회합니다 (neonet 경로). 호수는 영숫자 원문(예: <b>sb-112</b>).
+        네이버에 올라온 지산 매물의 번호로 호수를 조회합니다. 호수는 영숫자 원문(예: <b>sb-112</b>).
       </div>
       {err && <div className="text-sm text-red-600">{err}</div>}
       {res && res.ho && <JisanDetailCard info={info} ho={res.ho} hoRaw={res.ho_raw} articleNo={no.trim()} />}
@@ -367,7 +367,7 @@ function JisanDetailCard({ info, ho, hoRaw, articleNo }:
         </div>
         {cpUrl && (
           <a href={cpUrl} target="_blank" rel="noopener noreferrer"
-             className="text-xs text-blue-600 underline">원문(neonet) 보기 →</a>
+             className="text-xs text-blue-600 underline">원문 보기 →</a>
         )}
       </div>
     </div>
