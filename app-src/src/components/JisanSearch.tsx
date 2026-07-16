@@ -450,7 +450,13 @@ function ResultTable({ items, exportName }: { items: JisanItem[]; exportName: st
               return (
                 <tr key={String(it.매물일련번호) || i} className="border-t border-[color:var(--color-border)] hover:bg-[color:var(--color-bg-soft)]">
                   <Td>{v[0]}</Td>
-                  <Td className="max-w-[190px] truncate" title={v[1]}>{v[1]}</Td>
+                  <Td className="max-w-[210px] truncate" title={v[1]}>
+                    {it['_사무실등록'] ? (
+                      <span className="inline-block mr-1 px-1 py-0.5 rounded bg-amber-100 text-amber-700 text-[10px] font-semibold align-middle"
+                            title="사무실로 등록된 지산 매물">사무실</span>
+                    ) : null}
+                    {v[1]}
+                  </Td>
                   <Td className="font-semibold whitespace-nowrap">{v[2]}</Td>
                   <Td className="whitespace-nowrap">{v[3]}</Td>
                   <Td className="whitespace-nowrap">{v[4]}</Td>
