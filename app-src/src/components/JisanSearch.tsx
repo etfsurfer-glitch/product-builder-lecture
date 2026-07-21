@@ -230,7 +230,7 @@ function ArticleByNaverNo({ session }: { session: Session | null }) {
   const [no, setNo]   = useState('');
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState('');
-  const [res, setRes] = useState<{ ho: string; ho_raw: string; ho_source: string; info: Record<string, unknown> } | null>(null);
+  const [res, setRes] = useState<{ ho: string; ho_raw: string; ho_source: string; floorMatch: boolean | null; info: Record<string, unknown> } | null>(null);
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -238,7 +238,8 @@ function ArticleByNaverNo({ session }: { session: Session | null }) {
     setBusy(true); setErr(''); setRes(null);
     try {
       const r = await apiPost(session, '/api/jisan/article', { article_no: v });
-      setRes({ ho: r.ho || '', ho_raw: r.ho_raw || '', ho_source: r.ho_source || '', info: r.info || {} });
+      setRes({ ho: r.ho || '', ho_raw: r.ho_raw || '', ho_source: r.ho_source || '',
+               floorMatch: r.ho_floor_match === undefined ? null : r.ho_floor_match, info: r.info || {} });
       if (!r.ho) setErr('호수를 찾지 못했습니다 (호수 정보가 없는 매물이거나 지산이 아님)');
     } catch (e) { setErr(String(e)); } finally { setBusy(false); }
   }
@@ -260,7 +261,7 @@ function ArticleByNaverNo({ session }: { session: Session | null }) {
         네이버에 올라온 지산 매물의 번호로 호수를 조회합니다. 호수는 영숫자 원문(예: <b>sb-112</b>).
       </div>
       {err && <div className="text-sm text-red-600">{err}</div>}
-      {res && res.ho && <JisanDetailCard info={info} ho={res.ho} hoRaw={res.ho_raw} articleNo={no.trim()} />}
+      {res && res.ho && <JisanDetailCard info={info} ho={res.ho} hoRaw={res.ho_raw} articleNo={no.trim()} floorMatch={res.floorMatch} />}
     </div>
   );
 }
@@ -275,8 +276,8 @@ function fmtMan(n: number): string {
   return `${n.toLocaleString()}만`;
 }
 
-function JisanDetailCard({ info, ho, hoRaw, articleNo }:
-  { info: Record<string, unknown>; ho: string; hoRaw: string; articleNo: string }) {
+function JisanDetailCard({ info, ho, hoRaw, articleNo, floorMatch }:
+  { info: Record<string, unknown>; ho: string; hoRaw: string; articleNo: string; floorMatch?: boolean | null }) {
   const g = (k: string) => (info[k] != null && info[k] !== '' ? String(info[k]) : '');
   const n = (k: string) => { const x = Number(info[k]); return isFinite(x) ? x : 0; };
 
@@ -336,8 +337,24 @@ function JisanDetailCard({ info, ho, hoRaw, articleNo }:
           <div className="text-xs text-[color:var(--color-muted)]">호수</div>
           <div className="text-3xl font-extrabold text-[color:var(--color-brand)] leading-tight">{ho}</div>
           {hoRaw && hoRaw !== ho && <div className="text-xs text-[color:var(--color-muted)]">{hoRaw}</div>}
+          {floorMatch === true && (
+            <div className="mt-1 text-[11px] px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200 inline-block">
+              층 일치 확인
+            </div>
+          )}
+          {floorMatch === false && (
+            <div className="mt-1 text-[11px] px-1.5 py-0.5 rounded bg-amber-50 text-amber-700 border border-amber-300 inline-block"
+                 title="등록된 호수의 층과 매물 층이 다릅니다. 중개사가 입력한 값을 그대로 표시합니다.">
+              ⚠ 층 불일치 · 입력값 그대로
+            </div>
+          )}
         </div>
       </div>
+      {floorMatch === false && (
+        <div className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded px-2 py-1.5">
+          이 호수는 <b>중개사가 등록한 값을 그대로</b> 보여드리는 것으로, 호수가 가리키는 층이 매물의 층({g('correspondingFloorCount')}층)과 다릅니다. 등록 시 오기입 가능성이 있으니 확인이 필요합니다.
+        </div>
+      )}
 
       {tags.length > 0 && (
         <div className="flex flex-wrap gap-1">
@@ -457,7 +474,13 @@ function ResultTable({ items, exportName }: { items: JisanItem[]; exportName: st
                     ) : null}
                     {v[1]}
                   </Td>
-                  <Td className="font-semibold whitespace-nowrap">{v[2]}</Td>
+                  <Td className="font-semibold whitespace-nowrap">
+                    {v[2]}
+                    {it['_호수층일치'] === false && (
+                      <span className="ml-1 text-[10px] px-1 py-0.5 rounded bg-amber-100 text-amber-700 align-middle"
+                            title="등록된 호수의 층과 매물 층이 다릅니다 (중개사 입력값 그대로 표시)">⚠층</span>
+                    )}
+                  </Td>
                   <Td className="whitespace-nowrap">{v[3]}</Td>
                   <Td className="whitespace-nowrap">{v[4]}</Td>
                   <Td className="whitespace-nowrap">{v[5]}</Td>
