@@ -633,12 +633,14 @@ function priceFromRow(r: Record<string, unknown>): string {
   return '—';
 }
 
-function CompareView({ compare, onBack }: { compare: PortfolioCompare; onBack: () => void }) {
+export function CompareView({ compare, onBack, backLabel }: {
+  compare: PortfolioCompare; onBack: () => void; backLabel?: string;
+}) {
   const trades: string[] = ['매매', '전세', '월세'];
   return (
     <div>
       <button onClick={onBack} className="text-sm text-[color:var(--color-muted)] hover:text-[color:var(--color-brand)] mb-2">
-        ← 내 폴더로
+        {backLabel ?? '← 내 폴더로'}
       </button>
       <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight mb-1">시점 비교</h1>
       <div className="text-sm text-[color:var(--color-muted)] mb-6 font-mono">

@@ -1440,3 +1440,81 @@ export function villaSearchStatus(session: Session | null, jobId: string) {
     `/api/villa/search/status/${encodeURIComponent(jobId)}`, session,
   );
 }
+
+// ═══════════════ 단지 시점 비교 (Pro 전용, snapshot-watch) ═══════════════
+// 서버: /api/snapshot-watch* — require_pro (비Pro 403 subscription_required).
+// 스냅샷 저장소는 R2 `w/{sub}/{cno}/{ts}.json` — "내 폴더"와 물리 격리.
+
+export interface TcWatchItem extends ComplexItem {
+  sort_order?: number;
+  created_at?: string | null;
+  last_snapshot_at?: string | null;   // 마지막 스냅샷 시각 (ISO)
+  last_status?: string;               // 'ok' | 'error' | ''
+}
+
+export interface TcSnapshotMeta {
+  key: string;
+  savedAt: string;   // 'YYYY-MM-DD_HHmm'
+  date: string;      // 'YYYY-MM-DD'
+  size: number;
+}
+
+// 스냅샷이 1개뿐이면 baselineOnly=true (older 없음)
+export interface TcCompareResp extends Partial<PortfolioCompare> {
+  ok: boolean;
+  baselineOnly?: boolean;
+  newer: PortfolioCompare['newer'];
+}
+
+export function listTcFavorites(session: Session | null) {
+  return request<{ ok: boolean; count: number; max: number; items: TcWatchItem[] }>(
+    '/api/snapshot-watch', session,
+  );
+}
+
+export function addTcFavorite(session: Session | null, complex: ComplexItem) {
+  return request<{ ok: boolean; item: TcWatchItem | null }>(
+    '/api/snapshot-watch', session,
+    { method: 'POST', body: JSON.stringify({ complex }) },
+  );
+}
+
+export function removeTcFavorite(session: Session | null, complexNo: string) {
+  return request<{ ok: boolean }>(
+    `/api/snapshot-watch/${encodeURIComponent(complexNo)}`, session,
+    { method: 'DELETE' },
+  );
+}
+
+export function listTcSnapshots(session: Session | null, complexNo: string) {
+  return request<{ ok: boolean; items: TcSnapshotMeta[]; lastAt: string | null }>(
+    `/api/snapshot-watch/${encodeURIComponent(complexNo)}/snapshots`, session,
+  );
+}
+
+export function compareTcSnapshots(
+  session: Session | null,
+  complexNo: string,
+  body: { older_key?: string; newer_key?: string; base_date?: string } = {},
+) {
+  return request<TcCompareResp>(
+    `/api/snapshot-watch/${encodeURIComponent(complexNo)}/compare`, session,
+    { method: 'POST', body: JSON.stringify(body) },
+  );
+}
+
+// 지금 기준 콜드추출 시작 — 완료 후 saveTcFromJob 으로 스냅샷 확정.
+// 진행 폴링은 기존 getExtractStatus(jobId) 재사용.
+export function refreshTc(session: Session | null, complexNo: string) {
+  return request<{ ok: boolean; job_id: string; complex_no: string; name: string }>(
+    `/api/snapshot-watch/${encodeURIComponent(complexNo)}/refresh`, session,
+    { method: 'POST', body: JSON.stringify({}) },
+  );
+}
+
+export function saveTcFromJob(session: Session | null, complexNo: string, jobId: string) {
+  return request<{ ok: boolean; key: string; savedAt: string; size: number }>(
+    '/api/snapshot-watch/save-from-job', session,
+    { method: 'POST', body: JSON.stringify({ complex_no: complexNo, job_id: jobId }) },
+  );
+}

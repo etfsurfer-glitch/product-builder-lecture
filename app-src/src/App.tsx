@@ -9,6 +9,7 @@ import ArticleLookup from './components/ArticleLookup';
 import VillaSearch from './components/VillaSearch';
 import JisanSearch from './components/JisanSearch';
 import Portfolio from './components/Portfolio';
+import TimeCompare from './components/TimeCompare';
 import DeviceManager from './components/DeviceManager';
 import AdminPage from './components/AdminPage';
 import SubscriptionExpiryModal from './components/SubscriptionExpiryModal';
@@ -16,7 +17,7 @@ import SubscriptionRequiredModal from './components/SubscriptionRequiredModal';
 import BlockGateModal from './components/BlockGateModal';
 
 type Status = 'loading' | 'needs-login' | 'ready';
-type Tab = 'complex' | 'article' | 'villa' | 'jisan' | 'portfolio';
+type Tab = 'complex' | 'article' | 'villa' | 'jisan' | 'portfolio' | 'timecompare';
 
 // ── 구독 만료 알림 헬퍼 (서울 TZ 기준) ───────────────────────────────────────
 function todayInSeoul(): string {
@@ -184,6 +185,7 @@ export default function App() {
             <TabButton active={tab === 'villa'} onClick={() => setTab('villa')}>빌라/사무실 등</TabButton>
             <TabButton active={tab === 'jisan'} onClick={() => setTab('jisan')}>지식산업센터</TabButton>
             <TabButton active={tab === 'portfolio'} onClick={() => setTab('portfolio')}>내 폴더</TabButton>
+            <TabButton active={tab === 'timecompare'} onClick={() => setTab('timecompare')}>단지 시점 비교</TabButton>
           </div>
         </div>
       </header>
@@ -198,6 +200,7 @@ export default function App() {
             {tab === 'villa' && <VillaSearch session={session} />}
             {tab === 'jisan' && <JisanSearch session={session} />}
             {tab === 'portfolio' && <Portfolio session={session} />}
+            {tab === 'timecompare' && <TimeCompare session={session} />}
           </>
         )}
       </main>
