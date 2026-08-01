@@ -78,6 +78,7 @@ function TCManager({ session, items, maxN, error, onReload }: {
   const [selected, setSelected] = useState<TcWatchItem | null>(null);
   const [busy, setBusy] = useState('');
   const [err, setErr] = useState(error);
+  const [info, setInfo] = useState('');
 
   // 단지 추가 검색
   const [kw, setKw] = useState('');
@@ -97,10 +98,13 @@ function TCManager({ session, items, maxN, error, onReload }: {
   }
 
   async function onAdd(c: ComplexItem) {
-    setBusy(`add:${c.complex_no}`); setErr('');
+    setBusy(`add:${c.complex_no}`); setErr(''); setInfo('');
     try {
-      await addTcFavorite(session, c);
+      const r = await addTcFavorite(session, c);
       setCands([]); setKw('');
+      if (r.initial_snapshot) {
+        setInfo(`'${c.name}' 등록 완료 — 첫 스냅샷을 백그라운드에서 생성 중입니다 (수 분 소요, 완료 시 '갱신됨' 배지). 내일부터 바로 비교할 수 있습니다.`);
+      }
       await onReload();
     } catch (e2) {
       setErr(e2 instanceof ApiError ? e2.message : String(e2));
@@ -138,6 +142,11 @@ function TCManager({ session, items, maxN, error, onReload }: {
       </div>
 
       {err && <div className="text-sm text-red-600">{err}</div>}
+      {info && (
+        <div className="text-sm text-emerald-700 bg-emerald-50 border border-emerald-200 rounded px-3 py-2">
+          {info}
+        </div>
+      )}
 
       {/* 관심단지 목록 */}
       <div className="space-y-2">

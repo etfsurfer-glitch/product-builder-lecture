@@ -1473,7 +1473,8 @@ export function listTcFavorites(session: Session | null) {
 }
 
 export function addTcFavorite(session: Session | null, complex: ComplexItem) {
-  return request<{ ok: boolean; item: TcWatchItem | null }>(
+  // initial_snapshot=true 면 서버가 백그라운드로 첫 콜드추출·스냅샷 생성을 시작함
+  return request<{ ok: boolean; item: TcWatchItem | null; initial_snapshot?: boolean }>(
     '/api/snapshot-watch', session,
     { method: 'POST', body: JSON.stringify({ complex }) },
   );
