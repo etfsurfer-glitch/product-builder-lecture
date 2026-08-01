@@ -346,7 +346,9 @@ function toggleInSet<T>(s: Set<T>, v: T): Set<T> {
   return n;
 }
 
-function SnapshotView({ snap, onBack }: { snap: PortfolioSnapshot; onBack: () => void }) {
+export function SnapshotView({ snap, onBack, backLabel }: {
+  snap: PortfolioSnapshot; onBack: () => void; backLabel?: string;
+}) {
   const rows = snap.rows as Row[];
 
   const [groupMode, setGroupMode] = useState(true);
@@ -431,7 +433,7 @@ function SnapshotView({ snap, onBack }: { snap: PortfolioSnapshot; onBack: () =>
   return (
     <div>
       <button onClick={onBack} className="text-sm text-[color:var(--color-muted)] hover:text-[color:var(--color-brand)] mb-2">
-        ← 내 폴더로
+        {backLabel ?? '← 내 폴더로'}
       </button>
       <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight truncate">{snap.complex.name}</h1>
       <div className="text-sm text-[color:var(--color-muted)] truncate mb-1">

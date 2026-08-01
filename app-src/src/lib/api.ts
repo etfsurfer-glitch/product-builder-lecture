@@ -1493,6 +1493,14 @@ export function listTcSnapshots(session: Session | null, complexNo: string) {
   );
 }
 
+// 스냅샷 원본(rows 포함) 단건 조회 — 뷰어용. PortfolioSnapshot 과 동일 형태.
+export function getTcSnapshot(session: Session | null, complexNo: string, key: string) {
+  return request<{ ok: boolean; snapshot: PortfolioSnapshot }>(
+    `/api/snapshot-watch/${encodeURIComponent(complexNo)}/snapshot?key=${encodeURIComponent(key)}`,
+    session,
+  );
+}
+
 export function compareTcSnapshots(
   session: Session | null,
   complexNo: string,

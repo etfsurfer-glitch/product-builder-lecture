@@ -5,12 +5,13 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import type { Session } from '@supabase/supabase-js';
 import {
   listTcFavorites, addTcFavorite, removeTcFavorite,
-  listTcSnapshots, compareTcSnapshots, refreshTc, saveTcFromJob,
+  listTcSnapshots, compareTcSnapshots, refreshTc, saveTcFromJob, getTcSnapshot,
   searchComplex, getExtractStatus,
   ApiError,
   type TcWatchItem, type TcSnapshotMeta, type ComplexItem, type PortfolioCompare,
+  type PortfolioSnapshot,
 } from '../lib/api';
-import { CompareView } from './Portfolio';
+import { CompareView, SnapshotView } from './Portfolio';
 
 // ── 유틸 ────────────────────────────────────────────────────────────────────
 function fmtSavedAt(s: string | null | undefined): string {
@@ -241,6 +242,10 @@ function TCRunner({ session, complex, onBack }: {
   const [compare, setCompare] = useState<PortfolioCompare | null>(null);
   const [comparing, setComparing] = useState(false);
 
+  // 스냅샷 원본 뷰어
+  const [viewing, setViewing] = useState<PortfolioSnapshot | null>(null);
+  const [opening, setOpening] = useState('');   // 여는 중인 key
+
   // 콜드추출 진행
   const [cold, setCold] = useState<{ jobId: string; pct: number; msg: string } | null>(null);
   const pollRef = useRef<number | null>(null);
@@ -307,6 +312,19 @@ function TCRunner({ session, complex, onBack }: {
     }
   }
 
+  async function openSnapshot(meta: TcSnapshotMeta) {
+    setOpening(meta.key); setErr('');
+    try {
+      const r = await getTcSnapshot(session, complex.complex_no, meta.key);
+      setViewing(r.snapshot);
+    } catch (e) {
+      setErr(e instanceof ApiError ? `${e.status} · ${e.message}` : String(e));
+    } finally { setOpening(''); }
+  }
+
+  if (viewing) {
+    return <SnapshotView snap={viewing} onBack={() => setViewing(null)} backLabel="← 시점 선택으로" />;
+  }
   if (compare) {
     return <CompareView compare={compare} onBack={() => setCompare(null)} backLabel="← 시점 선택으로" />;
   }
@@ -378,14 +396,21 @@ function TCRunner({ session, complex, onBack }: {
             아직 스냅샷이 없습니다. 내일 오전 10시 자동 저장을 기다리거나 "지금 콜드추출"을 실행하세요.
           </div>
         ) : (
-          <div className="flex flex-wrap gap-1.5">
-            {snaps.map(s => (
-              <span key={s.key}
-                    className="px-2 py-1 rounded bg-[color:var(--color-bg-soft)] border border-[color:var(--color-border)] text-xs font-mono">
-                {s.savedAt}
-              </span>
-            ))}
-          </div>
+          <>
+            <div className="flex flex-wrap gap-1.5">
+              {snaps.map(s => (
+                <button key={s.key} onClick={() => void openSnapshot(s)}
+                        disabled={!!opening}
+                        className="px-2 py-1 rounded bg-[color:var(--color-bg-soft)] border border-[color:var(--color-border)] text-xs font-mono hover:border-[color:var(--color-brand)] hover:text-[color:var(--color-brand)] disabled:opacity-50"
+                        title="스냅샷 당시 매물 목록 보기">
+                  {opening === s.key ? '여는 중…' : `📋 ${s.savedAt}`}
+                </button>
+              ))}
+            </div>
+            <div className="text-xs text-[color:var(--color-muted)] mt-1.5">
+              시점을 클릭하면 그 당시 매물 목록을 볼 수 있습니다.
+            </div>
+          </>
         )}
       </div>
     </div>
