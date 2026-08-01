@@ -10,6 +10,7 @@ import VillaSearch from './components/VillaSearch';
 import JisanSearch from './components/JisanSearch';
 import Portfolio from './components/Portfolio';
 import TimeCompare from './components/TimeCompare';
+import FeatureNotice from './components/FeatureNotice';
 import DeviceManager from './components/DeviceManager';
 import AdminPage from './components/AdminPage';
 import SubscriptionExpiryModal from './components/SubscriptionExpiryModal';
@@ -231,6 +232,8 @@ export default function App() {
       )}
 
       {needsPro && <SubscriptionRequiredModal session={session} />}
+
+      <FeatureNotice onGo={() => setTab('timecompare')} />
     </div>
   );
 }
