@@ -246,12 +246,23 @@ function TCRunner({ session, complex, onBack }: {
   const [viewing, setViewing] = useState<PortfolioSnapshot | null>(null);
   const [opening, setOpening] = useState('');   // 여는 중인 key
 
+  // 선택 비교 — 스냅샷 2개 선택 (savedAt 순으로 older/newer 자동 결정)
+  const [sel, setSel] = useState<string[]>([]);
+  function toggleSel(key: string) {
+    setSel(prev => {
+      if (prev.includes(key)) return prev.filter(k => k !== key);
+      if (prev.length >= 2) return [prev[1], key];   // 2개 초과 시 오래된 선택 교체
+      return [...prev, key];
+    });
+  }
+
   // 콜드추출 진행
   const [cold, setCold] = useState<{ jobId: string; pct: number; msg: string } | null>(null);
   const pollRef = useRef<number | null>(null);
 
   const loadSnaps = useCallback(async () => {
     setLoading(true);
+    setSel([]);
     try {
       const r = await listTcSnapshots(session, complex.complex_no);
       setSnaps(r.items || []);
@@ -310,6 +321,13 @@ function TCRunner({ session, complex, onBack }: {
     } catch (e) {
       setErr(e instanceof ApiError ? `${e.status} · ${e.message}` : String(e));
     }
+  }
+
+  async function runSelectedCompare() {
+    if (sel.length !== 2) return;
+    // savedAt 문자열('YYYY-MM-DD_HHmm')은 사전순 = 시간순 → 작은 쪽이 older
+    const [a, b] = [...sel].sort();
+    await runCompare({ older_key: a, newer_key: b });
   }
 
   async function openSnapshot(meta: TcSnapshotMeta) {
@@ -398,17 +416,45 @@ function TCRunner({ session, complex, onBack }: {
         ) : (
           <>
             <div className="flex flex-wrap gap-1.5">
-              {snaps.map(s => (
-                <button key={s.key} onClick={() => void openSnapshot(s)}
-                        disabled={!!opening}
-                        className="px-2 py-1 rounded bg-[color:var(--color-bg-soft)] border border-[color:var(--color-border)] text-xs font-mono hover:border-[color:var(--color-brand)] hover:text-[color:var(--color-brand)] disabled:opacity-50"
-                        title="스냅샷 당시 매물 목록 보기">
-                  {opening === s.key ? '여는 중…' : `📋 ${s.savedAt}`}
+              {snaps.map(s => {
+                const on = sel.includes(s.key);
+                return (
+                  <span key={s.key}
+                        className={`inline-flex items-center gap-1 pl-1.5 pr-1 py-0.5 rounded border text-xs font-mono ${
+                          on
+                            ? 'border-[color:var(--color-brand)] bg-[color:var(--color-brand)]/10 text-[color:var(--color-brand)]'
+                            : 'border-[color:var(--color-border)] bg-[color:var(--color-bg-soft)]'
+                        }`}>
+                    <input type="checkbox" checked={on} onChange={() => toggleSel(s.key)}
+                           className="accent-[color:var(--color-brand)] cursor-pointer"
+                           title="선택 비교용 체크 (2개)" />
+                    <span className="cursor-pointer select-none" onClick={() => toggleSel(s.key)}>
+                      {s.savedAt}
+                    </span>
+                    <button onClick={() => void openSnapshot(s)} disabled={!!opening}
+                            className="px-1 rounded hover:bg-[color:var(--color-bg-soft)] disabled:opacity-50"
+                            title="스냅샷 당시 매물 목록 보기">
+                      {opening === s.key ? '…' : '📋'}
+                    </button>
+                  </span>
+                );
+              })}
+            </div>
+            <div className="flex items-center gap-2 mt-2">
+              <button onClick={() => void runSelectedCompare()}
+                      disabled={sel.length !== 2 || comparing || !!cold}
+                      className="h-8 px-3 rounded bg-[color:var(--color-brand)] text-white text-xs font-semibold disabled:opacity-40">
+                {comparing ? '비교 중…' : `선택 비교 (${sel.length}/2)`}
+              </button>
+              {sel.length > 0 && (
+                <button onClick={() => setSel([])}
+                        className="h-8 px-2 rounded border border-[color:var(--color-border)] text-xs text-[color:var(--color-muted)]">
+                  선택 해제
                 </button>
-              ))}
+              )}
             </div>
             <div className="text-xs text-[color:var(--color-muted)] mt-1.5">
-              시점을 클릭하면 그 당시 매물 목록을 볼 수 있습니다.
+              체크 2개 → <b>선택 비교</b> (이른 시점이 자동으로 기준이 됩니다) · 📋 클릭 → 그 당시 매물 목록
             </div>
           </>
         )}
