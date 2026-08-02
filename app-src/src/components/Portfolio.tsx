@@ -635,9 +635,11 @@ function priceFromRow(r: Record<string, unknown>): string {
   return '—';
 }
 
-export function CompareView({ compare, onBack, backLabel }: {
-  compare: PortfolioCompare; onBack: () => void; backLabel?: string;
+export function CompareView({ compare, onBack, backLabel, unitBased }: {
+  compare: PortfolioCompare; onBack: () => void; backLabel?: string; unitBased?: boolean;
 }) {
+  // unitBased: 신규/이탈이 동·호(유닛) 기준 (시점비교 탭). 미지정=매물번호 기준(내 폴더)
+  const diffNoun = unitBased ? '동·호' : '매물';
   const trades: string[] = ['매매', '전세', '월세'];
   return (
     <div>
@@ -689,8 +691,8 @@ export function CompareView({ compare, onBack, backLabel }: {
       </div>
 
       {/* 신규 / 이탈 / 가격변동 */}
-      <Section title={`🆕 신규 매물 (${compare.added.length})`} rows={compare.added} kind="single" />
-      <Section title={`❌ 이탈 매물 (${compare.removed.length})`} rows={compare.removed} kind="single" />
+      <Section title={`🆕 신규 ${diffNoun} (${compare.added.length})`} rows={compare.added} kind="single" />
+      <Section title={`❌ 이탈 ${diffNoun} (${compare.removed.length})`} rows={compare.removed} kind="single" />
       <PriceChangeSection rows={compare.priceChanges} />
     </div>
   );

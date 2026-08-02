@@ -344,7 +344,7 @@ function TCRunner({ session, complex, onBack }: {
     return <SnapshotView snap={viewing} onBack={() => setViewing(null)} backLabel="← 시점 선택으로" />;
   }
   if (compare) {
-    return <CompareView compare={compare} onBack={() => setCompare(null)} backLabel="← 시점 선택으로" />;
+    return <CompareView compare={compare} onBack={() => setCompare(null)} backLabel="← 시점 선택으로" unitBased />;
   }
 
   return (
