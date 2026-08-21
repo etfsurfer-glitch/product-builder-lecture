@@ -34,7 +34,7 @@ export default function FeatureNotice({ onGo }: { onGo: () => void }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
          onClick={closeOnce}>
-      <div className="w-full max-w-md rounded-2xl bg-[color:var(--color-bg)] border border-[color:var(--color-border)] shadow-xl p-6 space-y-4"
+      <div className="w-full max-w-md rounded-2xl bg-white border border-[color:var(--color-border)] shadow-xl p-6 space-y-4"
            onClick={e => e.stopPropagation()}>
         <div className="text-xs font-bold text-[color:var(--color-brand)]">신규 기능 안내</div>
         <h2 className="text-xl font-extrabold tracking-tight">🆕 단지 시점 비교</h2>
