@@ -52,6 +52,8 @@ export default function App() {
   const [session, setSession] = useState<Session | null>(null);
   const [error, setError] = useState<string>('');
   const [tab, setTab] = useState<Tab>('complex');
+  // 단지검색에 매물번호를 넣었을 때 매물번호 탭으로 넘길 값
+  const [pendingArticleNo, setPendingArticleNo] = useState('');
   const [showDevices, setShowDevices] = useState(false);
   const [showAdmin, setShowAdmin] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
@@ -196,8 +198,19 @@ export default function App() {
           <AdminPage session={session} onBack={() => setShowAdmin(false)} />
         ) : (
           <>
-            {tab === 'complex' && <SearchPanel session={session} />}
-            {tab === 'article' && <ArticleLookup session={session} />}
+            {tab === 'complex' && (
+              <SearchPanel
+                session={session}
+                onGoArticle={(no) => { setPendingArticleNo(no); setTab('article'); }}
+              />
+            )}
+            {tab === 'article' && (
+              <ArticleLookup
+                session={session}
+                initialArticleNo={pendingArticleNo}
+                onInitialConsumed={() => setPendingArticleNo('')}
+              />
+            )}
             {tab === 'villa' && <VillaSearch session={session} />}
             {tab === 'jisan' && <JisanSearch session={session} />}
             {tab === 'portfolio' && <Portfolio session={session} />}

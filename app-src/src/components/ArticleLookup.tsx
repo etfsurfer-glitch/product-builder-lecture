@@ -8,7 +8,13 @@ import {
   type Row,
 } from './ExtractResult';
 
-interface Props { session: Session | null; }
+interface Props {
+  session: Session | null;
+  /** 단지검색에서 매물번호로 판단해 넘어온 값 — 마운트 시 자동 조회 */
+  initialArticleNo?: string;
+  /** 자동 조회를 시작했음을 부모에 알림 (중복 실행 방지) */
+  onInitialConsumed?: () => void;
+}
 
 interface ResultItem {
   no: string;
@@ -97,7 +103,7 @@ const STAGE_STEPS = [
   { from: 120, label: '계속 처리 중입니다 · 창을 닫지 마세요' },
 ];
 
-export default function ArticleLookup({ session }: Props) {
+export default function ArticleLookup({ session, initialArticleNo, onInitialConsumed }: Props) {
   const [articleNo, setArticleNo] = useState('');
   const [loading, setLoading] = useState(false);
   const [items, setItems] = useState<ResultItem[]>([]);
@@ -108,6 +114,18 @@ export default function ArticleLookup({ session }: Props) {
   const timerRef = useRef<number | null>(null);
 
   useEffect(() => () => { if (timerRef.current) window.clearInterval(timerRef.current); }, []);
+
+  // 단지검색에서 매물번호로 넘어온 경우 — 입력칸 채우고 즉시 조회
+  const autoRan = useRef(false);
+  useEffect(() => {
+    const no = String(initialArticleNo || '').trim();
+    if (!no || autoRan.current) return;
+    autoRan.current = true;
+    setArticleNo(no);
+    onInitialConsumed?.();
+    void doLookup(no);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialArticleNo]);
 
   function startTimer() {
     setStageIdx(0);
@@ -131,7 +149,11 @@ export default function ArticleLookup({ session }: Props) {
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
-    const no = articleNo.trim().replace(/[^0-9]/g, '');
+    await doLookup(articleNo);
+  }
+
+  async function doLookup(raw: string) {
+    const no = String(raw || '').trim().replace(/[^0-9]/g, '');
     if (!no) { setErr('숫자 매물번호를 입력해주세요'); return; }
     setLoading(true); setErr('');
     startTimer();

@@ -9,19 +9,29 @@ import BulkExtractResult from './BulkExtractResult';
 import FavoritesSection from './FavoritesSection';
 import FavoriteStar from './FavoriteStar';
 
-interface Props { session: Session | null; }
+interface Props {
+  session: Session | null;
+  /** 입력값이 매물번호로 판단될 때 매물번호 조회 탭으로 넘김 */
+  onGoArticle?: (articleNo: string) => void;
+}
+
+/** 네이버 매물번호 형태 판정 — 순수 숫자 9~11자리 (단지명이 이 형태일 가능성은 없음) */
+function looksLikeArticleNo(v: string): boolean {
+  return /^\d{9,11}$/.test(String(v || '').trim());
+}
 
 type View =
   | { kind: 'search' }
   | { kind: 'single'; complex: ComplexItem }
   | { kind: 'bulk'; jobs: BulkExtractJob[] };
 
-export default function SearchPanel({ session }: Props) {
+export default function SearchPanel({ session, onGoArticle }: Props) {
   const [view, setView] = useState<View>({ kind: 'search' });
   const [keyword, setKeyword] = useState('');
   const [loading, setLoading] = useState(false);
   const [items, setItems] = useState<ComplexItem[]>([]);
   const [err, setErr] = useState('');
+  const [askArticleNo, setAskArticleNo] = useState('');   // 매물번호 확인 팝업
 
   const [favorites, setFavorites] = useState<FavoriteItem[]>([]);
   const [favLoading, setFavLoading] = useState(true);
@@ -61,10 +71,16 @@ export default function SearchPanel({ session }: Props) {
 
   async function onSearch(e: React.FormEvent) {
     e.preventDefault();
-    if (!keyword.trim()) return;
+    const kw = keyword.trim();
+    if (!kw) return;
+    // 매물번호를 단지검색에 넣은 경우 — 검색 대신 확인 팝업 (헛된 조회/오류 방지)
+    if (looksLikeArticleNo(kw) && onGoArticle) {
+      setAskArticleNo(kw);
+      return;
+    }
     setLoading(true); setErr(''); setItems([]);
     try {
-      const r = await searchComplex(session, keyword.trim());
+      const r = await searchComplex(session, kw);
       setItems(r.items);
       if (r.items.length === 0) setErr('검색 결과가 없습니다');
     } catch (e) {
@@ -124,6 +140,37 @@ export default function SearchPanel({ session }: Props) {
         onOpenSingle={(fav) => setView({ kind: 'single', complex: fav })}
         onBulkExtract={onBulkExtract}
       />
+
+      {askArticleNo && (
+        <div className="fixed inset-0 z-[65] flex items-center justify-center bg-black/40 px-4"
+             onClick={() => setAskArticleNo('')}>
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm p-6"
+               onClick={e => e.stopPropagation()}>
+            <h3 className="text-lg font-extrabold mb-2">매물번호로 보입니다</h3>
+            <p className="text-sm text-[color:var(--color-muted)] mb-1">
+              입력하신 <b className="text-[color:var(--color-ink)]">{askArticleNo}</b> 는
+              단지명이 아니라 매물번호 형식입니다.
+            </p>
+            <p className="text-sm text-[color:var(--color-muted)] mb-5">
+              <b>매물번호 조회</b>로 이동해 바로 검색할까요?
+            </p>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setAskArticleNo('')}
+                className="flex-1 h-11 rounded-xl bg-[color:var(--color-bg-soft)] hover:bg-[#edeff7] border border-[color:var(--color-border)] text-sm font-semibold"
+              >
+                아니오
+              </button>
+              <button
+                onClick={() => { const n = askArticleNo; setAskArticleNo(''); onGoArticle?.(n); }}
+                className="flex-1 h-11 rounded-xl bg-[color:var(--color-brand)] hover:bg-[color:var(--color-brand-dark)] text-white text-sm font-semibold"
+              >
+                네, 조회할게요
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <form onSubmit={onSearch} className="flex gap-2 mb-8">
         <input
