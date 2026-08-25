@@ -353,13 +353,22 @@ export interface ComplexItem {
   img_dir?: string;
 }
 
+/** 유사 단지 후보 — 정확 검색 0건일 때 서버가 함께 내려줌 */
+export interface SuggestItem extends ComplexItem {
+  _suggest_score?: number;
+}
+
 export function searchComplex(
   session: Session | null,
   keyword: string,
   sido = '',
   sigungu = '',
 ) {
-  return request<{ ok: boolean; count: number; items: ComplexItem[] }>(
+  return request<{
+    ok: boolean; count: number; items: ComplexItem[];
+    suggestions?: SuggestItem[];   // 0건일 때만
+    suggest_for?: string;
+  }>(
     '/api/search/complex',
     session,
     { method: 'POST', body: JSON.stringify({ keyword, sido, sigungu }) },

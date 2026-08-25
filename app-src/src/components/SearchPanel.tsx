@@ -32,6 +32,7 @@ export default function SearchPanel({ session, onGoArticle }: Props) {
   const [items, setItems] = useState<ComplexItem[]>([]);
   const [err, setErr] = useState('');
   const [askArticleNo, setAskArticleNo] = useState('');   // 매물번호 확인 팝업
+  const [suggestFor, setSuggestFor] = useState('');       // 0건 → 유사 단지 후보 제안
 
   const [favorites, setFavorites] = useState<FavoriteItem[]>([]);
   const [favLoading, setFavLoading] = useState(true);
@@ -78,11 +79,18 @@ export default function SearchPanel({ session, onGoArticle }: Props) {
       setAskArticleNo(kw);
       return;
     }
-    setLoading(true); setErr(''); setItems([]);
+    setLoading(true); setErr(''); setItems([]); setSuggestFor('');
     try {
       const r = await searchComplex(session, kw);
-      setItems(r.items);
-      if (r.items.length === 0) setErr('검색 결과가 없습니다');
+      if (r.items.length > 0) {
+        setItems(r.items);
+      } else if (r.suggestions && r.suggestions.length > 0) {
+        // 정확히 일치하는 단지는 없지만 비슷한 단지가 있음 → 후보로 제시
+        setItems(r.suggestions);
+        setSuggestFor(r.suggest_for || kw);
+      } else {
+        setErr('검색 결과가 없습니다');
+      }
     } catch (e) {
       setErr(e instanceof ApiError ? `${e.status} · ${e.message}` : String(e));
     } finally {
@@ -196,7 +204,19 @@ export default function SearchPanel({ session, onGoArticle }: Props) {
         </div>
       )}
 
-      {items.length > 0 && (
+      {suggestFor && items.length > 0 && (
+        <div className="mb-4 p-4 rounded-xl bg-amber-50 border border-amber-200">
+          <div className="text-sm font-bold text-amber-900 mb-1">
+            '{suggestFor}' 와 정확히 일치하는 단지가 없습니다
+          </div>
+          <div className="text-sm text-amber-800">
+            혹시 아래 단지를 찾으셨나요? 이름 순서나 표기가 조금 다를 수 있어
+            비슷한 단지 {items.length}곳을 찾았습니다. 주소·세대수를 확인하고 선택하세요.
+          </div>
+        </div>
+      )}
+
+      {!suggestFor && items.length > 0 && (
         <div className="mb-3 text-sm text-[color:var(--color-muted)]">
           {items.length}건의 결과 · 단지를 선택해 매물을 추출하세요
         </div>
