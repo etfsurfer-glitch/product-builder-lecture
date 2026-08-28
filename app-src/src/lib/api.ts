@@ -992,7 +992,7 @@ export interface OwnershipResult {
   matches:         OwnershipMatch[];
   floorCandidates: OwnershipCandidate[];
   counts:          { articles: number; inDong: number; pos: number;
-                     scope?: number; floor?: number; resolved?: number };
+                     scope?: number; floor?: number; resolved?: number; withOwner?: number };
   note:            string;
 }
 

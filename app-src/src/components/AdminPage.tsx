@@ -2053,7 +2053,7 @@ function OwnershipTab({ session }: { session: Session | null }) {
 
           <div className="mt-3 text-xs text-[color:var(--color-muted)]">
             {res.mode === 'full'
-              ? <>수집 {res.counts.articles}건 · 부동산포스 {res.counts.pos}건 · 소유자 {res.counts.resolved ?? res.matches.length}건</>
+              ? <>수집 {res.counts.articles}건 · 부동산포스 {res.counts.pos}건 · 세대 {res.matches.length}건 · 소유자 연락처 {res.counts.withOwner ?? res.matches.length}건</>
               : <>수집 {res.counts.articles}건 · {res.dong}동 {res.counts.inDong}건 · {res.floor}층 {res.counts.scope ?? res.counts.floor}건 · 포스 {res.counts.pos}건</>}
           </div>
         </div>
