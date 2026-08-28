@@ -1871,7 +1871,6 @@ function OwnershipTab({ session }: { session: Session | null }) {
   }
 
   async function lookup() {
-    if (!dong.trim() || !ho.trim()) { setErr('동·호를 입력하세요.'); return; }
     if (!picked && !query.trim())   { setErr('단지를 먼저 검색·선택하세요.'); return; }
     setLoading(true); setErr(''); setRes(null); setShowCand(false);
     try {
@@ -1927,29 +1926,32 @@ function OwnershipTab({ session }: { session: Session | null }) {
         </div>
       )}
 
-      {/* 동/호 + 조회 */}
-      <div className="flex flex-wrap items-end gap-2 mb-4">
+      {/* 동/호 (선택) + 조회 */}
+      <div className="flex flex-wrap items-end gap-2 mb-1">
         <label className="text-sm">
-          <div className="text-[color:var(--color-muted)] mb-1">동</div>
+          <div className="text-[color:var(--color-muted)] mb-1">동 <span className="opacity-60">(선택)</span></div>
           <input value={dong} onChange={e => setDong(e.target.value)}
                  onKeyDown={e => { if (e.key === 'Enter') lookup(); }}
-                 placeholder="103" className={inputCls + ' w-24'} />
+                 placeholder="전체" className={inputCls + ' w-24'} />
         </label>
         <label className="text-sm">
-          <div className="text-[color:var(--color-muted)] mb-1">호</div>
+          <div className="text-[color:var(--color-muted)] mb-1">호 <span className="opacity-60">(선택)</span></div>
           <input value={ho} onChange={e => setHo(e.target.value)}
                  onKeyDown={e => { if (e.key === 'Enter') lookup(); }}
-                 placeholder="2902" className={inputCls + ' w-24'} />
+                 placeholder="전체" className={inputCls + ' w-24'} />
         </label>
         <button onClick={lookup} disabled={loading}
                 className="h-9 px-4 rounded bg-[color:var(--color-brand)] text-white text-sm font-semibold disabled:bg-[#b5aeea]">
-          {loading ? '조회 중…' : '집주인 조회'}
+          {loading ? '조회 중…' : (ho.trim() ? '집주인 조회' : '단지 전체 조회')}
         </button>
         {picked && (
           <span className="text-sm text-[color:var(--color-muted)] self-center">
             선택: <b className="text-[color:var(--color-ink)]">{picked.name}</b>
           </span>
         )}
+      </div>
+      <div className="text-xs text-[color:var(--color-muted)] mb-4">
+        동·호를 비우면 <b>단지 전체</b> 집주인(동·호 포함)을 조회합니다. 동만 입력하면 해당 동 전체.
       </div>
 
       {err && (
@@ -2050,8 +2052,9 @@ function OwnershipTab({ session }: { session: Session | null }) {
           )}
 
           <div className="mt-3 text-xs text-[color:var(--color-muted)]">
-            수집 {res.counts.articles}건 · {res.dong}동 {res.counts.inDong}건 ·
-            {' '}{res.floor}층 {res.counts.floor}건 · 포스 {res.counts.pos}건
+            {res.mode === 'full'
+              ? <>수집 {res.counts.articles}건 · 부동산포스 {res.counts.pos}건 · 소유자 {res.counts.resolved ?? res.matches.length}건</>
+              : <>수집 {res.counts.articles}건 · {res.dong}동 {res.counts.inDong}건 · {res.floor}층 {res.counts.scope ?? res.counts.floor}건 · 포스 {res.counts.pos}건</>}
           </div>
         </div>
       )}

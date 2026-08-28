@@ -985,12 +985,14 @@ export interface OwnershipCandidate {
 
 export interface OwnershipResult {
   complex:         OwnershipComplex | null;
+  mode?:           string;   // 'full' | 'unit'
   dong:            string;
   ho:              string;
   floor:           string;
   matches:         OwnershipMatch[];
   floorCandidates: OwnershipCandidate[];
-  counts:          { articles: number; inDong: number; floor: number; pos: number };
+  counts:          { articles: number; inDong: number; pos: number;
+                     scope?: number; floor?: number; resolved?: number };
   note:            string;
 }
 
