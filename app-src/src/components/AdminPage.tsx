@@ -37,7 +37,11 @@ import {
   type PresalePopularRow,
   adminHealthFullMulti,
   type HealthFullPerHost,
-  type HealthCheck
+  type HealthCheck,
+  adminOwnershipComplexes,
+  adminOwnershipLookup,
+  type OwnershipComplex,
+  type OwnershipResult
 } from '../lib/api';
 
 type AdminUserFull = AdminUserRow & {
@@ -51,7 +55,7 @@ interface Props {
   onBack:  () => void;
 }
 
-type Tab = 'dash' | 'users' | 'logs' | 'create' | 'presale' | 'health';
+type Tab = 'dash' | 'users' | 'logs' | 'create' | 'presale' | 'health' | 'ownership';
 
 function uaShort(ua: string): string {
   if (!ua) return '';
@@ -127,7 +131,7 @@ export default function AdminPage({ session, onBack }: Props) {
       </div>
 
       <div className="mb-4 border-b border-[color:var(--color-border)] flex gap-1 overflow-x-auto">
-        {([['dash','대시보드'],['users','계정관리'],['logs','로그'],['create','신규 등록'],['presale','분양권 캐시'],['health','시스템 점검']] as [Tab,string][]).map(([k,label]) => (
+        {([['dash','대시보드'],['users','계정관리'],['logs','로그'],['create','신규 등록'],['presale','분양권 캐시'],['health','시스템 점검'],['ownership','소유권정보']] as [Tab,string][]).map(([k,label]) => (
           <button key={k} onClick={() => setTab(k)}
                   className={
                     'px-4 py-2.5 text-sm font-semibold border-b-2 -mb-px transition ' +
@@ -146,6 +150,7 @@ export default function AdminPage({ session, onBack }: Props) {
       {tab === 'create'  && <CreateTab  session={session} />}
       {tab === 'presale' && <PresaleTab session={session} />}
       {tab === 'health'  && <HealthTab  session={session} />}
+      {tab === 'ownership' && <OwnershipTab session={session} />}
     </div>
   );
 }
@@ -1836,3 +1841,220 @@ function CheckRow({ check }: { check: HealthCheck }) {
   );
 }
 
+
+function phoneHref(p: string): string {
+  return 'tel:' + (p || '').replace(/[^0-9+]/g, '');
+}
+
+function OwnershipTab({ session }: { session: Session | null }) {
+  const [query, setQuery]       = useState('');
+  const [complexes, setComplexes] = useState<OwnershipComplex[]>([]);
+  const [picked, setPicked]     = useState<OwnershipComplex | null>(null);
+  const [dong, setDong]         = useState('');
+  const [ho, setHo]             = useState('');
+  const [searching, setSearching] = useState(false);
+  const [loading, setLoading]   = useState(false);
+  const [err, setErr]           = useState('');
+  const [res, setRes]           = useState<OwnershipResult | null>(null);
+  const [showCand, setShowCand] = useState(false);
+
+  async function findComplex() {
+    if (!query.trim()) return;
+    setSearching(true); setErr(''); setComplexes([]); setPicked(null);
+    try {
+      const r = await adminOwnershipComplexes(session, query.trim());
+      setComplexes(r.complexes);
+      if (r.complexes.length === 1) setPicked(r.complexes[0]);
+    } catch (e) {
+      setErr(e instanceof ApiError ? `${e.status} · ${e.message}` : String(e));
+    } finally { setSearching(false); }
+  }
+
+  async function lookup() {
+    if (!dong.trim() || !ho.trim()) { setErr('동·호를 입력하세요.'); return; }
+    if (!picked && !query.trim())   { setErr('단지를 먼저 검색·선택하세요.'); return; }
+    setLoading(true); setErr(''); setRes(null); setShowCand(false);
+    try {
+      const r = await adminOwnershipLookup(session, {
+        complexNo: picked?.complexNo || '',
+        query:     picked ? '' : query.trim(),
+        dong:      dong.trim(),
+        ho:        ho.trim(),
+      });
+      setRes(r);
+    } catch (e) {
+      setErr(e instanceof ApiError ? `${e.status} · ${e.message}` : String(e));
+    } finally { setLoading(false); }
+  }
+
+  const inputCls =
+    'h-9 px-2 rounded border border-[color:var(--color-border-strong)] text-sm';
+
+  return (
+    <div>
+      {/* 단지 검색 */}
+      <div className="flex flex-wrap items-end gap-2 mb-3">
+        <label className="text-sm">
+          <div className="text-[color:var(--color-muted)] mb-1">단지명</div>
+          <input value={query} onChange={e => setQuery(e.target.value)}
+                 onKeyDown={e => { if (e.key === 'Enter') findComplex(); }}
+                 placeholder="예: 아산자이그랜드파크1단지"
+                 className={inputCls + ' w-64'} />
+        </label>
+        <button onClick={findComplex} disabled={searching}
+                className="h-9 px-3 rounded bg-[color:var(--color-brand)] text-white text-sm font-semibold disabled:bg-[#b5aeea]">
+          {searching ? '...' : '단지 찾기'}
+        </button>
+      </div>
+
+      {/* 단지 후보 */}
+      {complexes.length > 0 && (
+        <div className="mb-3 flex flex-wrap gap-2">
+          {complexes.map(c => (
+            <button key={c.complexNo} onClick={() => setPicked(c)}
+                    className={
+                      'px-3 py-1.5 rounded border text-sm transition ' +
+                      (picked?.complexNo === c.complexNo
+                        ? 'border-[color:var(--color-brand)] bg-[color:var(--color-brand)]/10 text-[color:var(--color-brand)] font-semibold'
+                        : 'border-[color:var(--color-border-strong)] text-[color:var(--color-ink)] hover:border-[color:var(--color-brand)]')
+                    }>
+              {c.name}
+              <span className="text-[color:var(--color-muted)] ml-1">
+                {c.addr || `#${c.complexNo}`}
+              </span>
+            </button>
+          ))}
+        </div>
+      )}
+
+      {/* 동/호 + 조회 */}
+      <div className="flex flex-wrap items-end gap-2 mb-4">
+        <label className="text-sm">
+          <div className="text-[color:var(--color-muted)] mb-1">동</div>
+          <input value={dong} onChange={e => setDong(e.target.value)}
+                 onKeyDown={e => { if (e.key === 'Enter') lookup(); }}
+                 placeholder="103" className={inputCls + ' w-24'} />
+        </label>
+        <label className="text-sm">
+          <div className="text-[color:var(--color-muted)] mb-1">호</div>
+          <input value={ho} onChange={e => setHo(e.target.value)}
+                 onKeyDown={e => { if (e.key === 'Enter') lookup(); }}
+                 placeholder="2902" className={inputCls + ' w-24'} />
+        </label>
+        <button onClick={lookup} disabled={loading}
+                className="h-9 px-4 rounded bg-[color:var(--color-brand)] text-white text-sm font-semibold disabled:bg-[#b5aeea]">
+          {loading ? '조회 중…' : '집주인 조회'}
+        </button>
+        {picked && (
+          <span className="text-sm text-[color:var(--color-muted)] self-center">
+            선택: <b className="text-[color:var(--color-ink)]">{picked.name}</b>
+          </span>
+        )}
+      </div>
+
+      {err && (
+        <div className="p-3 mb-3 rounded bg-red-50 border border-red-200 text-red-800 text-sm">
+          {err}
+        </div>
+      )}
+
+      {loading && (
+        <div className="text-sm text-[color:var(--color-muted)]">
+          네이버 매물 수집 + 포스(rfine) 조회 중… 단지 규모에 따라 10~30초 걸릴 수 있습니다.
+        </div>
+      )}
+
+      {res && (
+        <div>
+          {res.note && (
+            <div className="p-3 mb-3 rounded bg-amber-50 border border-amber-200 text-amber-900 text-sm">
+              {res.note}
+            </div>
+          )}
+
+          {res.matches.length > 0 ? (
+            <div className="overflow-x-auto mb-4">
+              <table className="w-full text-sm border-collapse">
+                <thead>
+                  <tr className="bg-[color:var(--color-surface-2,#f3f4f6)]">
+                    <Th>출처</Th><Th>동</Th><Th>호</Th><Th>거래</Th><Th>층</Th>
+                    <Th>집주인</Th><Th>연락처</Th><Th>등록일</Th><Th>중개사</Th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {res.matches.map((m, i) => (
+                    <tr key={m.articleNo + i}
+                        className="border-b border-[color:var(--color-border)]">
+                      <Td>{m.via === 'rfine' ? '포스' : m.via === 'serve' ? '써브' : m.via}</Td>
+                      <Td>{m.dong}</Td>
+                      <Td>{m.ho}</Td>
+                      <Td>{m.tradeType}</Td>
+                      <Td>{m.floor}</Td>
+                      <Td><b>{m.ownerName || '-'}</b></Td>
+                      <Td>
+                        {m.ownerPhone
+                          ? <a href={phoneHref(m.ownerPhone)}
+                               className="text-[color:var(--color-brand)] font-semibold">
+                              {m.ownerPhone}
+                            </a>
+                          : '-'}
+                      </Td>
+                      <Td>{m.registeredAt || '-'}</Td>
+                      <Td><span className="text-[color:var(--color-muted)]">{m.realtorName || '-'}</span></Td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <div className="p-3 mb-3 rounded bg-[color:var(--color-surface-2,#f3f4f6)] text-sm text-[color:var(--color-muted)]">
+              일치하는 세대의 집주인 정보가 없습니다.
+            </div>
+          )}
+
+          {/* 층 후보 (진단용) */}
+          {res.floorCandidates.length > 0 && (
+            <div>
+              <button onClick={() => setShowCand(v => !v)}
+                      className="text-sm text-[color:var(--color-muted)] underline">
+                {showCand ? '▲ 같은 층 매물 접기' : `▼ 같은 층 매물 ${res.floorCandidates.length}건 (진단)`}
+              </button>
+              {showCand && (
+                <div className="overflow-x-auto mt-2">
+                  <table className="w-full text-xs border-collapse">
+                    <thead>
+                      <tr className="bg-[color:var(--color-surface-2,#f3f4f6)]">
+                        <Th>매물번호</Th><Th>동</Th><Th>층</Th><Th>거래</Th>
+                        <Th>CP</Th><Th>rfine호</Th><Th>소유자확보</Th><Th>사유</Th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {res.floorCandidates.map(c => (
+                        <tr key={c.articleNo}
+                            className="border-b border-[color:var(--color-border)]">
+                          <Td>{c.articleNo}</Td>
+                          <Td>{c.dong}</Td>
+                          <Td>{c.floor}</Td>
+                          <Td>{c.tradeType}</Td>
+                          <Td>{c.cpName}</Td>
+                          <Td>{c.rfineHo || '-'}</Td>
+                          <Td>{c.ownerResolved ? '✓' : ''}</Td>
+                          <Td><span className="text-[color:var(--color-muted)]">{c.reason}</span></Td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          )}
+
+          <div className="mt-3 text-xs text-[color:var(--color-muted)]">
+            수집 {res.counts.articles}건 · {res.dong}동 {res.counts.inDong}건 ·
+            {' '}{res.floor}층 {res.counts.floor}건 · 포스 {res.counts.pos}건
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
