@@ -1846,6 +1846,17 @@ function phoneHref(p: string): string {
   return 'tel:' + (p || '').replace(/[^0-9+]/g, '');
 }
 
+// rfine 확인유형 → 라벨. 전번 유무는 N/O(동의) vs D(서류·연락처 미동의)로 갈린다.
+function verifyLabel(t?: string): string {
+  switch ((t || '').toUpperCase()) {
+    case 'N': return '신홍보';
+    case 'O': return '집주인';
+    case 'D': return '서류';
+    case 'S': return '현장';
+    default:  return t || '';
+  }
+}
+
 function OwnershipTab({ session }: { session: Session | null }) {
   const [query, setQuery]       = useState('');
   const [complexes, setComplexes] = useState<OwnershipComplex[]>([]);
@@ -1980,7 +1991,7 @@ function OwnershipTab({ session }: { session: Session | null }) {
                 <thead>
                   <tr className="bg-[color:var(--color-surface-2,#f3f4f6)]">
                     <Th>출처</Th><Th>동</Th><Th>호</Th><Th>거래</Th><Th>층</Th>
-                    <Th>집주인</Th><Th>연락처</Th><Th>등록일</Th><Th>중개사</Th>
+                    <Th>집주인</Th><Th>연락처</Th><Th>확인</Th><Th>등록일</Th><Th>중개사</Th>
                   </tr>
                 </thead>
                 <tbody>
@@ -2001,6 +2012,7 @@ function OwnershipTab({ session }: { session: Session | null }) {
                             </a>
                           : '-'}
                       </Td>
+                      <Td><span className="text-[color:var(--color-muted)]">{verifyLabel(m.verifyType) || '-'}</span></Td>
                       <Td>{m.registeredAt || '-'}</Td>
                       <Td><span className="text-[color:var(--color-muted)]">{m.realtorName || '-'}</span></Td>
                     </tr>
@@ -2053,7 +2065,7 @@ function OwnershipTab({ session }: { session: Session | null }) {
 
           <div className="mt-3 text-xs text-[color:var(--color-muted)]">
             {res.mode === 'full'
-              ? <>수집 {res.counts.articles}건 · 부동산포스 {res.counts.pos}건 · 세대 {res.matches.length}건 · 소유자 연락처 {res.counts.withOwner ?? res.matches.length}건</>
+              ? <>수집 {res.counts.articles}건 · 부동산포스 {res.counts.pos}건 · 세대 {res.matches.length}건 · 이름 {res.counts.withOwner ?? res.matches.length}건 · 전번 {res.counts.withPhone ?? '-'}건</>
               : <>수집 {res.counts.articles}건 · {res.dong}동 {res.counts.inDong}건 · {res.floor}층 {res.counts.scope ?? res.counts.floor}건 · 포스 {res.counts.pos}건</>}
           </div>
         </div>

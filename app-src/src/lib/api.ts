@@ -966,6 +966,8 @@ export interface OwnershipMatch {
   price:        string;
   ownerName:    string;
   ownerPhone:   string;
+  verifyType?:  string;   // N=신홍보 / O=집주인확인 / D=서류확인
+  ownerConsent?: string;  // Y/N (연락처 공개 동의)
   registeredAt: string;
   realtorName:  string;
   cpName:       string;
@@ -992,7 +994,8 @@ export interface OwnershipResult {
   matches:         OwnershipMatch[];
   floorCandidates: OwnershipCandidate[];
   counts:          { articles: number; inDong: number; pos: number;
-                     scope?: number; floor?: number; resolved?: number; withOwner?: number };
+                     scope?: number; floor?: number; resolved?: number;
+                     withOwner?: number; withPhone?: number };
   note:            string;
 }
 
