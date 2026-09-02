@@ -130,7 +130,7 @@ export default function SanggaSearch({ session }: Props) {
     <div className="space-y-4">
       <form onSubmit={onAutocomplete} className="flex flex-wrap gap-2 items-stretch">
         <input type="text" value={keyword} onChange={e => setKeyword(e.target.value)}
-               placeholder="주소·지번·건물명 (예: 매곡리 1387 또는 매곡리 지웰시티몰)"
+               placeholder="주소·지번·건물명 (예: 탕정면 매곡리 1387 또는 탕정면 매곡리 지웰시티몰)"
                className="flex-1 min-w-[220px] h-10 px-3 rounded-lg border border-[color:var(--color-border)] text-sm"
                disabled={autoBusy} />
         <button type="submit" disabled={autoBusy || !keyword.trim()}
@@ -139,7 +139,8 @@ export default function SanggaSearch({ session }: Props) {
         </button>
       </form>
       <div className="text-xs text-sky-700 bg-sky-50 border border-sky-200 rounded px-2 py-1.5">
-        상가·근린생활시설 전용 검색. 동/읍/면/리 뒤에 <b>지번</b>(예: 매곡리 1387) 또는 <b>건물명</b>(예: 매곡리 지웰시티몰)을 넣으면 그 건물 매물만 나옵니다.
+        상가·근린생활시설 전용 검색. <b>동 지역</b>은 동명(예: 다산동), <b>읍·면 지역</b>은 <b>읍·면명까지</b> 넣어 검색하세요(리 단위는 미검색 — 예: <b>탕정면</b> 매곡리).
+        뒤에 <b>지번</b>(예: 탕정면 매곡리 1387) 또는 <b>건물명</b>(예: 탕정면 매곡리 지웰시티몰)을 넣으면 그 건물 매물만 나옵니다.
         호수는 등기주소(예: <b>B동 221호</b>) 원문. 같은 호가 여러 건이면 중개사별 중복 등록입니다. 지도는 위치 <b>확인용</b>입니다.
       </div>
       {autoErr && <div className="text-sm text-red-600">{autoErr}</div>}
