@@ -948,6 +948,75 @@ export function adminSetSubscription(
   );
 }
 
+// ── 소유권(집주인) 정보 조회 — 관리자 전용 ─────────────────────────────────
+export interface OwnershipComplex {
+  complexNo: string;
+  name:      string;
+  addr:      string;
+  cortarNo:  string;
+}
+
+export interface OwnershipMatch {
+  via:          string;
+  articleNo:    string;
+  dong:         string;
+  ho:           string;
+  tradeType:    string;
+  floor:        string;
+  price:        string;
+  ownerName:    string;
+  ownerPhone:   string;
+  verifyType?:  string;   // N=신홍보 / O=집주인확인 / D=서류확인
+  ownerConsent?: string;  // Y/N (연락처 공개 동의)
+  registeredAt: string;
+  realtorName:  string;
+  cpName:       string;
+}
+
+export interface OwnershipCandidate {
+  articleNo:     string;
+  dong:          string;
+  floor:         string;
+  tradeType:     string;
+  price:         string;
+  cpName:        string;
+  rfineHo:       string;
+  ownerResolved: boolean;
+  reason:        string;
+}
+
+export interface OwnershipResult {
+  complex:         OwnershipComplex | null;
+  mode?:           string;   // 'full' | 'unit'
+  dong:            string;
+  ho:              string;
+  floor:           string;
+  matches:         OwnershipMatch[];
+  floorCandidates: OwnershipCandidate[];
+  counts:          { articles: number; inDong: number; pos: number;
+                     scope?: number; floor?: number; resolved?: number;
+                     withOwner?: number; withPhone?: number };
+  note:            string;
+}
+
+/** 단지명 → 후보 목록 (드롭다운용). 관리자 전용. */
+export function adminOwnershipComplexes(session: Session | null, query: string) {
+  return request<{ complexes: OwnershipComplex[] }>(
+    `/api/admin/ownership/complexes?query=${encodeURIComponent(query)}`, session,
+  );
+}
+
+/** 단지 + 동 + 호 → 집주인 정보. 관리자 전용. */
+export function adminOwnershipLookup(
+  session: Session | null,
+  body: { query?: string; complexNo?: string; dong: string; ho: string },
+) {
+  return request<OwnershipResult>(
+    `/api/admin/ownership/lookup`, session,
+    { method: 'POST', body: JSON.stringify(body) },
+  );
+}
+
 // ── 엑셀/CSV/ZIP 내보내기 ───────────────────────────────────────────────────
 export interface ExportReq {
   job_id?:       string;
