@@ -8,6 +8,7 @@ import SearchPanel from './components/SearchPanel';
 import ArticleLookup from './components/ArticleLookup';
 import VillaSearch from './components/VillaSearch';
 import JisanSearch from './components/JisanSearch';
+import SanggaSearch from './components/SanggaSearch';
 import Portfolio from './components/Portfolio';
 import TimeCompare from './components/TimeCompare';
 import FeatureNotice from './components/FeatureNotice';
@@ -18,7 +19,7 @@ import SubscriptionRequiredModal from './components/SubscriptionRequiredModal';
 import BlockGateModal from './components/BlockGateModal';
 
 type Status = 'loading' | 'needs-login' | 'ready';
-type Tab = 'complex' | 'article' | 'villa' | 'jisan' | 'portfolio' | 'timecompare';
+type Tab = 'complex' | 'article' | 'villa' | 'jisan' | 'sangga' | 'portfolio' | 'timecompare';
 
 // ── 구독 만료 알림 헬퍼 (서울 TZ 기준) ───────────────────────────────────────
 function todayInSeoul(): string {
@@ -187,6 +188,7 @@ export default function App() {
             <TabButton active={tab === 'article'} onClick={() => setTab('article')}>매물번호 조회</TabButton>
             <TabButton active={tab === 'villa'} onClick={() => setTab('villa')}>빌라/사무실 등</TabButton>
             <TabButton active={tab === 'jisan'} onClick={() => setTab('jisan')}>지식산업센터</TabButton>
+            <TabButton active={tab === 'sangga'} onClick={() => setTab('sangga')}>상가</TabButton>
             <TabButton active={tab === 'portfolio'} onClick={() => setTab('portfolio')}>내 폴더</TabButton>
             <TabButton active={tab === 'timecompare'} onClick={() => setTab('timecompare')}>단지 시점 비교</TabButton>
           </div>
@@ -213,6 +215,7 @@ export default function App() {
             )}
             {tab === 'villa' && <VillaSearch session={session} />}
             {tab === 'jisan' && <JisanSearch session={session} />}
+            {tab === 'sangga' && <SanggaSearch session={session} />}
             {tab === 'portfolio' && <Portfolio session={session} />}
             {tab === 'timecompare' && <TimeCompare session={session} />}
           </>
