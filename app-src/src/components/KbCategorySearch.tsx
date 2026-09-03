@@ -302,8 +302,7 @@ function ArticleByNaverNo({ session }: { session: Session | null }) {
         </button>
       </form>
       <div className="text-xs text-sky-700 bg-sky-50 border border-sky-200 rounded px-2 py-1.5">
-        비아파트 매물(상가·사무실·빌라·다가구·공장 등) 번호로 호수를 조회합니다. KB 지역검색을 대조해 <b>건물·층·면적</b>이 일치하는 호수를 찾습니다.
-        첫 조회는 최대 20초가량 걸릴 수 있습니다(같은 지역 재조회는 빨라집니다). 층이 <b>저/중/고</b>로 가려진 매물은 조회가 어렵습니다.
+        비아파트 매물(상가·사무실·빌라·다가구·공장 등) 번호로 호수를 조회합니다.
       </div>
       {err && <div className="text-sm text-red-600">{err}</div>}
       {res && res.ho && <KbDetailCard info={info} ho={res.ho} hoRaw={res.ho_raw} articleNo={no.trim()} floorMatch={res.floorMatch} />}
