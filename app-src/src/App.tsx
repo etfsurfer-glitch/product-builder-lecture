@@ -9,6 +9,7 @@ import ArticleLookup from './components/ArticleLookup';
 import VillaSearch from './components/VillaSearch';
 import JisanSearch from './components/JisanSearch';
 import SanggaSearch from './components/SanggaSearch';
+import KbCategorySearch from './components/KbCategorySearch';
 import Portfolio from './components/Portfolio';
 import TimeCompare from './components/TimeCompare';
 import FeatureNotice from './components/FeatureNotice';
@@ -19,7 +20,7 @@ import SubscriptionRequiredModal from './components/SubscriptionRequiredModal';
 import BlockGateModal from './components/BlockGateModal';
 
 type Status = 'loading' | 'needs-login' | 'ready';
-type Tab = 'complex' | 'article' | 'villa' | 'jisan' | 'sangga' | 'portfolio' | 'timecompare';
+type Tab = 'complex' | 'article' | 'villa' | 'jisan' | 'sangga' | 'house' | 'commercial' | 'etc' | 'portfolio' | 'timecompare';
 
 // ── 구독 만료 알림 헬퍼 (서울 TZ 기준) ───────────────────────────────────────
 function todayInSeoul(): string {
@@ -189,6 +190,9 @@ export default function App() {
             <TabButton active={tab === 'villa'} onClick={() => setTab('villa')}>빌라/사무실 등</TabButton>
             <TabButton active={tab === 'jisan'} onClick={() => setTab('jisan')}>지식산업센터</TabButton>
             <TabButton active={tab === 'sangga'} onClick={() => setTab('sangga')}>상가</TabButton>
+            <TabButton active={tab === 'house'} onClick={() => setTab('house')}>주택</TabButton>
+            <TabButton active={tab === 'commercial'} onClick={() => setTab('commercial')}>상가·업무</TabButton>
+            <TabButton active={tab === 'etc'} onClick={() => setTab('etc')}>기타</TabButton>
             <TabButton active={tab === 'portfolio'} onClick={() => setTab('portfolio')}>내 폴더</TabButton>
             <TabButton active={tab === 'timecompare'} onClick={() => setTab('timecompare')}>단지 시점 비교</TabButton>
           </div>
@@ -216,6 +220,38 @@ export default function App() {
             {tab === 'villa' && <VillaSearch session={session} />}
             {tab === 'jisan' && <JisanSearch session={session} />}
             {tab === 'sangga' && <SanggaSearch session={session} />}
+            {tab === 'house' && (
+              <KbCategorySearch session={session} exportPrefix="house"
+                cats={[
+                  { key: 'villa', label: '빌라(연립/다세대)' },
+                  { key: 'dagagu', label: '다가구' },
+                  { key: 'single', label: '단독' },
+                  { key: 'sanggah', label: '상가주택' },
+                  { key: 'country', label: '전원주택' },
+                ]}
+                hint={<>연립·다세대(빌라)·다가구·단독·상가주택·전원주택 통합 검색. 동 지역은 동명(예: 다산동), <b>읍·면 지역은 읍/면명 포함</b>(예: 탕정면 매곡리). 호수는 등기주소 원문입니다.</>} />
+            )}
+            {tab === 'commercial' && (
+              <KbCategorySearch session={session} exportPrefix="biz"
+                cats={[
+                  { key: 'sangga', label: '상가' },
+                  { key: 'office', label: '사무실' },
+                  { key: 'jisan', label: '지식산업센터' },
+                  { key: 'building', label: '건물' },
+                ]}
+                hint={<>상가·사무실·지식산업센터·빌딩/건물 통합 검색. <b>지역+지번</b>(예: 탕정면 매곡리 1387) 또는 <b>지역+건물명</b>으로 좁힐 수 있습니다. 호수는 등기주소 원문(예: B동 221호)입니다.</>} />
+            )}
+            {tab === 'etc' && (
+              <KbCategorySearch session={session} exportPrefix="etc"
+                cats={[
+                  { key: 'factory', label: '공장' },
+                  { key: 'warehouse', label: '창고' },
+                  { key: 'land', label: '토지' },
+                  { key: 'redevelop', label: '재개발' },
+                  { key: 'lodging', label: '생활숙박' },
+                ]}
+                hint={<>공장·창고·토지·재개발·생활숙박시설 검색. 동 지역은 동명, <b>읍·면 지역은 읍/면명 포함</b>. 종류에 따라 호수·층 등 일부 항목이 없을 수 있습니다.</>} />
+            )}
             {tab === 'portfolio' && <Portfolio session={session} />}
             {tab === 'timecompare' && <TimeCompare session={session} />}
           </>
