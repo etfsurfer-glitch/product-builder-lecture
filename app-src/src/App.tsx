@@ -6,7 +6,8 @@ import { serverLogout, getMe, IS_TEST_BUILD, API_BASE,
          type BlockGateInfo } from './lib/api';
 import SearchPanel from './components/SearchPanel';
 import ArticleLookup from './components/ArticleLookup';
-import VillaSearch from './components/VillaSearch';
+// [미작동/숨김 2026-09-03] 빌라/사무실 등 탭(naver 기반) — 주택 탭(KB)으로 대체. 코드 보존, import만 주석.
+// import VillaSearch from './components/VillaSearch';
 import JisanSearch from './components/JisanSearch';
 import SanggaSearch from './components/SanggaSearch';
 import KbCategorySearch from './components/KbCategorySearch';
@@ -187,7 +188,8 @@ export default function App() {
           <div className="flex gap-1 -mb-px">
             <TabButton active={tab === 'complex'} onClick={() => setTab('complex')}>단지 검색</TabButton>
             <TabButton active={tab === 'article'} onClick={() => setTab('article')}>매물번호 조회</TabButton>
-            <TabButton active={tab === 'villa'} onClick={() => setTab('villa')}>빌라/사무실 등</TabButton>
+            {/* [미작동/숨김 2026-09-03] 빌라/사무실 등 탭 — 주택 탭(KB)으로 대체. 코드 보존.
+            <TabButton active={tab === 'villa'} onClick={() => setTab('villa')}>빌라/사무실 등</TabButton> */}
             <TabButton active={tab === 'jisan'} onClick={() => setTab('jisan')}>지식산업센터</TabButton>
             <TabButton active={tab === 'sangga'} onClick={() => setTab('sangga')}>상가</TabButton>
             <TabButton active={tab === 'house'} onClick={() => setTab('house')}>주택</TabButton>
@@ -217,7 +219,8 @@ export default function App() {
                 onInitialConsumed={() => setPendingArticleNo('')}
               />
             )}
-            {tab === 'villa' && <VillaSearch session={session} />}
+            {/* [미작동/숨김 2026-09-03] 빌라/사무실 등 탭 — 주택 탭(KB)으로 대체. 코드 보존.
+            {tab === 'villa' && <VillaSearch session={session} />} */}
             {tab === 'jisan' && <JisanSearch session={session} />}
             {tab === 'sangga' && <SanggaSearch session={session} />}
             {tab === 'house' && (
