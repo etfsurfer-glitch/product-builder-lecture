@@ -68,7 +68,34 @@ const ROOM_TYPES: { label: string; code: string }[] = [
   { label: '방 전체', code: '' }, { label: '원룸', code: '1' }, { label: '투룸', code: '2' },
 ];
 
-export default function KbCategorySearch({ session, cats, showRooms, exportPrefix, hint }: Props) {
+type SubTab = 'area' | 'article';
+
+export default function KbCategorySearch(props: Props) {
+  const [subTab, setSubTab] = useState<SubTab>('area');
+  return (
+    <div className="space-y-4">
+      <div className="flex gap-1 border-b border-[color:var(--color-border)]">
+        <SubTabBtn active={subTab === 'area'} onClick={() => setSubTab('area')}>지역/지번 검색</SubTabBtn>
+        <SubTabBtn active={subTab === 'article'} onClick={() => setSubTab('article')}>매물번호 조회</SubTabBtn>
+      </div>
+      {subTab === 'area'    && <AreaSearch {...props} />}
+      {subTab === 'article' && <ArticleByNaverNo session={props.session} />}
+    </div>
+  );
+}
+
+function SubTabBtn({ active, onClick, children }: { active: boolean; onClick: () => void; children: React.ReactNode }) {
+  return (
+    <button onClick={onClick}
+      className={'px-4 py-2 text-sm font-semibold border-b-2 transition ' +
+        (active ? 'border-[color:var(--color-brand)] text-[color:var(--color-brand)]'
+                : 'border-transparent text-[color:var(--color-muted)] hover:text-[color:var(--color-ink)]')}>
+      {children}
+    </button>
+  );
+}
+
+function AreaSearch({ session, cats, showRooms, exportPrefix, hint }: Props) {
   const [cat, setCat]           = useState(cats[0]?.key || '');
   const [room, setRoom]         = useState('');
   const [keyword, setKeyword]   = useState('');
@@ -237,6 +264,122 @@ export default function KbCategorySearch({ session, cats, showRooms, exportPrefi
           <RefMap items={items} fallback={chosen} />
           <ResultTable items={items} exportName={`${exportPrefix || 'kb'}_${chosen?.name || ''}`} />
         </>
+      )}
+    </div>
+  );
+}
+
+// ── 매물번호 → 호수 조회 (비아파트 전 종류 공용) ─────────────────────────────
+function ArticleByNaverNo({ session }: { session: Session | null }) {
+  const [no, setNo]   = useState('');
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState('');
+  const [res, setRes] = useState<{ ho: string; ho_raw: string; ho_source: string; floorMatch: boolean | null; info: Record<string, unknown> } | null>(null);
+
+  async function onSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    const v = no.trim(); if (!v) return;
+    setBusy(true); setErr(''); setRes(null);
+    try {
+      const r = await apiPost(session, '/api/kbcat/article', { article_no: v });
+      setRes({ ho: r.ho || '', ho_raw: r.ho_raw || '', ho_source: r.ho_source || '',
+               floorMatch: r.ho_floor_match === undefined ? null : r.ho_floor_match, info: r.info || {} });
+      if (!r.ho) setErr('호수를 찾지 못했습니다 (KB 미등록·층 비공개(저/중/고)·면적 기준차 등). 지역/지번 검색을 이용해 보세요.');
+    } catch (e) { setErr(String(e)); } finally { setBusy(false); }
+  }
+
+  const info = res?.info || {};
+  return (
+    <div className="space-y-4">
+      <form onSubmit={onSubmit} className="flex gap-2 items-stretch">
+        <input type="text" value={no} onChange={e => setNo(e.target.value)}
+               placeholder="네이버 매물번호 (예: 2647421349)"
+               className="flex-1 max-w-md h-10 px-3 rounded-lg border border-[color:var(--color-border)] text-sm"
+               disabled={busy} />
+        <button type="submit" disabled={busy || !no.trim()}
+                className="h-10 px-4 rounded-lg bg-[color:var(--color-brand)] text-white text-sm font-semibold disabled:opacity-50">
+          {busy ? '조회 중...' : '호수 조회'}
+        </button>
+      </form>
+      <div className="text-xs text-sky-700 bg-sky-50 border border-sky-200 rounded px-2 py-1.5">
+        비아파트 매물(상가·사무실·빌라·다가구·공장 등) 번호로 호수를 조회합니다. KB 지역검색을 대조해 <b>건물·층·면적</b>이 일치하는 호수를 찾습니다.
+        첫 조회는 최대 20초가량 걸릴 수 있습니다(같은 지역 재조회는 빨라집니다). 층이 <b>저/중/고</b>로 가려진 매물은 조회가 어렵습니다.
+      </div>
+      {err && <div className="text-sm text-red-600">{err}</div>}
+      {res && res.ho && <KbDetailCard info={info} ho={res.ho} hoRaw={res.ho_raw} articleNo={no.trim()} floorMatch={res.floorMatch} />}
+    </div>
+  );
+}
+
+function fmtMan(n: number): string {
+  if (!n || n <= 0) return '';
+  if (n >= 10000) {
+    const eok = Math.floor(n / 10000), man = n % 10000;
+    return man > 0 ? `${eok}억 ${man.toLocaleString()}만` : `${eok}억`;
+  }
+  return `${n.toLocaleString()}만`;
+}
+
+function KbDetailCard({ info, ho, hoRaw, articleNo, floorMatch }:
+  { info: Record<string, unknown>; ho: string; hoRaw: string; articleNo: string; floorMatch?: boolean | null }) {
+  const g = (k: string) => (info[k] != null && info[k] !== '' ? String(info[k]) : '');
+  const n = (k: string) => { const x = Number(info[k]); return isFinite(x) ? x : 0; };
+  const bldg  = g('buildingName') || g('articleName');
+  const rtype = g('realEstateTypeName') || '매물';
+  const trade = g('tradeTypeName');
+  const warrant = n('warrantPrice'); const rent = n('rentPrice') || n('rentPrc'); const deal = n('dealOrWarrantPrc');
+  let priceStr = '';
+  if (trade === '매매') priceStr = fmtMan(deal || warrant);
+  else if (trade === '전세') priceStr = fmtMan(warrant);
+  else if (rent > 0) priceStr = `보증 ${fmtMan(warrant)} / 월 ${fmtMan(rent)}`;
+  else priceStr = fmtMan(warrant || deal);
+  const excl = g('exclusiveSpace') || g('area2'); const sply = g('supplySpace') || g('area1');
+  const areaStr = excl ? `전용 ${excl}㎡${sply ? ` / 공급 ${sply}㎡` : ''}` : '';
+  const floor = g('floorInfo') || (g('correspondingFloorCount') ? `${g('correspondingFloorCount')}/${g('totalFloorCount')}` : '');
+  const addr  = g('exposureAddress') || g('address');
+  const realtor = g('realtorName') || g('representativeName');
+  const tel   = g('representativeTelNo') || g('cellPhoneNo');
+  const rows = ([
+    ['거래', trade && priceStr ? `${trade}  ${priceStr}` : (trade || priceStr)],
+    ['면적', areaStr], ['층', floor], ['방향', g('directionTypeName')], ['주소', addr],
+  ] as [string, string][]).filter(([, v]) => v);
+
+  return (
+    <div className="border border-[color:var(--color-border)] rounded-xl p-5 space-y-4">
+      <div className="flex items-start justify-between gap-3 flex-wrap">
+        <div>
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="text-lg font-bold">{bldg || rtype}</span>
+            <span className="text-xs px-2 py-0.5 rounded bg-sky-100 text-sky-700 font-semibold">{rtype}</span>
+          </div>
+          <div className="text-xs text-[color:var(--color-muted)] mt-0.5">네이버 매물번호 {articleNo}</div>
+        </div>
+        <div className="text-right">
+          <div className="text-xs text-[color:var(--color-muted)]">호수</div>
+          <div className="text-2xl font-extrabold text-[color:var(--color-brand)] leading-tight">{ho}</div>
+          {hoRaw && hoRaw !== ho && <div className="text-xs text-[color:var(--color-muted)]">{hoRaw}</div>}
+          {floorMatch === true && (
+            <div className="mt-1 text-[11px] px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200 inline-block">층 일치 확인</div>
+          )}
+          {floorMatch === false && (
+            <div className="mt-1 text-[11px] px-1.5 py-0.5 rounded bg-amber-50 text-amber-700 border border-amber-300 inline-block"
+                 title="등록된 호수의 층과 매물 층이 다릅니다.">⚠ 층 불일치 · 참고용</div>
+          )}
+        </div>
+      </div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-1.5 text-sm">
+        {rows.map(([label, v]) => (
+          <div key={label} className="flex gap-2">
+            <span className="text-[color:var(--color-muted)] text-xs w-16 shrink-0 pt-0.5">{label}</span>
+            <span className="flex-1">{v}</span>
+          </div>
+        ))}
+      </div>
+      {(realtor || tel) && (
+        <div className="flex items-center gap-3 flex-wrap pt-1 border-t border-[color:var(--color-border)] text-sm">
+          {realtor && <span className="font-semibold">{realtor}</span>}
+          {tel && <span className="text-[color:var(--color-muted)]">{tel}</span>}
+        </div>
       )}
     </div>
   );
