@@ -1,3 +1,6 @@
+// [2026-09-23] runto.online 서비스 종료 — 이 도메인의 /app/ 접근은 종료 랜딩으로.
+if (location.hostname.endsWith('runto.online')) { location.replace('/'); }
+
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import App from './App';

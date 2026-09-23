@@ -2,6 +2,26 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
+<!-- [2026-09-23] runto.online 서비스 종료 게이트 — 이 도메인에서만 종료 안내. studio.ytinfo.site 등은 정상. -->
+<script>
+(function () {
+  if (!location.hostname.endsWith('runto.online')) return;
+  var css = document.createElement('style');
+  css.textContent = 'body{visibility:hidden}';
+  document.head.appendChild(css);
+  document.addEventListener('DOMContentLoaded', function () {
+    document.title = '서비스 종료';
+    document.body.style.visibility = 'visible';
+    document.body.innerHTML =
+      '<div style="min-height:100vh;display:flex;align-items:center;justify-content:center;'
+      + 'font-family:system-ui,-apple-system,sans-serif;background:#0f1115;color:#e5e7eb">'
+      + '<div style="text-align:center;padding:24px">'
+      + '<div style="font-size:22px;font-weight:700;margin-bottom:10px">서비스를 종료합니다</div>'
+      + '<div style="font-size:14px;color:#9ca3af">그동안 이용해 주셔서 감사합니다.</div>'
+      + '</div></div>';
+  });
+})();
+</script>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="description" content="nfind - 아파트 매물관리시스템">
 <meta name="theme-color" content="#6c5ce7">
@@ -653,7 +673,8 @@ $('#login-form').addEventListener('submit', async e => {
   setTimeout(redirectToApp, 350);
 });
 
-initSupabase();
+// runto.online 은 종료 게이트가 처리 — 로그인 초기화/세션 리다이렉트 실행 안 함
+if (!location.hostname.endsWith('runto.online')) initSupabase();
 // (모달은 HTML 에 기본 open 상태로 렌더됨 — JS 로드 실패해도 표시 보장)
 </script>
 
