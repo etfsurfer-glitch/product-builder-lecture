@@ -7,7 +7,7 @@ import { isHostAlive } from './health';
 //   index 0: PRIMARY (VITE_API_BASE)         — 운영: KR (한국 IDC, primary)
 //   index 1: BACKUP  (VITE_API_BASE_BACKUP)  — 운영: A  (Mac Mini, fallback). 비우면 단일 호스트.
 // BACKUP 기본값은 빈 문자열 — env 누락 시 운영 A 로 잘못 가지 않도록 안전망.
-const PRIMARY_API = (import.meta.env.VITE_API_BASE        as string | undefined) ?? 'https://api-kr.runto.online';
+const PRIMARY_API = (import.meta.env.VITE_API_BASE        as string | undefined) ?? 'https://api.ytinfo.site';
 const BACKUP_API  = (import.meta.env.VITE_API_BASE_BACKUP as string | undefined) ?? '';
 
 export const API_HOSTS: readonly string[] = [PRIMARY_API, BACKUP_API].filter(Boolean) as string[];
