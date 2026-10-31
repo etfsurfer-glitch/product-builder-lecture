@@ -14,6 +14,7 @@ import KbCategorySearch from './components/KbCategorySearch';
 import Portfolio from './components/Portfolio';
 import TimeCompare from './components/TimeCompare';
 import FeatureNotice from './components/FeatureNotice';
+import ServiceNotice from './components/ServiceNotice';
 import DeviceManager from './components/DeviceManager';
 import AdminPage from './components/AdminPage';
 import SubscriptionExpiryModal from './components/SubscriptionExpiryModal';
@@ -289,6 +290,7 @@ export default function App() {
       {needsPro && <SubscriptionRequiredModal session={session} />}
 
       <FeatureNotice onGo={() => setTab('timecompare')} />
+      <ServiceNotice />
     </div>
   );
 }
